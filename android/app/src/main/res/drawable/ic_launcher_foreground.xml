@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylized "L" + speech dot mark on the launcher safe zone -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,26 L42,26 L42,64 L62,64 L62,74 L30,74 Z" />
+    <path
+        android:fillColor="#C7D2FE"
+        android:pathData="M64,30 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M56,78 L70,78 L64,88 Z" />
+</vector>
