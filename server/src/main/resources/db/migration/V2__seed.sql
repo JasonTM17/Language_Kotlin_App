@@ -127,7 +127,7 @@ INSERT INTO quiz_questions (id, quiz_id, question_type, prompt, options, correct
 (1, 1, 'MULTIPLE_CHOICE', '環境 có nghĩa là gì?', '["Công việc","Môi trường","Kinh tế","Giáo dục"]', 'Môi trường', '環境 (かんきょう) = môi trường.', 1),
 (2, 1, 'MULTIPLE_CHOICE', '家族 đọc là gì?', '["かぞく","かてい","かじょう","がぞく"]', 'かぞく', '家族 = かぞく (kazoku) = gia đình.', 2),
 (3, 1, 'MULTIPLE_CHOICE', '先生 có nghĩa là gì?', '["Học sinh","Bác sĩ","Giáo viên","Kỹ sư"]', 'Giáo viên', '先生 (せんせい) = giáo viên.', 3),
-(4, 1, 'MULTIPLE_CHOICE', 'Từ nào nghĩa là "nước"?', '[''木'',''水'',''火'',''金'']', '水', '水 (みず) = nước.', 4),
+(4, 1, 'MULTIPLE_CHOICE', 'Từ nào nghĩa là "nước"', '["木","水","火","金"]', '水', '水 (みず) = nước.', 4),
 (5, 1, 'MULTIPLE_CHOICE', '駅とは何ですか。', '["Sân bay","Ga tàu","Bệnh viện","Trường học"]', 'Ga tàu', '駅 (えき) = ga tàu.', 5),
 (6, 2, 'MULTIPLE_CHOICE', '予約 có nghĩa là gì?', '[''Lời hứa'',''Sự đặt trước'',''Sự chuẩn bị'',''Kinh nghiệm'']', 'Sự đặt trước', '予約 (よやく) = đặt trước (phòng, vé, nhà hàng).', 1),
 (7, 2, 'MULTIPLE_CHOICE', 'Điền vào chỗ trống: 約束を（　　）でください。', '[''忘れない'',''忘れたい'',''忘れる'',''忘れた'']', '忘れない', 'Dạng ないで của lời yêu cầu: xin đừng quên lời hứa.', 2),

@@ -1,10 +1,13 @@
 package com.linguaai.server
 
 import com.linguaai.server.config.AppConfig
+import com.linguaai.server.db.DatabaseFactory
 import com.linguaai.server.plugins.configureMonitoring
 import com.linguaai.server.plugins.configureSerialization
 import com.linguaai.server.plugins.configureStatusPages
+import com.linguaai.server.repository.AuthRepository
 import com.linguaai.server.repository.ContentRepository
+import com.linguaai.server.routes.configureAuthRoutes
 import com.linguaai.server.routes.configureContentRoutes
 import com.linguaai.server.routes.configureRouting
 import io.ktor.server.application.Application
@@ -25,12 +28,14 @@ fun main() {
  * Composition root: database first, then cross-cutting plugins, then routes.
  */
 fun Application.module(config: AppConfig = AppConfig.fromEnv()) {
-    val database = com.linguaai.server.db.DatabaseFactory.init(config)
-    database // keep reference for tests that need the pooled datasource
+    DatabaseFactory.init(config)
+
+    val contentRepository = ContentRepository()
 
     configureSerialization()
     configureMonitoring()
     configureStatusPages()
     configureRouting(config)
-    configureContentRoutes(ContentRepository())
+    configureContentRoutes(contentRepository)
+    configureAuthRoutes(config, AuthRepository(), contentRepository)
 }
