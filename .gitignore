@@ -1,0 +1,50 @@
+# Gradle / build outputs
+.gradle/
+build/
+**/build/
+!**/src/**/build/
+
+# Local environment
+local.properties
+.env
+*.env
+!.env.example
+
+# IDE
+.idea/
+*.iml
+.vscode/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android artifacts
+*.apk
+*.aab
+*.jks
+*.keystore
+!debug.keystore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node (tooling, if ever used locally)
+node_modules/
+
+# AgentKit / runtime tooling (kept local; the deliverable is the app repository)
+.agentkit/
+.agents/
+.codex/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+.omp/
+.grok/
+.mimosa/
+.video_agent/
+plans/
