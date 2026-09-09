@@ -20,6 +20,8 @@ import androidx.navigation.toRoute
 import com.linguaai.app.ui.components.LinguaBottomBar
 import com.linguaai.app.ui.screens.auth.LoginScreen
 import com.linguaai.app.ui.screens.auth.RegisterScreen
+import com.linguaai.app.ui.screens.home.HomeScreen
+import com.linguaai.app.ui.screens.onboarding.OnboardingScreen
 import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import com.linguaai.app.ui.screens.splash.StartDestination
@@ -94,10 +96,8 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable<OnboardingRoute> {
-                PlaceholderScreen(
-                    title = "Onboarding",
-                    actionLabel = "Continue to Home",
-                    onAction = {
+                OnboardingScreen(
+                    onCompleted = {
                         navController.navigate(HomeRoute) {
                             popUpTo(OnboardingRoute) { inclusive = true }
                         }
@@ -106,7 +106,21 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
             }
 
             composable<HomeRoute> {
-                PlaceholderScreen(title = "Home")
+                HomeScreen(
+                    onContinueLesson = { lessonId ->
+                        navController.navigate(LessonDetailRoute(lessonId))
+                    },
+                    onStartReview = {
+                        navController.navigate(FlashcardRoute)
+                    },
+                    onOpenAiTutor = {
+                        navController.navigate(AiTutorRoute) {
+                            popUpTo(HomeRoute) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
             composable<LearnRoute> {
                 PlaceholderScreen(title = "Learn")
