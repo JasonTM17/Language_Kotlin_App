@@ -18,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import com.linguaai.app.ui.components.LinguaBottomBar
+import com.linguaai.app.ui.screens.auth.LoginScreen
+import com.linguaai.app.ui.screens.auth.RegisterScreen
 import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import kotlin.reflect.KClass
@@ -62,13 +64,39 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
             }
 
             composable<LoginRoute> {
-                PlaceholderScreen(title = "Login")
+                LoginScreen(
+                    onNavigateToRegister = {
+                        navController.navigate(RegisterRoute) { launchSingleTop = true }
+                    },
+                    onAuthenticated = {
+                        navController.navigate(OnboardingRoute) {
+                            popUpTo(LoginRoute) { inclusive = true }
+                        }
+                    },
+                )
             }
             composable<RegisterRoute> {
-                PlaceholderScreen(title = "Register")
+                RegisterScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(LoginRoute) { launchSingleTop = true }
+                    },
+                    onRegistered = {
+                        navController.navigate(OnboardingRoute) {
+                            popUpTo(RegisterRoute) { inclusive = true }
+                        }
+                    },
+                )
             }
             composable<OnboardingRoute> {
-                PlaceholderScreen(title = "Onboarding")
+                PlaceholderScreen(
+                    title = "Onboarding",
+                    actionLabel = "Continue to Home",
+                    onAction = {
+                        navController.navigate(HomeRoute) {
+                            popUpTo(OnboardingRoute) { inclusive = true }
+                        }
+                    },
+                )
             }
 
             composable<HomeRoute> {
