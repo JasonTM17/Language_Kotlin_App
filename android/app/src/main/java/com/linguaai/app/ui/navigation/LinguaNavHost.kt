@@ -1,0 +1,137 @@
+package com.linguaai.app.ui.navigation
+
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
+import androidx.navigation.toRoute
+import com.linguaai.app.ui.components.LinguaBottomBar
+import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
+import com.linguaai.app.ui.screens.splash.SplashScreen
+import kotlin.reflect.KClass
+
+/**
+ * Single navigation host for the app. The bottom bar is shown only on
+ * top-level destinations; detail screens get the full canvas.
+ */
+@Composable
+fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = backStackEntry?.destination
+    val showBottomBar = topLevelDestinations.any { route ->
+        currentDestination?.hasRoute(route::class) == true
+    }
+
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                LinguaBottomBar(
+                    currentDestination = currentDestination,
+                    onNavigate = { routeClass -> navController.navigateToTopLevel(routeClass) },
+                )
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = SplashRoute,
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(animationSpec = tween(200)) },
+            exitTransition = { fadeOut(animationSpec = tween(200)) },
+        ) {
+            composable<SplashRoute> {
+                SplashScreen(
+                    onSplashFinished = {
+                        navController.navigate(LoginRoute) {
+                            popUpTo(SplashRoute) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable<LoginRoute> {
+                PlaceholderScreen(title = "Login")
+            }
+            composable<RegisterRoute> {
+                PlaceholderScreen(title = "Register")
+            }
+            composable<OnboardingRoute> {
+                PlaceholderScreen(title = "Onboarding")
+            }
+
+            composable<HomeRoute> {
+                PlaceholderScreen(title = "Home")
+            }
+            composable<LearnRoute> {
+                PlaceholderScreen(title = "Learn")
+            }
+            composable<AiTutorRoute> {
+                PlaceholderScreen(title = "AI Tutor")
+            }
+            composable<ProgressRoute> {
+                PlaceholderScreen(title = "Progress")
+            }
+            composable<ProfileRoute> {
+                PlaceholderScreen(title = "Profile")
+            }
+
+            composable<LessonDetailRoute> { entry ->
+                val route = entry.toRoute<LessonDetailRoute>()
+                PlaceholderScreen(title = "Lesson #${route.lessonId}")
+            }
+            composable<VocabularyRoute> {
+                PlaceholderScreen(title = "Vocabulary")
+            }
+            composable<FlashcardRoute> {
+                PlaceholderScreen(title = "Flashcards")
+            }
+            composable<GrammarRoute> {
+                PlaceholderScreen(title = "Grammar")
+            }
+            composable<GrammarDetailRoute> { entry ->
+                val route = entry.toRoute<GrammarDetailRoute>()
+                PlaceholderScreen(title = "Grammar #${route.grammarId}")
+            }
+            composable<QuizRoute> { entry ->
+                val route = entry.toRoute<QuizRoute>()
+                PlaceholderScreen(title = "Quiz #${route.quizId}")
+            }
+            composable<QuizResultRoute> { entry ->
+                val route = entry.toRoute<QuizResultRoute>()
+                PlaceholderScreen(title = "Quiz result #${route.attemptId}")
+            }
+            composable<AiChatRoute> { entry ->
+                val route = entry.toRoute<AiChatRoute>()
+                PlaceholderScreen(title = "AI chat (${route.mode})")
+            }
+        }
+    }
+}
+
+/** Tab navigation preserves each tab's back stack state. */
+private fun NavHostController.navigateToTopLevel(routeClass: KClass<*>) {
+    val options = navOptions {
+        popUpTo(HomeRoute) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+    when (routeClass) {
+        HomeRoute::class -> navigate(HomeRoute, options)
+        LearnRoute::class -> navigate(LearnRoute, options)
+        AiTutorRoute::class -> navigate(AiTutorRoute, options)
+        ProgressRoute::class -> navigate(ProgressRoute, options)
+        ProfileRoute::class -> navigate(ProfileRoute, options)
+    }
+}
