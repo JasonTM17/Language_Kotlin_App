@@ -22,6 +22,7 @@ import com.linguaai.app.ui.screens.auth.LoginScreen
 import com.linguaai.app.ui.screens.auth.RegisterScreen
 import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
+import com.linguaai.app.ui.screens.splash.StartDestination
 import kotlin.reflect.KClass
 
 /**
@@ -55,8 +56,13 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
         ) {
             composable<SplashRoute> {
                 SplashScreen(
-                    onSplashFinished = {
-                        navController.navigate(LoginRoute) {
+                    onLanding = { destination ->
+                        val target = when (destination) {
+                            StartDestination.LOGIN -> LoginRoute
+                            StartDestination.ONBOARDING -> OnboardingRoute
+                            StartDestination.HOME -> HomeRoute
+                        }
+                        navController.navigate(target) {
                             popUpTo(SplashRoute) { inclusive = true }
                         }
                     },
