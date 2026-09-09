@@ -1,10 +1,15 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    application
 }
 
 group = "com.linguaai"
 version = "1.0.0"
+
+application {
+    mainClass.set("com.linguaai.server.ApplicationKt")
+}
 
 kotlin {
     compilerOptions {

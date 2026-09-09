@@ -76,7 +76,7 @@ INSERT INTO vocabularies (id, language_id, level, word, reading, pronunciation, 
 (60, 2, 'A2', 'effort', NULL, '/ˈefət/', 'Nỗ lực', 'Your effort will pay off.', 'Nỗ lực của bạn sẽ được đền đáp.', 'Verb', CURRENT_TIMESTAMP);
 
 -- ------------------------------ japanese grammar (1-10) ----------------------
-INSERT INTO grammar_lessons (id, language_id, level, title, structure, meaning, usage, examples, notes, difficulty, created_at) VALUES
+INSERT INTO grammar_lessons (id, language_id, level, title, structure, meaning, usage_notes, examples, notes, difficulty, created_at) VALUES
 (1, 1, 'N3', '～ように', 'V辞書 + ように / Vない + ように', 'Để / sao cho', 'Diễn tả mục đích, mong muốn một hành động hoặc kết quả xảy ra, thường dùng với động từ khả năng, động từ tự nhiên.', '忘れないようにメモします。| Ghi chú để không quên. / 風邪をひかないように気をつけて。| Cẩn thận để không bị cảm.', 'Khác ～ために: ように dùng khi mục đích là trạng thái/khả năng (の+ thư), ために dùng cho hành động có chủ đích rõ ràng.', 3, CURRENT_TIMESTAMP),
 (2, 1, 'N3', '～わけではない', '普通形 + わけではない', 'Không hẳn là', 'Phủ định một cách tuyệt đối giả định trước đó; phủ định một phần.', '高いですが、買えないわけではありません。| Dù đắt nhưng không hẳn là tôi không mua được.', 'Thường đi với 特に, 別に để nhấn mạnh sắc thái phủ định nhẹ.', 3, CURRENT_TIMESTAMP),
 (3, 1, 'N3', '～ことになる', 'V辞書/ない形 + ことになる', 'Trở thành, được quyết định', 'Diễn tả quyết định hoặc kết quả do hoàn cảnh bên ngoài đưa ra (không phải ý muốn chủ quan).', '来月、大阪に転勤することになりました。| Tháng sau tôi được điều chuyển đến Osaka.', 'Đối lập với ～ことにする (quyết định chủ quan).', 4, CURRENT_TIMESTAMP),
@@ -89,7 +89,7 @@ INSERT INTO grammar_lessons (id, language_id, level, title, structure, meaning, 
 (10, 1, 'N4', '～なければならない', 'Vない (bỏ ない) + なければならない', 'Phải (bắt buộc)', 'Diễn tả nghĩa vụ bắt buộc phải làm.', 'レポートを提出しなければなりません。| Tôi phải nộp báo cáo.', 'Nói ngắn: ～なきゃ (thân mật).', 2, CURRENT_TIMESTAMP);
 
 -- ------------------------------ english grammar (11-20) ----------------------
-INSERT INTO grammar_lessons (id, language_id, level, title, structure, meaning, usage, examples, notes, difficulty, created_at) VALUES
+INSERT INTO grammar_lessons (id, language_id, level, title, structure, meaning, usage_notes, examples, notes, difficulty, created_at) VALUES
 (11, 2, 'A1', 'Present Simple', 'S + V(s/es)', 'Thì hiện tại đơn', 'Diễn tả thói quen, sự thật chung. Thêm s/es với ngôi thứ ba số ít.', 'I study English every day. | Tôi học tiếng Anh mỗi ngày. / She works at a bank. | Cô ấy làm việc ở ngân hàng.', 'Dùng do/does cho câu phủ định và nghi vấn.', 1, CURRENT_TIMESTAMP),
 (12, 2, 'A1', 'Present Continuous', 'S + am/is/are + V-ing', 'Thì hiện tại tiếp diễn', 'Diễn tả hành động đang diễn ra ngay lúc nói hoặc xung quanh hiện tại.', 'They are watching TV now. | Họ đang xem TV bây giờ.', 'Không dùng với động từ trạng thái như know, like.', 1, CURRENT_TIMESTAMP),
 (13, 2, 'A1', 'Past Simple', 'S + V2/ed', 'Thì quá khứ đơn', 'Diễn tả hành động đã kết thúc tại thời điểm xác định trong quá khứ.', 'We visited Kyoto last year. | Chúng tôi đã ghé Kyoto năm ngoái.', 'Động từ bất quy tắc cần học thuộc (go - went).', 2, CURRENT_TIMESTAMP),

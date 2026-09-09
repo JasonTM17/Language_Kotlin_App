@@ -255,7 +255,7 @@ class ContentRepository {
             title = row[GrammarLessons.title],
             structure = row[GrammarLessons.structure],
             meaning = row[GrammarLessons.meaning],
-            usage = row[GrammarLessons.usage],
+            usage = row[GrammarLessons.usageNotes],
             examples = examples,
             notes = row[GrammarLessons.notes],
             difficulty = row[GrammarLessons.difficulty],

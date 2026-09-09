@@ -86,7 +86,8 @@ object GrammarLessons : Table("grammar_lessons") {
     val title = varchar("title", 200)
     val structure = varchar("structure", 500).nullable()
     val meaning = varchar("meaning", 1000).nullable()
-    val usage = text("usage").nullable()
+    // "usage" is a MySQL reserved word; the column is named usage_notes
+    val usageNotes = text("usage_notes").nullable()
     val examples = text("examples").nullable()
     val notes = text("notes").nullable()
     val difficulty = integer("difficulty")

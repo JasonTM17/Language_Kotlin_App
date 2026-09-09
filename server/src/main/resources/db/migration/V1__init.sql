@@ -82,7 +82,7 @@ CREATE TABLE grammar_lessons (
     title VARCHAR(200) NOT NULL,
     structure VARCHAR(500),
     meaning VARCHAR(1000),
-    usage TEXT,
+    usage_notes TEXT,
     examples TEXT,
     notes TEXT,
     difficulty INT NOT NULL,
