@@ -20,6 +20,7 @@ data class AppConfig(
     val aiModel: String,
     val aiTimeoutSeconds: Int,
     val aiRateLimitPerMinute: Int,
+    val aiMockScenario: String?,
 ) {
     enum class AiProviderKind { MOCK, OPENAI_COMPATIBLE }
 
@@ -52,6 +53,7 @@ data class AppConfig(
                 aiModel = str("AI_MODEL", "gpt-4o-mini"),
                 aiTimeoutSeconds = int("AI_TIMEOUT_SECONDS", 60),
                 aiRateLimitPerMinute = int("AI_RATE_LIMIT_PER_MINUTE", 20),
+                aiMockScenario = env("AI_MOCK_SCENARIO")?.takeIf { it.isNotBlank() },
             )
         }
     }

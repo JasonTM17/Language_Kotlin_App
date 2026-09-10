@@ -5,8 +5,10 @@ import com.linguaai.server.db.DatabaseFactory
 import com.linguaai.server.plugins.configureMonitoring
 import com.linguaai.server.plugins.configureSerialization
 import com.linguaai.server.plugins.configureStatusPages
+import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.AuthRepository
 import com.linguaai.server.repository.ContentRepository
+import com.linguaai.server.routes.configureAiRoutes
 import com.linguaai.server.routes.configureAuthRoutes
 import com.linguaai.server.routes.configureContentRoutes
 import com.linguaai.server.routes.configureRouting
@@ -30,6 +32,7 @@ fun main() {
 fun Application.module(config: AppConfig = AppConfig.fromEnv()) {
     DatabaseFactory.init(config)
 
+    val authRepository = AuthRepository()
     val contentRepository = ContentRepository()
 
     configureSerialization()
@@ -37,5 +40,6 @@ fun Application.module(config: AppConfig = AppConfig.fromEnv()) {
     configureStatusPages()
     configureRouting(config)
     configureContentRoutes(contentRepository)
-    configureAuthRoutes(config, AuthRepository(), contentRepository)
+    configureAuthRoutes(config, authRepository, contentRepository)
+    configureAiRoutes(config, authRepository, contentRepository)
 }
