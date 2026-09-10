@@ -20,9 +20,16 @@ import androidx.navigation.toRoute
 import com.linguaai.app.ui.components.LinguaBottomBar
 import com.linguaai.app.ui.screens.auth.LoginScreen
 import com.linguaai.app.ui.screens.auth.RegisterScreen
+import com.linguaai.app.ui.screens.flashcard.FlashcardScreen
+import com.linguaai.app.ui.screens.grammar.GrammarDetailScreen
+import com.linguaai.app.ui.screens.grammar.GrammarScreen
 import com.linguaai.app.ui.screens.home.HomeScreen
+import com.linguaai.app.ui.screens.learn.LearnScreen
+import com.linguaai.app.ui.screens.learn.LessonDetailScreen
 import com.linguaai.app.ui.screens.onboarding.OnboardingScreen
 import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
+import com.linguaai.app.ui.screens.quiz.QuizScreen
+import com.linguaai.app.ui.screens.vocabulary.VocabularyScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import com.linguaai.app.ui.screens.splash.StartDestination
 import kotlin.reflect.KClass
@@ -123,7 +130,13 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable<LearnRoute> {
-                PlaceholderScreen(title = "Learn")
+                LearnScreen(
+                    onOpenLesson = { lessonId -> navController.navigate(LessonDetailRoute(lessonId)) },
+                    onOpenVocabulary = { navController.navigate(VocabularyRoute) },
+                    onOpenGrammar = { navController.navigate(GrammarRoute) },
+                    onOpenFlashcards = { navController.navigate(FlashcardRoute) },
+                    onStartQuiz = { quizId -> navController.navigate(QuizRoute(quizId)) },
+                )
             }
             composable<AiTutorRoute> {
                 PlaceholderScreen(title = "AI Tutor")
@@ -136,25 +149,41 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
             }
 
             composable<LessonDetailRoute> { entry ->
-                val route = entry.toRoute<LessonDetailRoute>()
-                PlaceholderScreen(title = "Lesson #${route.lessonId}")
+                LessonDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onAskAi = { lessonId ->
+                        navController.navigate(AiChatRoute(conversationId = lessonId, mode = "lesson-context"))
+                    },
+                )
             }
             composable<VocabularyRoute> {
-                PlaceholderScreen(title = "Vocabulary")
+                VocabularyScreen(
+                    onOpenFlashcards = { navController.navigate(FlashcardRoute) },
+                )
             }
             composable<FlashcardRoute> {
-                PlaceholderScreen(title = "Flashcards")
+                FlashcardScreen(onBack = { navController.popBackStack() })
             }
             composable<GrammarRoute> {
-                PlaceholderScreen(title = "Grammar")
+                GrammarScreen(
+                    onOpenGrammar = { grammarId -> navController.navigate(GrammarDetailRoute(grammarId)) },
+                )
             }
             composable<GrammarDetailRoute> { entry ->
-                val route = entry.toRoute<GrammarDetailRoute>()
-                PlaceholderScreen(title = "Grammar #${route.grammarId}")
+                GrammarDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onAskAi = { grammarId ->
+                        navController.navigate(AiChatRoute(conversationId = grammarId, mode = "grammar-explain"))
+                    },
+                )
             }
             composable<QuizRoute> { entry ->
-                val route = entry.toRoute<QuizRoute>()
-                PlaceholderScreen(title = "Quiz #${route.quizId}")
+                QuizScreen(
+                    onBack = { navController.popBackStack() },
+                    onAskAiAboutMistakes = { quizId ->
+                        navController.navigate(AiChatRoute(conversationId = quizId, mode = "mistakes"))
+                    },
+                )
             }
             composable<QuizResultRoute> { entry ->
                 val route = entry.toRoute<QuizResultRoute>()
