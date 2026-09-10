@@ -70,14 +70,14 @@ class HomeViewModel @Inject constructor(
             // Continue learning: the first lesson for the learner's language.
             val languageId = _uiState.value.profile?.languageId
             if (languageId != null) {
-                when (val lessons = learningContentRepository.lessons(languageId, null, null)) {
-                    is AppResult.Success -> _uiState.update {
-                        it.copy(continueLesson = lessons.data.firstOrNull())
-                    }
+                when (val refresh = learningContentRepository.refreshLessons(languageId, null)) {
                     is AppResult.Failure -> if (_uiState.value.error == null) {
-                        _uiState.update { it.copy(error = lessons.error.toUserMessage()) }
+                        _uiState.update { it.copy(error = refresh.error.toUserMessage()) }
                     }
+                    else -> Unit
                 }
+                val lessons = learningContentRepository.observeLessons(languageId, null).first()
+                _uiState.update { it.copy(continueLesson = lessons.firstOrNull()) }
             }
 
             _uiState.update { it.copy(isLoading = false) }

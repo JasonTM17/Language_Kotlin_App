@@ -1,5 +1,8 @@
 package com.linguaai.app.data.repository
 
+import com.linguaai.app.data.local.dao.GrammarDao
+import com.linguaai.app.data.local.dao.LessonDao
+import com.linguaai.app.data.local.dao.VocabularyDao
 import com.linguaai.app.data.remote.api.ContentApi
 import com.linguaai.app.data.remote.dto.GrammarDto
 import com.linguaai.app.data.remote.dto.LanguageDto
@@ -14,34 +17,148 @@ import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-/** Network-backed implementation; the offline cache layer wraps this later. */
+/**
+ * Offline-first content store: network refreshes repopulate Room, and UI
+ * observes Room so cached content stays available without connectivity.
+ */
 @Singleton
 class LearningContentRepositoryImpl @Inject constructor(
     private val contentApi: ContentApi,
+    private val lessonDao: LessonDao,
+    private val vocabularyDao: VocabularyDao,
+    private val grammarDao: GrammarDao,
 ) : LearningContentRepository {
 
-    override suspend fun languages() = safeApiCall { contentApi.languages() }
+    override suspend fun languages(): AppResult<List<LanguageDto>> = safeApiCall { contentApi.languages() }
 
-    override suspend fun lessons(
-        languageId: Long?,
-        level: String?,
-        type: String?,
-    ): AppResult<List<LessonSummaryDto>> = safeApiCall { contentApi.lessons(languageId, level, type) }
+    // ---- lessons ----
 
-    override suspend fun lesson(id: Long): AppResult<LessonDto> = safeApiCall { contentApi.lesson(id) }
+    override suspend fun refreshLessons(languageId: Long?, level: String?): AppResult<Unit> {
+        val result = safeApiCall { contentApi.lessons(languageId, level, null) }
+        return when (result) {
+            is AppResult.Success -> {
+                lessonDao.upsertAll(result.data.map { it.toEntity() })
+                AppResult.Success(Unit)
+            }
+            is AppResult.Failure -> result
+        }
+    }
 
-    override suspend fun vocabulary(
+    override fun observeLessons(languageId: Long?, level: String?): Flow<List<LessonSummaryDto>> =
+        lessonDao.observeLessons(languageId, level).map { list -> list.map { it.toSummaryDto() } }
+
+    override suspend fun refreshLesson(id: Long): AppResult<LessonDto> {
+        val result = safeApiCall { contentApi.lesson(id) }
+        return when (result) {
+            is AppResult.Success -> {
+                lessonDao.upsertAll(listOf(result.data.toEntity()))
+                AppResult.Success(result.data)
+            }
+            is AppResult.Failure -> result
+        }
+    }
+
+    // ---- vocabulary ----
+
+    override suspend fun refreshVocabulary(
         languageId: Long?,
         level: String?,
         category: String?,
         query: String?,
-    ): AppResult<List<VocabularyDto>> = safeApiCall { contentApi.vocabulary(languageId, level, category, query) }
+    ): AppResult<Unit> {
+        val result = safeApiCall { contentApi.vocabulary(languageId, level, category, query) }
+        return when (result) {
+            is AppResult.Success -> {
+                // Preserve local review state: favorites/mastery live in this table.
+                val preserved = result.data
+                    .mapNotNull { dto -> vocabularyDao.findById(dto.id)?.let { dto.id to it } }
+                    .toMap()
+                val entities = result.data.map { dto ->
+                    val old = preserved[dto.id]
+                    if (old != null) {
+                        dto.toEntity().copy(
+                            favorite = old.favorite,
+                            masteryLevel = old.masteryLevel,
+                            reviewCount = old.reviewCount,
+                            correctCount = old.correctCount,
+                            wrongCount = old.wrongCount,
+                            lastReviewedAt = old.lastReviewedAt,
+                            nextReviewAt = old.nextReviewAt,
+                        )
+                    } else {
+                        dto.toEntity()
+                    }
+                }
+                vocabularyDao.upsertAll(entities)
+                AppResult.Success(Unit)
+            }
+            is AppResult.Failure -> result
+        }
+    }
 
-    override suspend fun grammar(languageId: Long?, level: String?): AppResult<List<GrammarDto>> =
-        safeApiCall { contentApi.grammar(languageId, level) }
+    override fun observeVocabulary(
+        languageId: Long?,
+        level: String?,
+        category: String?,
+        query: String?,
+    ): Flow<List<com.linguaai.app.domain.model.VocabularyCard>> =
+        vocabularyDao.observeVocabulary(languageId, level, category, query).map { list ->
+            list.map { entity ->
+                entity.toDto().let { dto ->
+                    com.linguaai.app.domain.model.VocabularyCard(
+                        id = entity.id,
+                        languageId = entity.languageId,
+                        level = entity.level,
+                        word = entity.word,
+                        reading = entity.reading,
+                        pronunciation = entity.pronunciation,
+                        meaning = entity.meaning,
+                        example = entity.example,
+                        exampleTranslation = entity.exampleTranslation,
+                        category = entity.category,
+                        favorite = entity.favorite,
+                        masteryLevel = entity.masteryLevel,
+                    )
+                }
+            }
+        }
 
-    override suspend fun grammarById(id: Long): AppResult<GrammarDto> = safeApiCall { contentApi.grammarById(id) }
+    override suspend fun toggleFavorite(id: Long) {
+        vocabularyDao.findById(id)?.let { vocabularyDao.setFavorite(id, !it.favorite) }
+    }
+
+    // ---- grammar ----
+
+    override suspend fun refreshGrammar(languageId: Long?, level: String?): AppResult<Unit> {
+        val result = safeApiCall { contentApi.grammar(languageId, level) }
+        return when (result) {
+            is AppResult.Success -> {
+                grammarDao.upsertAll(result.data.map { it.toEntity() })
+                AppResult.Success(Unit)
+            }
+            is AppResult.Failure -> result
+        }
+    }
+
+    override fun observeGrammar(languageId: Long?, level: String?): Flow<List<GrammarDto>> =
+        grammarDao.observeGrammar(languageId, level).map { list -> list.map { it.toDto() } }
+
+    override suspend fun grammarById(id: Long): AppResult<GrammarDto> {
+        val cached = grammarDao.findById(id)
+        val result = safeApiCall { contentApi.grammarById(id) }
+        return when (result) {
+            is AppResult.Success -> {
+                grammarDao.upsertAll(listOf(result.data.toEntity()))
+                AppResult.Success(result.data)
+            }
+            is AppResult.Failure -> cached?.let { AppResult.Success(it.toDto()) } ?: result
+        }
+    }
+
+    // ---- quizzes (always fresh; small payloads) ----
 
     override suspend fun quiz(id: Long): AppResult<QuizDto> = safeApiCall { contentApi.quiz(id) }
 
