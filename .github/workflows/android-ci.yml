@@ -1,0 +1,63 @@
+name: android-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # AGP 8.7.x needs JDK 17 or newer. 21 is the current LTS and what this
+      # project is verified against.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The Android SDK is not present on a bare runner, so the debug build would
+      # fail before compiling anything.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # JVM unit tests only. Instrumented tests need a device or emulator and are
+      # deliberately not run here — see docs/TESTING.md.
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      # assembleDebug also compiles the androidTest sources, so a broken
+      # migration test is caught even though it cannot run on this runner.
+      - name: Assemble debug
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-report
+          path: android/app/build/reports/tests
+          retention-days: 7
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 7
