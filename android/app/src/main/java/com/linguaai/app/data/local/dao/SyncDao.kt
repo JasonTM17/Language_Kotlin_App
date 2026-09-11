@@ -31,3 +31,19 @@ interface SyncDao {
 
     suspend fun pending(limit: Int = 50): List<PendingSyncOpEntity> = byState(SyncOpState.STATE_PENDING, limit)
 }
+
+@Dao
+interface AiMessageCacheDao {
+
+    @Insert
+    suspend fun insertAll(messages: List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>)
+
+    @Insert
+    suspend fun insert(message: com.linguaai.app.data.local.entity.AiMessageCacheEntity)
+
+    @Query("SELECT * FROM ai_message_cache WHERE conversationId = :conversationId ORDER BY id")
+    suspend fun byConversation(conversationId: Long): List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>
+
+    @Query("DELETE FROM ai_message_cache WHERE conversationId = :conversationId")
+    suspend fun clearConversation(conversationId: Long)
+}

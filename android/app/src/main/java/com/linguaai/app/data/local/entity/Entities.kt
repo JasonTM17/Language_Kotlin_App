@@ -73,3 +73,13 @@ object SyncOpState {
     const val STATE_SYNCED = "SYNCED"
     const val STATE_FAILED = "FAILED"
 }
+
+/** Offline cache of AI conversation messages (server stays source of truth). */
+@Entity(tableName = "ai_message_cache", indices = [Index(value = ["conversationId"])])
+data class AiMessageCacheEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val conversationId: Long,
+    val role: String,
+    val content: String,
+    val cachedAt: Long = System.currentTimeMillis(),
+)

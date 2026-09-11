@@ -139,7 +139,19 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable<AiTutorRoute> {
-                PlaceholderScreen(title = "AI Tutor")
+                com.linguaai.app.ui.screens.ai.AiHomeScreen(
+                    onOpenConversation = { selection ->
+                        when (selection) {
+                            null -> navController.navigate(AiChatRoute(mode = "general"))
+                            -1L -> navController.navigate(AiChatRoute(mode = "conversation-practice"))
+                            -2L -> navController.navigate(AiChatRoute(mode = "sentence-correction"))
+                            else -> navController.navigate(AiChatRoute(conversationId = selection, mode = "conversation"))
+                        }
+                    },
+                )
+            }
+            composable<AiChatRoute> { entry ->
+                com.linguaai.app.ui.screens.ai.AiChatScreen(onBack = { navController.popBackStack() })
             }
             composable<ProgressRoute> {
                 PlaceholderScreen(title = "Progress")

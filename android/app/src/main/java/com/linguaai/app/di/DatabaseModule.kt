@@ -22,6 +22,7 @@ object DatabaseModule {
     @Singleton
     fun database(@ApplicationContext context: Context): LinguaDatabase =
         Room.databaseBuilder(context, LinguaDatabase::class.java, LinguaDatabase.NAME)
+            .addMigrations(LinguaDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
@@ -36,4 +37,8 @@ object DatabaseModule {
 
     @Provides
     fun syncDao(database: LinguaDatabase): SyncDao = database.syncDao()
+
+    @Provides
+    fun aiMessageCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.AiMessageCacheDao =
+        database.aiMessageCacheDao()
 }

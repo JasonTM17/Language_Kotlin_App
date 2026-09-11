@@ -45,7 +45,7 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("bare")
-    fun bareOkHttpClient(logging: HttpLoggingInterceptor): OkHttpClient =
+    fun bareOkHttpClient(@Named("logging") logging: HttpLoggingInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -65,7 +65,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun okHttpClient(
-        logging: HttpLoggingInterceptor,
+        @Named("logging") logging: HttpLoggingInterceptor,
         authInterceptor: AuthInterceptor,
         authenticator: TokenAuthenticator,
     ): OkHttpClient =
@@ -93,4 +93,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun contentApi(retrofit: Retrofit): ContentApi = retrofit.create(ContentApi::class.java)
+
+    @Provides
+    @Singleton
+    fun aiApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.AiApi = retrofit.create(com.linguaai.app.data.remote.api.AiApi::class.java)
 }

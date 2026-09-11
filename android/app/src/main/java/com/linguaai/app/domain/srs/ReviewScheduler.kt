@@ -1,5 +1,7 @@
 package com.linguaai.app.domain.srs
 
+import javax.inject.Inject
+
 /**
  * Pluggable review scheduler. The default implementation is a light SM-2
  * derivative; swap via DI without touching UI or repository code.
@@ -17,7 +19,7 @@ enum class ReviewGrade { AGAIN, HARD, GOOD, EASY }
  * Light SM-2: again resets progress, hard repeats shortly, good/easy grow the
  * interval geometrically with mastery.
  */
-class Sm2LiteScheduler : ReviewScheduler {
+class Sm2LiteScheduler @Inject constructor() : ReviewScheduler {
 
     override fun nextIntervalMinutes(masteryLevel: Int, grade: ReviewGrade): Long {
         val level = masteryLevel.coerceIn(0, 5)
