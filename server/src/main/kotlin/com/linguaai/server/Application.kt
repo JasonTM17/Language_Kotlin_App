@@ -11,6 +11,7 @@ import com.linguaai.server.repository.ContentRepository
 import com.linguaai.server.routes.configureAiRoutes
 import com.linguaai.server.routes.configureAuthRoutes
 import com.linguaai.server.routes.configureContentRoutes
+import com.linguaai.server.routes.configureProgressRoutes
 import com.linguaai.server.routes.configureRouting
 import io.ktor.server.application.Application
 import io.ktor.server.engine.embeddedServer
@@ -42,4 +43,5 @@ fun Application.module(config: AppConfig = AppConfig.fromEnv()) {
     configureContentRoutes(contentRepository)
     configureAuthRoutes(config, authRepository, contentRepository)
     configureAiRoutes(config, authRepository, contentRepository)
+    configureProgressRoutes()
 }
