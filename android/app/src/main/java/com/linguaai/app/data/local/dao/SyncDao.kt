@@ -33,6 +33,10 @@ interface SyncDao {
     @Query("DELETE FROM pending_sync_ops WHERE state = :state")
     suspend fun deleteByState(state: String)
 
+    /** Wipes the outbox. Used on sign-out so one user's events never reach another. */
+    @Query("DELETE FROM pending_sync_ops")
+    suspend fun clearAll()
+
     @Query("SELECT COUNT(*) FROM pending_sync_ops WHERE state != 'SYNCED'")
     suspend fun unsyncedCount(): Int
 
@@ -53,4 +57,8 @@ interface AiMessageCacheDao {
 
     @Query("DELETE FROM ai_message_cache WHERE conversationId = :conversationId")
     suspend fun clearConversation(conversationId: Long)
+
+    /** Wipes cached conversation content. Used on sign-out. */
+    @Query("DELETE FROM ai_message_cache")
+    suspend fun clearAll()
 }

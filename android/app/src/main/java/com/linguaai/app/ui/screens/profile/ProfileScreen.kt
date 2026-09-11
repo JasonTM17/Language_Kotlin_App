@@ -1,0 +1,268 @@
+package com.linguaai.app.ui.screens.profile
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.ui.components.ErrorState
+import com.linguaai.app.ui.components.LinguaButton
+import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LoadingIndicator
+import com.linguaai.app.ui.components.SectionHeader
+import com.linguaai.app.ui.theme.Spacing
+
+private val DAILY_GOAL_OPTIONS = listOf(10, 15, 20, 30, 45, 60)
+private val REMINDER_HOURS = (6..22).toList()
+
+@Composable
+fun ProfileScreen(
+    onSignedOut: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.signedOut) {
+        if (state.signedOut) onSignedOut()
+    }
+
+    ProfileContent(
+        state = state,
+        onDailyGoal = viewModel::setDailyGoal,
+        onThemeMode = viewModel::setThemeMode,
+        onReminderHour = { hour -> viewModel.setReminderTime(hour, state.reminderMinute) },
+        onNotifications = viewModel::setNotificationsEnabled,
+        onSignOut = viewModel::signOut,
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun ProfileContent(
+    state: ProfileUiState,
+    onDailyGoal: (Int) -> Unit,
+    onThemeMode: (String) -> Unit,
+    onReminderHour: (Int) -> Unit,
+    onNotifications: (Boolean) -> Unit,
+    onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (state.isLoading && state.profile == null) {
+        LoadingIndicator(modifier = modifier)
+        return
+    }
+
+    if (state.profile == null && state.error != null) {
+        ErrorState(message = state.error, modifier = modifier)
+        return
+    }
+
+    val profile = state.profile
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.md),
+    ) {
+        SectionHeader(title = "Profile", modifier = Modifier.padding(top = Spacing.md))
+
+        LinguaCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = profile?.user?.username?.take(1)?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+                Column(modifier = Modifier.padding(start = Spacing.md)) {
+                    Text(
+                        text = profile?.user?.username ?: "Learner",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = profile?.user?.email.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val level = profile?.level
+                    if (level != null) {
+                        Text(
+                            text = "Level $level",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        SectionHeader(title = "Daily goal", modifier = Modifier.padding(top = Spacing.lg))
+        LinguaCard {
+            Column(modifier = Modifier.padding(Spacing.md)) {
+                Text(
+                    text = "${state.dailyGoalMinutes} minutes a day",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                FlowRow(
+                    modifier = Modifier.padding(top = Spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    DAILY_GOAL_OPTIONS.forEach { minutes ->
+                        FilterChip(
+                            selected = state.dailyGoalMinutes == minutes,
+                            onClick = { onDailyGoal(minutes) },
+                            label = { Text("$minutes") },
+                        )
+                    }
+                }
+            }
+        }
+
+        SectionHeader(title = "Appearance", modifier = Modifier.padding(top = Spacing.lg))
+        LinguaCard {
+            Column(modifier = Modifier.padding(Spacing.md)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.DarkMode,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "Theme",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = Spacing.sm),
+                    )
+                }
+                FlowRow(
+                    modifier = Modifier.padding(top = Spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    listOf(
+                        SettingsDataStore.THEME_SYSTEM to "System",
+                        SettingsDataStore.THEME_LIGHT to "Light",
+                        SettingsDataStore.THEME_DARK to "Dark",
+                    ).forEach { (mode, label) ->
+                        FilterChip(
+                            selected = state.themeMode == mode,
+                            onClick = { onThemeMode(mode) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+            }
+        }
+
+        SectionHeader(title = "Reminders", modifier = Modifier.padding(top = Spacing.lg))
+        LinguaCard {
+            Column(modifier = Modifier.padding(Spacing.md)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "Daily study reminder",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = Spacing.sm),
+                    )
+                    Switch(
+                        checked = state.notificationsEnabled,
+                        onCheckedChange = onNotifications,
+                    )
+                }
+
+                if (state.notificationsEnabled) {
+                    Text(
+                        text = "Remind me at " + "%02d:00".format(state.reminderHour),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = Spacing.sm),
+                    )
+                    FlowRow(
+                        modifier = Modifier.padding(top = Spacing.sm),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    ) {
+                        REMINDER_HOURS.forEach { hour ->
+                            FilterChip(
+                                selected = state.reminderHour == hour,
+                                onClick = { onReminderHour(hour) },
+                                label = { Text("%02d:00".format(hour)) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (state.error != null) {
+            Text(
+                text = state.error,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = Spacing.md),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.lg))
+
+        LinguaButton(
+            text = "Sign out",
+            onClick = onSignOut,
+            enabled = !state.isSaving,
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.xl))
+    }
+}

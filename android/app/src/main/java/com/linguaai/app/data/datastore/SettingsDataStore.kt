@@ -26,6 +26,8 @@ class SettingsDataStore @Inject constructor(
     val dailyGoalMinutes: Flow<Int> = context.settingsDataStore.data.map { it[DAILY_GOAL] ?: 20 }
     val onboardingCompleted: Flow<Boolean> = context.settingsDataStore.data.map { it[ONBOARDING_DONE] ?: false }
     val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[NOTIFICATIONS] ?: true }
+    val reminderHour: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_HOUR] ?: DEFAULT_REMINDER_HOUR }
+    val reminderMinute: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_MINUTE] ?: 0 }
 
     suspend fun setThemeMode(mode: String) {
         context.settingsDataStore.edit { it[THEME_MODE] = mode }
@@ -43,13 +45,26 @@ class SettingsDataStore @Inject constructor(
         context.settingsDataStore.edit { it[NOTIFICATIONS] = enabled }
     }
 
-    private companion object {
+    suspend fun setReminderTime(hour: Int, minute: Int) {
+        context.settingsDataStore.edit {
+            it[REMINDER_HOUR] = hour.coerceIn(0, 23)
+            it[REMINDER_MINUTE] = minute.coerceIn(0, 59)
+        }
+    }
+
+    companion object {
         const val THEME_SYSTEM = "system"
         const val THEME_LIGHT = "light"
         const val THEME_DARK = "dark"
-        val THEME_MODE = stringPreferencesKey("theme_mode")
-        val DAILY_GOAL = intPreferencesKey("daily_goal_minutes")
-        val ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
-        val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
+
+        /** 19:00 — an evening default that suits a study reminder. */
+        const val DEFAULT_REMINDER_HOUR = 19
+
+        private val THEME_MODE = stringPreferencesKey("theme_mode")
+        private val DAILY_GOAL = intPreferencesKey("daily_goal_minutes")
+        private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
+        private val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
+        private val REMINDER_HOUR = intPreferencesKey("reminder_hour")
+        private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
     }
 }

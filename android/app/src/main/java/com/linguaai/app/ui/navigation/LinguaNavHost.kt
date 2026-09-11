@@ -157,7 +157,16 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 com.linguaai.app.ui.screens.progress.ProgressScreen()
             }
             composable<ProfileRoute> {
-                PlaceholderScreen(title = "Profile")
+                com.linguaai.app.ui.screens.profile.ProfileScreen(
+                    onSignedOut = {
+                        // Clear the whole back stack: after sign-out the previous
+                        // user's screens must not be reachable with Back.
+                        navController.navigate(LoginRoute) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
 
             composable<LessonDetailRoute> { entry ->
