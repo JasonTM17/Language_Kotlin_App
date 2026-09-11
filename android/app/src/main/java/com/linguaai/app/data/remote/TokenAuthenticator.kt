@@ -1,11 +1,11 @@
 package com.linguaai.app.data.remote
 
-import com.linguaai.app.data.datastore.SessionManager
 import com.linguaai.app.data.remote.api.AuthApi
 import com.linguaai.app.data.remote.dto.RefreshRequestDto
 import com.linguaai.app.data.remote.dto.RefreshResponseDto
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
+import com.linguaai.app.domain.repository.SessionStore
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -35,7 +35,7 @@ import retrofit2.Retrofit
  */
 @Singleton
 class TokenAuthenticator @Inject constructor(
-    private val sessionManager: SessionManager,
+    private val sessionManager: SessionStore,
     @Named("bareRetrofit") private val bareRetrofit: Retrofit,
 ) : Authenticator {
 

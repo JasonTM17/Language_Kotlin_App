@@ -26,7 +26,7 @@ private val Context.tokenDataStore: DataStore<Preferences> by preferencesDataSto
 @Singleton
 class SessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : com.linguaai.app.domain.repository.SessionStore {
 
     @Volatile
     private var cachedAccessToken: String? = null
@@ -37,21 +37,21 @@ class SessionManager @Inject constructor(
     @Volatile
     private var cacheInitialized = false
 
-    val accessFlow: Flow<String?> = context.tokenDataStore.data.map { it[ACCESS_TOKEN] }
-    val refreshFlow: Flow<String?> = context.tokenDataStore.data.map { it[REFRESH_TOKEN] }
+    override val accessFlow: Flow<String?> = context.tokenDataStore.data.map { it[ACCESS_TOKEN] }
+    override val refreshFlow: Flow<String?> = context.tokenDataStore.data.map { it[REFRESH_TOKEN] }
 
     /** Synchronous access for OkHttp's interceptor/authenticator threads. */
-    fun accessTokenSync(): String? {
+    override fun accessTokenSync(): String? {
         ensureCache()
         return cachedAccessToken
     }
 
-    fun refreshTokenSync(): String? {
+    override fun refreshTokenSync(): String? {
         ensureCache()
         return cachedRefreshToken
     }
 
-    suspend fun saveTokens(accessToken: String, refreshToken: String) {
+    override suspend fun saveTokens(accessToken: String, refreshToken: String) {
         cachedAccessToken = accessToken
         cachedRefreshToken = refreshToken
         context.tokenDataStore.edit { prefs ->
@@ -60,7 +60,7 @@ class SessionManager @Inject constructor(
         }
     }
 
-    suspend fun clear() {
+    override suspend fun clear() {
         cachedAccessToken = null
         cachedRefreshToken = null
         context.tokenDataStore.edit { it.clear() }
