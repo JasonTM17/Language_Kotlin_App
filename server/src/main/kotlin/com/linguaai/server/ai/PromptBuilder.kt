@@ -256,6 +256,34 @@ class PromptBuilder(
                 "$prefix: ${message.content.take(120)}"
             }
 
+        /**
+         * Folds newly evicted messages into the existing summary, keeping the most
+         * recent content within [MAX_SUMMARY_CHARS].
+         *
+         * The cap is load-bearing. Without it the summary is appended to on every
+         * eviction and grows without bound, so a long conversation ends up paying
+         * more tokens for the "summary" than for the messages it replaced —
+         * defeating the entire point of bounded context (spec §17). The oldest
+         * content is dropped first because it is the least relevant to the next
+         * reply.
+         */
+        fun foldSummary(existing: String?, addition: String): String {
+            if (addition.isBlank()) return existing.orEmpty()
+            val combined = if (existing.isNullOrBlank()) addition else "$existing\n$addition"
+            if (combined.length <= MAX_SUMMARY_CHARS) return combined
+
+            val tail = combined.takeLast(MAX_SUMMARY_CHARS)
+            // Drop the first partial line so the summary never starts mid-sentence.
+            val firstBreak = tail.indexOf('\n')
+            return if (firstBreak in 0 until tail.length - 1) tail.substring(firstBreak + 1) else tail
+        }
+
+        /**
+         * Hard cap on the rolling summary. Roughly 1,000 tokens, which keeps the
+         * context cost of a very long conversation flat instead of linear.
+         */
+        const val MAX_SUMMARY_CHARS = 4000
+
         private const val SUMMARY_WINDOW = 10
     }
 }

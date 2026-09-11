@@ -316,10 +316,12 @@ class AiService(
             val pending = all.filter { it.id > (conversation.summarizedUntil ?: 0L) }
             if (pending.size <= SUMMARIZE_THRESHOLD) return
             val evicted = pending.take(pending.size / 2)
-            val newSummary = buildString {
-                conversation.summary?.let { append(it).append("\n") }
-                append(PromptBuilder.summarize(evicted))
-            }
+            // foldSummary caps the total size; appending directly let the summary
+            // grow without bound across a long conversation.
+            val newSummary = PromptBuilder.foldSummary(
+                existing = conversation.summary,
+                addition = PromptBuilder.summarize(evicted),
+            )
             aiRepository.updateSummary(conversation.id, newSummary, evicted.last().id)
         } catch (_: Exception) {
             // Summarization is best-effort; the chat flow continues.
