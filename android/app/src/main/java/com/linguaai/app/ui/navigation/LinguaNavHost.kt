@@ -210,10 +210,9 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 val route = entry.toRoute<QuizResultRoute>()
                 PlaceholderScreen(title = "Quiz result #${route.attemptId}")
             }
-            composable<AiChatRoute> { entry ->
-                val route = entry.toRoute<AiChatRoute>()
-                PlaceholderScreen(title = "AI chat (${route.mode})")
-            }
+            // NOTE: AiChatRoute is registered once, above. A second registration
+            // used to sit here rendering a placeholder, and because the last
+            // registration wins it silently replaced the real chat screen.
         }
     }
 }
