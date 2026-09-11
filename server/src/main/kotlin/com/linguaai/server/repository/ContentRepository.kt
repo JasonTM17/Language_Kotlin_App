@@ -51,6 +51,27 @@ class ContentRepository {
         }
     }
 
+    /**
+     * Single-language lookup.
+     *
+     * Exists so prompt construction can name the language the learner is actually
+     * studying. Passing a numeric id to a model is meaningless — "a learner of
+     * language #1" tells it nothing about whether to use Japanese or Spanish.
+     */
+    fun findLanguageById(id: Long): LanguageDto? = transaction {
+        Languages.selectAll()
+            .andWhere { Languages.id eq id }
+            .firstOrNull()
+            ?.let { row ->
+                LanguageDto(
+                    id = row[Languages.id],
+                    code = row[Languages.code],
+                    name = row[Languages.name],
+                    levels = row[Languages.levels].split(",").map { it.trim() },
+                )
+            }
+    }
+
     fun findLessons(languageId: Long?, level: String?, type: String?): List<LessonSummaryDto> = transaction {
         val stmt = Lessons.selectAll()
         languageId?.let { stmt.andWhere { Lessons.languageId eq it } }

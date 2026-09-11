@@ -25,6 +25,12 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
                 }
             }
             "empty" -> return AiChatResponse(content = "")
+            // Test-support scenario: echoes the assembled system prompt back as
+            // the reply, so an integration test can assert on what the tutor was
+            // actually told rather than on a separately constructed string.
+            "echo_system" -> return AiChatResponse(
+                content = request.messages.firstOrNull { it.role == "system" }?.content.orEmpty(),
+            )
         }
 
         if (request.jsonMode) {
@@ -39,7 +45,8 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
         }
 
         val lastUser = request.messages.lastOrNull { it.role == "user" }?.content.orEmpty()
-        val grammarHint = request.messages.firstOrNull()?.content?.contains("Grammar context") == true
+        val grammarHint = request.messages.firstOrNull()?.content
+            ?.contains(PromptBuilder.HEADING_GRAMMAR) == true
         val reply = buildString {
             append("Good question! ")
             if (grammarHint) append("About the grammar point you are studying: ")

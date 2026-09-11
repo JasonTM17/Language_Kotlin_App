@@ -224,9 +224,19 @@ class AiService(
         val builder = promptBuilder(userId)
         val system = builder.systemPrompt("general", profile, null, null, null)
         val count = request.count.coerceIn(1, 10)
+        // Resolve the language name. The previous version interpolated the numeric
+        // id ("language #1"), which conveys nothing to a model.
+        val languageName = runCatching { contentRepository.findLanguageById(request.languageId) }
+            .getOrNull()
+            ?.name
+            ?: "the learner's target language"
         val prompt = """
-            Create $count multiple-choice questions for a ${request.level} learner of language #${request.languageId}.
+            Create $count multiple-choice questions for a ${request.level} learner of $languageName.
             ${request.topic?.let { "Focus on: $it." } ?: ""}
+            Requirements:
+            - Exactly one option is correct and the other three are plausible distractors at the same level, not obviously wrong.
+            - Do not reuse the same distractor pattern across questions.
+            - "explanation" states the rule or reason in one sentence, in English.
             Return STRICT JSON: {"questions":[{"prompt":...,"options":[4 strings],"correctAnswer":one option verbatim,"explanation":...}]}
         """.trimIndent()
         val response = provider.chat(
