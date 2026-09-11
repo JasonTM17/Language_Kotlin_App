@@ -22,7 +22,11 @@ object Validators {
 
     fun validateUsername(username: String): String? = when {
         username.isBlank() -> "Username is required"
-        username.length < 3 -> "Username must be at least 3 characters"
+        // Length is measured on the trimmed value: RegisterUseCase sends the
+        // trimmed username to the server, so validating the padded length would
+        // let a one-character name through (" a" is three characters but one of
+        // content). Email is trimmed for the same reason.
+        username.trim().length < 3 -> "Username must be at least 3 characters"
         else -> null
     }
 }
