@@ -93,7 +93,7 @@ class QuizViewModel @Inject constructor(
                     syncDao.enqueue(
                         PendingSyncOpEntity(
                             operationId = java.util.UUID.randomUUID().toString(),
-                            eventType = "QUIZ_COMPLETED",
+                            eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.QUIZ_ATTEMPT,
                             refId = quizId,
                             minutes = 5,
                             occurredAt = System.currentTimeMillis(),

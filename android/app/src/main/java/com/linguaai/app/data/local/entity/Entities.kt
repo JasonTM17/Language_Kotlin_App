@@ -1,5 +1,6 @@
 package com.linguaai.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -65,6 +66,10 @@ data class PendingSyncOpEntity(
     val minutes: Int,
     val occurredAt: Long,
     val state: String = SyncOpState.STATE_PENDING,
+    // Declared with a SQL default so the v3 -> v4 ALTER TABLE matches the schema
+    // Room expects. Room compares column defaults, so an ALTER that adds
+    // DEFAULT 0 without this annotation would fail migration validation.
+    @ColumnInfo(defaultValue = "0") val attempts: Int = 0,
 )
 
 object SyncOpState {

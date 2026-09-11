@@ -23,6 +23,13 @@ interface SyncDao {
     @Query("UPDATE pending_sync_ops SET state = :state WHERE id = :id")
     suspend fun updateState(id: Long, state: String)
 
+    /** Records a failed delivery attempt and parks the op for the next run. */
+    @Query("UPDATE pending_sync_ops SET attempts = attempts + 1, state = :state WHERE id = :id")
+    suspend fun recordAttempt(id: Long, state: String)
+
+    @Query("SELECT COUNT(*) FROM pending_sync_ops WHERE state = :state")
+    suspend fun countByState(state: String): Int
+
     @Query("DELETE FROM pending_sync_ops WHERE state = :state")
     suspend fun deleteByState(state: String)
 

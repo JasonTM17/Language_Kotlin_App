@@ -104,7 +104,7 @@ class FlashcardViewModel @Inject constructor(
             syncDao.enqueue(
                 PendingSyncOpEntity(
                     operationId = java.util.UUID.randomUUID().toString(),
-                    eventType = "VOCAB_REVIEW",
+                    eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.FLASHCARD_REVIEW,
                     refId = card.id,
                     minutes = 1,
                     occurredAt = now,

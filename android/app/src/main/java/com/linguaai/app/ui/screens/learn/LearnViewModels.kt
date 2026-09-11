@@ -134,7 +134,7 @@ class LessonDetailViewModel @Inject constructor(
             syncDao.enqueue(
                 com.linguaai.app.data.local.entity.PendingSyncOpEntity(
                     operationId = java.util.UUID.randomUUID().toString(),
-                    eventType = "LESSON_COMPLETED",
+                    eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.LESSON_COMPLETED,
                     refId = lessonId,
                     minutes = minutes,
                     occurredAt = System.currentTimeMillis(),

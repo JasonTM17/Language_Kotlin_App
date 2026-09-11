@@ -26,7 +26,7 @@ import com.linguaai.app.data.local.entity.VocabularyEntity
         AiMessageCacheEntity::class,
         ProgressCacheEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class LinguaDatabase : RoomDatabase() {
@@ -67,6 +67,17 @@ abstract class LinguaDatabase : RoomDatabase() {
                         "`payload` TEXT NOT NULL, " +
                         "`cachedAt` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`id`))",
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Adds the retry counter to the outbox so a permanently failing
+                // operation can be dead-lettered instead of retried forever.
+                // The DEFAULT matches @ColumnInfo(defaultValue = "0") on the entity.
+                db.execSQL(
+                    "ALTER TABLE `pending_sync_ops` ADD COLUMN `attempts` INTEGER NOT NULL DEFAULT 0",
                 )
             }
         }
