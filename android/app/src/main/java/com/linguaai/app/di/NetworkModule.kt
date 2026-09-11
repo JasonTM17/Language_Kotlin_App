@@ -29,6 +29,15 @@ object NetworkModule {
         explicitNulls = false
     }
 
+    /**
+     * Exposes the single configured [Json] instance so non-network components
+     * (local cache codecs) encode and decode with exactly the same settings as
+     * the wire format.
+     */
+    @Provides
+    @Singleton
+    fun provideJson(): Json = json
+
     @Provides
     @Singleton
     @Named("logging")
@@ -97,4 +106,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun aiApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.AiApi = retrofit.create(com.linguaai.app.data.remote.api.AiApi::class.java)
+
+    @Provides
+    @Singleton
+    fun progressApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.ProgressApi = retrofit.create(com.linguaai.app.data.remote.api.ProgressApi::class.java)
 }

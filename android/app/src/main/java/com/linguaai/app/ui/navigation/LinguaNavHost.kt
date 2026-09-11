@@ -154,7 +154,7 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
                 com.linguaai.app.ui.screens.ai.AiChatScreen(onBack = { navController.popBackStack() })
             }
             composable<ProgressRoute> {
-                PlaceholderScreen(title = "Progress")
+                com.linguaai.app.ui.screens.progress.ProgressScreen()
             }
             composable<ProfileRoute> {
                 PlaceholderScreen(title = "Profile")

@@ -35,6 +35,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val remoteAuthRepository: RemoteAuthRepository,
     private val learningContentRepository: LearningContentRepository,
+    private val progressRepository: com.linguaai.app.domain.repository.ProgressRepository,
     private val settingsDataStore: SettingsDataStore,
 ) : ViewModel() {
 
@@ -66,6 +67,19 @@ class HomeViewModel @Inject constructor(
 
             val goal = settingsDataStore.dailyGoalMinutes.first()
             _uiState.update { it.copy(dailyGoalMinutes = goal) }
+
+            // Streak and today's minutes come from the progress endpoint, the same
+            // source the Progress screen renders, so the two views cannot disagree.
+            when (val progress = progressRepository.refresh()) {
+                is AppResult.Success -> _uiState.update { state ->
+                    state.copy(
+                        streakDays = progress.data.streak.current,
+                        todayMinutes = progress.data.recentActivity.lastOrNull()?.minutes
+                            ?: state.todayMinutes,
+                    )
+                }
+                is AppResult.Failure -> Unit
+            }
 
             // Continue learning: the first lesson for the learner's language.
             val languageId = _uiState.value.profile?.languageId

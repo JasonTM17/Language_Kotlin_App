@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.linguaai.app.data.local.entity.GrammarEntity
 import com.linguaai.app.data.local.entity.LessonEntity
+import com.linguaai.app.data.local.entity.ProgressCacheEntity
 import com.linguaai.app.data.local.entity.VocabularyEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -70,4 +71,19 @@ interface GrammarDao {
 
     @Query("SELECT * FROM grammar_lessons WHERE id = :id")
     suspend fun findById(id: Long): GrammarEntity?
+}
+
+@Dao
+interface ProgressCacheDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(entry: ProgressCacheEntity)
+
+    @Query("SELECT * FROM progress_cache WHERE id = :id")
+    suspend fun get(id: Int = ProgressCacheEntity.SINGLETON_ID): ProgressCacheEntity?
+
+    @Query("SELECT * FROM progress_cache WHERE id = :id")
+    fun observeEntry(id: Int = ProgressCacheEntity.SINGLETON_ID): Flow<ProgressCacheEntity?>
+
+    @Query("DELETE FROM progress_cache")
+    suspend fun clear()
 }

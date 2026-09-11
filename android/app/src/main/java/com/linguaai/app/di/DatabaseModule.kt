@@ -22,7 +22,7 @@ object DatabaseModule {
     @Singleton
     fun database(@ApplicationContext context: Context): LinguaDatabase =
         Room.databaseBuilder(context, LinguaDatabase::class.java, LinguaDatabase.NAME)
-            .addMigrations(LinguaDatabase.MIGRATION_1_2)
+            .addMigrations(LinguaDatabase.MIGRATION_1_2, LinguaDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
@@ -41,4 +41,8 @@ object DatabaseModule {
     @Provides
     fun aiMessageCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.AiMessageCacheDao =
         database.aiMessageCacheDao()
+
+    @Provides
+    fun progressCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.ProgressCacheDao =
+        database.progressCacheDao()
 }

@@ -83,3 +83,22 @@ data class AiMessageCacheEntity(
     val content: String,
     val cachedAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * Single-row cache of the last progress summary the server returned.
+ *
+ * The summary is a read-only server aggregate, so it is cached as its serialized
+ * payload rather than being shredded into relational tables. `id` is pinned to
+ * [SINGLETON_ID] so there is never more than one row.
+ */
+@Entity(tableName = "progress_cache")
+data class ProgressCacheEntity(
+    @PrimaryKey val id: Int = SINGLETON_ID,
+    val payload: String,
+    val cachedAt: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        const val SINGLETON_ID = 1
+    }
+}
+
