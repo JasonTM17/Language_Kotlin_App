@@ -124,10 +124,22 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
+    // Drives the real Room migrations against a device database.
+    androidTestImplementation(libs.room.testing)
 }
 
 // Export the Room schema so migrations can be diffed and tested instead of
 // being validated only at runtime on a device.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Room's MigrationTestHelper loads the exported schema JSONs from the
+// androidTest assets, so the schemas directory has to be registered as an asset
+// source root. Without this the migration tests fail with
+// "Cannot find the schema file in the assets folder".
+android {
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 }
