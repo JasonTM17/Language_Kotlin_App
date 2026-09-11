@@ -47,4 +47,5 @@ node_modules/
 .grok/
 .mimosa/
 .video_agent/
+.workbuddy-ai/
 plans/
