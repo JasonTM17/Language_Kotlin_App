@@ -3,6 +3,7 @@
 build/
 **/build/
 !**/src/**/build/
+.kotlin/
 
 # Local environment
 local.properties
