@@ -215,7 +215,8 @@ class PromptBuilder(
         const val HEADING_GRAMMAR = "## Grammar in focus"
 
         private const val ROLE =
-            "You are LinguaAI, a patient one-to-one language tutor. You teach by making the learner produce language, not by lecturing.\n"
+            "You are LinguaAI, a patient one-to-one language tutor. " +
+                "You teach by making the learner produce language, not by lecturing.\n"
 
         // Not `const`: trimMargin() is a function call, so this is not a
         // compile-time constant.
@@ -235,18 +236,34 @@ class PromptBuilder(
          * in scope, which is what made earlier replies either trivial or
          * overwhelming.
          */
+        // Strings are wrapped with + rather than raw multi-line literals so the
+        // guidance stays a single line in the prompt it produces.
         private val LEVEL_GUIDANCE = mapOf(
-            "N5" to "Absolute beginner. Roughly 800 words and the two basic scripts. Use short sentences, present and past tense only. Reply in 1-2 sentences. Romanise alongside the script.",
-            "N4" to "Elementary. Around 1,500 words, basic verb forms and simple subordinate clauses. Reply in 2-3 short sentences. Introduce one particle or conjugation at a time.",
-            "N3" to "Lower intermediate. Around 3,700 words, te-form, conditionals, passive and causative. Reply in 3-4 sentences. Assume the learner can read the standard script without romanisation.",
-            "N2" to "Upper intermediate. Around 6,000 words, keigo and nuanced register. Reply in 4-6 sentences. Distinguish formal and casual usage explicitly.",
-            "N1" to "Advanced. Around 10,000 words plus literary and formal registers. Reply naturally at native speed. Correct only genuine errors, not stylistic preferences.",
-            "A1" to "Beginner. Present tense, everyday nouns, fixed phrases. Reply in 1-2 short sentences and gloss anything new.",
-            "A2" to "Elementary. Past and future forms, common connectors. Reply in 2-3 sentences. Introduce one structure at a time.",
-            "B1" to "Intermediate. Can sustain a simple conversation and explain opinions. Reply in 3-4 sentences and expect the learner to reply in the target language.",
-            "B2" to "Upper intermediate. Fluent on familiar topics with some errors. Reply in 4-6 sentences. Correct errors that affect meaning or sound clearly non-native.",
-            "C1" to "Advanced. Fluent and spontaneous. Reply naturally. Focus on register, idiom and nuance rather than basic accuracy.",
-            "C2" to "Near-native. Reply at full natural speed. Discuss style and connotation, not correctness.",
+            "N5" to "Absolute beginner. Roughly 800 words and the two basic scripts. " +
+                "Use short sentences, present and past tense only. " +
+                "Reply in 1-2 sentences. Romanise alongside the script.",
+            "N4" to "Elementary. Around 1,500 words, basic verb forms and simple subordinate clauses. " +
+                "Reply in 2-3 short sentences. Introduce one particle or conjugation at a time.",
+            "N3" to "Lower intermediate. Around 3,700 words, te-form, conditionals, passive and causative. " +
+                "Reply in 3-4 sentences. " +
+                "Assume the learner can read the standard script without romanisation.",
+            "N2" to "Upper intermediate. Around 6,000 words, keigo and nuanced register. " +
+                "Reply in 4-6 sentences. Distinguish formal and casual usage explicitly.",
+            "N1" to "Advanced. Around 10,000 words plus literary and formal registers. " +
+                "Reply naturally at native speed. Correct only genuine errors, not stylistic preferences.",
+            "A1" to "Beginner. Present tense, everyday nouns, fixed phrases. " +
+                "Reply in 1-2 short sentences and gloss anything new.",
+            "A2" to "Elementary. Past and future forms, common connectors. " +
+                "Reply in 2-3 sentences. Introduce one structure at a time.",
+            "B1" to "Intermediate. Can sustain a simple conversation and explain opinions. " +
+                "Reply in 3-4 sentences and expect the learner to reply in the target language.",
+            "B2" to "Upper intermediate. Fluent on familiar topics with some errors. " +
+                "Reply in 4-6 sentences. " +
+                "Correct errors that affect meaning or sound clearly non-native.",
+            "C1" to "Advanced. Fluent and spontaneous. Reply naturally. " +
+                "Focus on register, idiom and nuance rather than basic accuracy.",
+            "C2" to "Near-native. Reply at full natural speed. " +
+                "Discuss style and connotation, not correctness.",
         )
 
         /** Extractive rolling summary of the messages being evicted. */
