@@ -84,7 +84,8 @@ class PromptBuilder(
 
     private fun StringBuilder.appendLevelGuidance(level: String?) {
         val guidance = LEVEL_GUIDANCE[level?.trim()?.uppercase()]
-            ?: "Match the learner's demonstrated level. When unsure, start simpler and increase difficulty if the learner handles it easily."
+            ?: "Match the learner's demonstrated level. When unsure, start simpler " +
+                "and increase difficulty if the learner handles it easily."
         append("\n## Level guidance (${level ?: "unknown"})\n$guidance\n")
     }
 
