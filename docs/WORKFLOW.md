@@ -31,17 +31,21 @@ worse than not starting.
 
 ### Current plan inventory (as of 2026-09-12)
 
-| Directory | Belongs to | Status |
-| --- | --- | --- |
-| `20260909-linguaai` | LinguaAI — original A→Z build, phases A…AK | Superseded by the completion plan; ledger records phases A–I with commit evidence |
-| `260911-2254-linguaai-completion` | LinguaAI — 6-phase completion | **Active** |
-| `20260815-1600-gemini-harness` | AgentKit itself | Not this project |
-| `20260827-agentkit-ultra-agy` | AgentKit itself | Not this project |
-| `20260827-grok-build-adapter` | AgentKit itself | Not this project |
+| Directory | Status |
+| --- | --- |
+| `260912-0804-linguaai-unified-delivery` | **Active** — the single canonical plan |
+| `_archive/20260909-linguaai` | Archived. Original A→Z build plan; declared itself superseded. Kept for its commit evidence. |
+| `_archive/260911-2254-linguaai-completion` | Archived. 6-phase completion plan, reached 5/6. Its state was merged into the unified plan. |
+| `templates/` | AgentKit plan scaffolding |
 
-The three AgentKit plans are not part of this repository's work and should be
-removed from `plans/` so that resume cannot land on one. They are gitignored, so
-removal is local-only and safe.
+The archive is excluded from resume by convention: `plans/_archive/` must never be
+treated as a candidate. Only one ledger outside `_archive/` should exist.
+
+Three unrelated plans — `gemini-harness`, `agentkit-ultra-agy` and
+`grok-build-adapter` — were removed on 2026-09-12. They were AgentKit's own
+development plans, not this project's work, and they made plan identity
+ambiguous. All three exist in `/d/Agent_Kit/Agent-Kit/plans/`, so no copy was
+unique.
 
 ---
 
