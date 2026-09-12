@@ -50,6 +50,18 @@ class ProgressRepository {
     /** Maximum number of weak topics surfaced. */
     private val weakTopicLimit = 5
 
+    // Truncation limits. These have to match the column widths in db/Tables.kt:
+    // a value longer than the column makes the insert fail rather than clipping,
+    // so the two are coupled and both sides say so.
+    private val maxOperationIdLength = 64
+    private val maxEventTypeLength = 30
+
+    // Mastery bands on the shared 0..5 scale. The Android SRS scheduler uses the
+    // same scale, so a change here has to be mirrored there — which is only
+    // possible if the numbers are findable.
+    private val masteryLearnedFloor = 4
+    private val learningBand = 1..3
+
     /**
      * Records one learning event. Only [ProgressEventTypes.all] count toward a
      * streak; anything else is stored but does not extend activity.
@@ -73,8 +85,8 @@ class ProgressRepository {
 
             val eventId = UserProgress.insert { row ->
                 row[UserProgress.userId] = userId
-                row[UserProgress.clientOperationId] = request.clientOperationId.take(64)
-                row[UserProgress.eventType] = request.eventType.take(30)
+        row[UserProgress.clientOperationId] = request.clientOperationId.take(maxOperationIdLength)
+        row[UserProgress.eventType] = request.eventType.take(maxEventTypeLength)
                 row[UserProgress.refId] = request.refId
                 row[UserProgress.minutes] = minutes
                 row[UserProgress.occurredAt] = now
@@ -174,8 +186,8 @@ class ProgressRepository {
             ),
             vocabulary = VocabularyProgressDto(
                 tracked = vocabulary.size,
-                mastered = vocabulary.count { it.first >= 4 },
-                learning = vocabulary.count { it.first in 1..3 },
+            mastered = vocabulary.count { it.first >= masteryLearnedFloor },
+            learning = vocabulary.count { it.first in learningBand },
                 fresh = vocabulary.count { it.first <= 0 },
                 dueForReview = vocabulary.count { it.third != null && it.third!! <= now },
             ),
