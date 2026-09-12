@@ -24,6 +24,9 @@ import com.linguaai.server.api.ErrorBody
 import com.linguaai.server.api.ErrorCodes
 import com.linguaai.server.api.ErrorResponse
 
+/** Short request id for logs — long enough to correlate, short enough to read. */
+private const val REQUEST_ID_LENGTH = 8
+
 private val RequestIdKey = AttributeKey<String>("requestId")
 
 /** Per-request correlation id used in logs and error envelopes. */
@@ -47,7 +50,7 @@ fun Application.configureMonitoring() {
     intercept(ApplicationCallPipeline.Monitoring) {
         val target = call
         if (target.attributes.getOrNull(RequestIdKey) == null) {
-            target.attributes.put(RequestIdKey, UUID.randomUUID().toString().take(8))
+            target.attributes.put(RequestIdKey, UUID.randomUUID().toString().take(REQUEST_ID_LENGTH))
         }
     }
     install(CallLogging) {

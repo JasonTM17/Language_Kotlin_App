@@ -10,6 +10,13 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.LocalDateTime
 
+/**
+ * Titles are clipped to the width of ai_conversations.title in db/Tables.kt. A
+ * longer value fails the insert rather than being clipped, and the limit is
+ * applied in two places, so it is named once.
+ */
+private const val MAX_TITLE_LENGTH = 190
+
 data class ConversationRow(
     val id: Long,
     val userId: Long,
@@ -42,7 +49,7 @@ class AiRepository {
         val now = LocalDateTime.now()
         val id = AiConversations.insert { row ->
             row[AiConversations.userId] = userId
-            row[AiConversations.title] = title.take(190)
+            row[AiConversations.title] = title.take(MAX_TITLE_LENGTH)
             row[AiConversations.mode] = mode
             row[AiConversations.contextLessonId] = contextLessonId
             row[AiConversations.contextGrammarId] = contextGrammarId
@@ -52,7 +59,7 @@ class AiRepository {
         ConversationRow(
             id = id,
             userId = userId,
-            title = title.take(190),
+            title = title.take(MAX_TITLE_LENGTH),
             mode = mode,
             summary = null,
             summarizedUntil = null,

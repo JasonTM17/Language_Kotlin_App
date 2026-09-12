@@ -32,6 +32,9 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
+/** Characters of a question prompt kept for list previews. */
+private const val PROMPT_PREVIEW_LENGTH = 80
+
 /**
  * Read-side content store (languages, lessons, vocabulary, grammar, quizzes)
  * plus server-side quiz grading. Every function opens its own transaction.
@@ -200,7 +203,7 @@ class ContentRepository {
         val weakTopics = feedback.filter { !it.correct }
             .mapNotNull { item ->
                 questionRows.firstOrNull { it[QuizQuestions.id] == item.questionId }
-                    ?.let { row -> row[QuizQuestions.prompt].take(80) }
+                    ?.let { row -> row[QuizQuestions.prompt].take(PROMPT_PREVIEW_LENGTH) }
             }
         weakTopics.forEach { topic ->
             UserMistakes.insert { insertRow ->

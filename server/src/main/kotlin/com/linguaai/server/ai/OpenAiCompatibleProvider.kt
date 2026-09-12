@@ -20,6 +20,9 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.add
 
+/** HTTP 429, spelled out so the rate-limit branch reads without a lookup. */
+private const val HTTP_TOO_MANY_REQUESTS = 429
+
 /**
  * Talks to any OpenAI-compatible chat completions endpoint (OpenAI, DeepSeek,
  * Groq, self-hosted gateways). The API key lives only on the server.
@@ -75,7 +78,7 @@ class OpenAiCompatibleProvider(
                     headers { append(HttpHeaders.Authorization, "Bearer ${config.aiApiKey}") }
                     setBody(payload)
                 }
-                if (response.status.value == 429) {
+                if (response.status.value == HTTP_TOO_MANY_REQUESTS) {
                     throw AiProviderException(
                         AiProviderException.Kind.RATE_LIMITED,
                         "AI provider rate limited",

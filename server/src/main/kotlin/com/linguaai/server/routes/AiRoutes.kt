@@ -28,6 +28,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 
+/** Connect timeout for server-to-server calls, in milliseconds. */
+private const val CONNECT_TIMEOUT_MILLIS = 5_000L
+
 /**
  * Authenticated AI endpoints. Every handler resolves the user principal; the
  * client never picks the system prompt or provider.
@@ -121,7 +124,7 @@ fun Application.configureAiRoutes(
 fun aiHttpClient(config: com.linguaai.server.config.AppConfig): io.ktor.client.HttpClient =
     io.ktor.client.HttpClient(io.ktor.client.engine.cio.CIO) {
         install(HttpTimeout) {
-            connectTimeoutMillis = 5_000L
+            connectTimeoutMillis = CONNECT_TIMEOUT_MILLIS
             requestTimeoutMillis = config.aiTimeoutSeconds * 1000L
         }
         install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {

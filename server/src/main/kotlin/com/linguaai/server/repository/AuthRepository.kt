@@ -19,6 +19,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.LocalDateTime
 
+/** Daily-goal fallback when the learner has not chosen one. */
+private const val DEFAULT_DAILY_GOAL_MINUTES = 10
+
 data class UserRecord(
     val id: Long,
     val email: String,
@@ -160,7 +163,7 @@ class AuthRepository {
                 row[UserProfiles.languageId] = request.languageId
                 row[UserProfiles.level] = request.level
                 row[UserProfiles.goal] = request.goal
-                row[UserProfiles.dailyGoalMinutes] = request.dailyGoalMinutes ?: 10
+                row[UserProfiles.dailyGoalMinutes] = request.dailyGoalMinutes ?: DEFAULT_DAILY_GOAL_MINUTES
                 row[UserProfiles.onboarded] = request.onboarded ?: false
                 row[UserProfiles.updatedAt] = now
             }

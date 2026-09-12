@@ -9,6 +9,9 @@ import org.jetbrains.exposed.sql.Database
 import org.slf4j.LoggerFactory
 import java.util.Locale
 
+/** HikariCP pool size. Sized for a single instance; scale with it. */
+private const val MAX_POOL_SIZE = 10
+
 /**
  * Owns the connection pool and schema migrations. Flyway is the single source
  * of DDL truth — Exposed never auto-creates schema.
@@ -34,7 +37,7 @@ object DatabaseFactory {
             username = config.dbUser
             password = config.dbPassword
             driverClassName = driverClass
-            maximumPoolSize = 10
+            maximumPoolSize = MAX_POOL_SIZE
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             poolName = "linguaai-pool"

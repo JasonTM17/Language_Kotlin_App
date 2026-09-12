@@ -6,6 +6,9 @@ import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.ContentRepository
 import com.linguaai.server.repository.MessageRow
 
+/** Characters kept per line when evicting messages into the rolling summary. */
+private const val SUMMARY_LINE_LENGTH = 120
+
 /**
  * Builds the system prompt from trusted server-side data only: learner profile,
  * the target language, lesson/grammar context, weak topics and the condensed
@@ -271,7 +274,7 @@ class PromptBuilder(
         fun summarize(evicted: List<MessageRow>): String =
             evicted.takeLast(SUMMARY_WINDOW).joinToString("\n") { message ->
                 val prefix = if (message.role.equals("user", true)) "Learner" else "Tutor"
-                "$prefix: ${message.content.take(120)}"
+                "$prefix: ${message.content.take(SUMMARY_LINE_LENGTH)}"
             }
 
         /**
