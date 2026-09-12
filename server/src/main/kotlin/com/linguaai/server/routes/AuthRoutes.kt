@@ -47,31 +47,8 @@ import java.time.ZoneOffset
 fun Application.configureAuthRoutes(
     config: AppConfig,
     authRepository: AuthRepository,
-    contentRepository: ContentRepository,
 ) {
     val tokenService = JwtTokenService(config)
-
-    install(Authentication) {
-        jwt("auth-jwt") {
-            verifier(tokenService.accessTokenVerifier())
-            validate { credential ->
-                val userId = credential.payload.getClaim(JwtTokenService.CLAIM_USER_ID)?.asString()
-                if (!userId.isNullOrBlank()) JWTPrincipal(credential.payload) else null
-            }
-            challenge { _, _ ->
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    ErrorResponse(
-                        ErrorBody(
-                            code = ErrorCodes.UNAUTHORIZED,
-                            message = "Missing or invalid access token",
-                            requestId = call.requestId,
-                        ),
-                    ),
-                )
-            }
-        }
-    }
 
     fun issueTokens(userId: Long): TokenPairDto {
         val refreshToken = tokenService.generateRefreshToken()
@@ -154,35 +131,6 @@ fun Application.configureAuthRoutes(
                 call.respond(mapOf("success" to true))
             }
         }
-
-        authenticate("auth-jwt") {
-            get("/api/v1/profile") {
-                call.respond(requireProfile(call, authRepository))
-            }
-
-            put("/api/v1/profile") {
-                val userId = requireUserId(call)
-                val request = call.receive<UpdateProfileRequest>()
-                request.dailyGoalMinutes?.let {
-                    if (it !in 5..240) {
-                        throw ApiException(
-                            HttpStatusCode.UnprocessableEntity,
-                            ErrorCodes.VALIDATION,
-                            "dailyGoalMinutes must be between 5 and 240",
-                        )
-                    }
-                }
-                call.respond(authRepository.updateProfile(userId, request))
-            }
-
-            post("/api/v1/quizzes/{id}/submit") {
-                val userId = requireUserId(call)
-                val quizId = call.parameters["id"]?.toLongOrNull()
-                    ?: throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Invalid quiz id")
-                val submission = call.receive<com.linguaai.server.api.dto.QuizSubmissionDto>()
-                call.respond(contentRepository.submitQuiz(userId, quizId, submission))
-            }
-        }
     }
 }
 
@@ -199,7 +147,7 @@ private fun validateRegistration(request: RegisterRequest) {
     }
 }
 
-private fun requireUserId(call: ApplicationCall): Long =
+internal fun requireUserId(call: ApplicationCall): Long =
     call.principal<JWTPrincipal>()
         ?.payload
         ?.getClaim(JwtTokenService.CLAIM_USER_ID)
@@ -207,6 +155,6 @@ private fun requireUserId(call: ApplicationCall): Long =
         ?.toLongOrNull()
         ?: throw ApiException(HttpStatusCode.Unauthorized, ErrorCodes.UNAUTHORIZED, "Missing principal")
 
-private fun requireProfile(call: ApplicationCall, authRepository: AuthRepository): ProfileDto =
+internal fun requireProfile(call: ApplicationCall, authRepository: AuthRepository): ProfileDto =
     authRepository.findProfile(requireUserId(call))
         ?: throw ApiException(HttpStatusCode.NotFound, ErrorCodes.NOT_FOUND, "User not found")

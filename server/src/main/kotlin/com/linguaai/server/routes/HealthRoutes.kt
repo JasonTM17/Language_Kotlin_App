@@ -1,19 +1,11 @@
 package com.linguaai.server.routes
 
-import com.linguaai.server.config.AppConfig
+import com.linguaai.server.api.dto.HealthResponse
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class HealthResponse(
-    val status: String,
-    val service: String,
-    val version: String,
-)
 
 fun Application.configureRouting() {
     routing {
