@@ -1,3 +1,14 @@
+// Column widths in this file are schema declarations, not magic numbers.
+//
+// `varchar("email", 255)` reads better than
+// `varchar("email", EMAIL_MAX_LENGTH)` — the width belongs next to the column it
+// constrains, and a named constant for each would add roughly two dozen
+// declarations while moving every value away from what it describes.
+//
+// This is a file-level exemption, not a rule change: MagicNumber stays active
+// everywhere else in the build.
+@file:Suppress("MagicNumber")
+
 package com.linguaai.server.db
 
 import org.jetbrains.exposed.sql.Table
