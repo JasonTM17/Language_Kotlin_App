@@ -33,7 +33,8 @@ class AiProviderException(
     val kind: Kind,
     message: String,
     val retryAfterSeconds: Long? = null,
-) : RuntimeException(message) {
+    cause: Throwable? = null,
+) : RuntimeException(message, cause) {
     enum class Kind { TIMEOUT, RATE_LIMITED, PROVIDER_ERROR, INVALID_RESPONSE, EMPTY_RESPONSE, NETWORK }
 }
 

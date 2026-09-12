@@ -273,21 +273,26 @@ class AiService(
         val response = try {
             provider.chat(AiChatRequest(messages = fullMessages))
         } catch (e: AiProviderException) {
+            // Carry the cause through the mapping, otherwise the provider's own
+            // failure reason is lost at exactly the point it matters most.
             throw when (e.kind) {
                 AiProviderException.Kind.RATE_LIMITED -> ApiException(
                     HttpStatusCode.TooManyRequests,
                     ErrorCodes.RATE_LIMITED,
                     "The AI tutor is busy. Please retry shortly.",
+                    cause = e,
                 )
                 AiProviderException.Kind.TIMEOUT -> ApiException(
                     HttpStatusCode.ServiceUnavailable,
                     ErrorCodes.AI_UNAVAILABLE,
                     "The AI tutor took too long to respond. Please try again.",
+                    cause = e,
                 )
                 else -> ApiException(
                     HttpStatusCode.BadGateway,
                     ErrorCodes.AI_UNAVAILABLE,
                     "The AI tutor is unavailable right now.",
+                    cause = e,
                 )
             }
         }
@@ -363,10 +368,13 @@ class AiService(
         }
         payload
     } catch (e: Exception) {
+        // Carry the cause. Without it a 502 gives the operator no trace of what
+        // the provider actually returned or which require() rejected it.
         throw ApiException(
             HttpStatusCode.BadGateway,
             ErrorCodes.AI_UNAVAILABLE,
             "The AI tutor returned an invalid quiz. Please retry.",
+            cause = e,
         )
     }
 
@@ -378,6 +386,7 @@ class AiService(
             HttpStatusCode.BadGateway,
             ErrorCodes.AI_UNAVAILABLE,
             "Could not score the conversation. Please retry.",
+            cause = e,
         )
     }
 

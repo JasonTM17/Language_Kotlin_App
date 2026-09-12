@@ -39,7 +39,7 @@ fun Application.module(config: AppConfig = AppConfig.fromEnv()) {
     configureSerialization()
     configureMonitoring()
     configureStatusPages()
-    configureRouting(config)
+    configureRouting()
     configureContentRoutes(contentRepository)
     configureAuthRoutes(config, authRepository, contentRepository)
     configureAiRoutes(config, authRepository, contentRepository)

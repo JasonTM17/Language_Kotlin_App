@@ -8,7 +8,8 @@ class ApiException(
     val status: HttpStatusCode,
     val code: String,
     message: String,
-) : RuntimeException(message)
+    cause: Throwable? = null,
+) : RuntimeException(message, cause)
 
 /** Consistent error envelope returned for every failed request. */
 @Serializable

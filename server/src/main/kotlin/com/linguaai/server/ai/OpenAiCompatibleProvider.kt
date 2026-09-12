@@ -10,6 +10,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
 import java.io.IOException
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -35,7 +36,10 @@ class OpenAiCompatibleProvider(
     private data class ProviderChoice(val message: ProviderMessage)
 
     @Serializable
-    private data class ProviderUsage(val prompt_tokens: Int? = null, val completion_tokens: Int? = null)
+    private data class ProviderUsage(
+        @SerialName("prompt_tokens") val promptTokens: Int? = null,
+        @SerialName("completion_tokens") val completionTokens: Int? = null,
+    )
 
     @Serializable
     private data class ProviderResponse(
@@ -94,8 +98,8 @@ class OpenAiCompatibleProvider(
                 }
                 return AiChatResponse(
                     content = content,
-                    promptTokens = body.usage?.prompt_tokens,
-                    completionTokens = body.usage?.completion_tokens,
+                    promptTokens = body.usage?.promptTokens,
+                    completionTokens = body.usage?.completionTokens,
                 )
             } catch (e: AiProviderException) {
                 throw e
@@ -103,7 +107,13 @@ class OpenAiCompatibleProvider(
                 // Connection setup failures may be retried once; a request that
                 // already reached the provider is never re-sent (not idempotent).
                 if (attempt >= MAX_ATTEMPTS) {
-                    throw AiProviderException(AiProviderException.Kind.NETWORK, "AI provider unreachable")
+                    // Carry the cause so the operator can tell DNS failure from
+                    // connection reset from read timeout.
+                    throw AiProviderException(
+                        AiProviderException.Kind.NETWORK,
+                        "AI provider unreachable",
+                        cause = e,
+                    )
                 }
             }
         }

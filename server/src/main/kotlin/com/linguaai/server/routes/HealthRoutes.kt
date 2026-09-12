@@ -15,7 +15,7 @@ data class HealthResponse(
     val version: String,
 )
 
-fun Application.configureRouting(config: AppConfig) {
+fun Application.configureRouting() {
     routing {
         get("/api/v1/health") {
             call.respond(
