@@ -134,19 +134,30 @@ fun Application.configureAuthRoutes(
     }
 }
 
+// These bounds mirror com.linguaai.app.domain.validation.Validators on the
+// Android side. They are named here so the server check and its message cannot
+// drift apart, and so the duplication with the client is visible rather than
+// buried in two bare literals.
+private const val MIN_USERNAME_LENGTH = 3
+private const val MIN_PASSWORD_LENGTH = 8
+
 private fun validateRegistration(request: RegisterRequest) {
     val emailRegex = Regex("^[A-Za-z0-9+_.\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}$")
     if (!emailRegex.matches(request.email.trim())) {
         throw ApiException(HttpStatusCode.UnprocessableEntity, ErrorCodes.VALIDATION, "Invalid email address")
     }
-    if (request.username.trim().length < 3) {
-        throw ApiException(HttpStatusCode.UnprocessableEntity, ErrorCodes.VALIDATION, "Username too short")
-    }
-    if (request.password.length < 8) {
+    if (request.username.trim().length < MIN_USERNAME_LENGTH) {
         throw ApiException(
             HttpStatusCode.UnprocessableEntity,
             ErrorCodes.VALIDATION,
-            "Password must be at least 8 characters",
+            "Username must be at least $MIN_USERNAME_LENGTH characters",
+        )
+    }
+    if (request.password.length < MIN_PASSWORD_LENGTH) {
+        throw ApiException(
+            HttpStatusCode.UnprocessableEntity,
+            ErrorCodes.VALIDATION,
+            "Password must be at least $MIN_PASSWORD_LENGTH characters",
         )
     }
 }

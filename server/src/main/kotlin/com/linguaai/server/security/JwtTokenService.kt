@@ -30,8 +30,18 @@ class JwtTokenService(private val config: AppConfig) {
         .withAudience(AUDIENCE)
         .build()
 
+    // Unit factors named because a bare 60_000 or 86_400 does not say which unit
+    // it converts, and getting one wrong silently changes every token lifetime
+    // without failing anything.
+    private val millisPerMinute = 60_000L
+    private val secondsPerMinute = 60L
+    private val secondsPerDay = 86_400L
+
+    /** 256 bits of entropy. Only the hash of this token is ever persisted. */
+    private val refreshTokenBytes = 32
+
     fun generateAccessToken(userId: Long): String {
-        val expiresAt = Date(System.currentTimeMillis() + config.accessTokenTtlMinutes * 60_000)
+        val expiresAt = Date(System.currentTimeMillis() + config.accessTokenTtlMinutes * millisPerMinute)
         return JWT.create()
             .withIssuer(ISSUER)
             .withAudience(AUDIENCE)
@@ -40,11 +50,11 @@ class JwtTokenService(private val config: AppConfig) {
             .sign(algorithm)
     }
 
-    fun accessTokenTtlSeconds(): Long = config.accessTokenTtlMinutes * 60
+    fun accessTokenTtlSeconds(): Long = config.accessTokenTtlMinutes * secondsPerMinute
 
     /** Opaque, URL-safe refresh token. Only its hash is persisted. */
     fun generateRefreshToken(): String {
-        val bytes = ByteArray(32)
+        val bytes = ByteArray(refreshTokenBytes)
         secureRandom.nextBytes(bytes)
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
@@ -55,5 +65,5 @@ class JwtTokenService(private val config: AppConfig) {
             .joinToString("") { "%02x".format(it) }
 
     fun refreshExpiryInstant(from: Instant = Instant.now()): Instant =
-        from.plusSeconds(config.refreshTokenTtlDays * 86_400)
+        from.plusSeconds(config.refreshTokenTtlDays * secondsPerDay)
 }
