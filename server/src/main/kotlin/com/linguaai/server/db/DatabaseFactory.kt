@@ -24,7 +24,7 @@ object DatabaseFactory {
 
     fun init(config: AppConfig): HikariDataSource {
         val dataSource = createDataSource(config)
-        migrate(dataSource, config.dbUrl)
+        migrate(dataSource)
         Database.connect(dataSource)
         return dataSource
     }
@@ -48,7 +48,7 @@ object DatabaseFactory {
         return HikariDataSource(hikariConfig)
     }
 
-    private fun migrate(dataSource: HikariDataSource, dbUrl: String) {
+    private fun migrate(dataSource: HikariDataSource) {
         // V1 schema and seed are written for both dialects, so H2 and MySQL share
         // one location. This used to be a conditional whose two branches were
         // identical, which read as a dialect difference that did not exist.
