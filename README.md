@@ -123,6 +123,7 @@ plans/            local planning artefacts (gitignored)
 | [Development](docs/DEVELOPMENT.md) | Setup, run, conventions, troubleshooting |
 | [Testing](docs/TESTING.md) | What each suite covers and what is deliberately missing |
 | [Deployment](docs/DEPLOYMENT.md) | Docker, configuration, and the known limitations |
+| [Working agreement](docs/WORKFLOW.md) | Plan identity, execution cadence, verification budget, reporting contract |
 
 ## Known limitations
 

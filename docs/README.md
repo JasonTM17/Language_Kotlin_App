@@ -8,6 +8,7 @@
 | [diagrams/](diagrams/README.md) | Mermaid diagrams (system, clean architecture, AI & auth sequences) |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | How to set up and run the project locally |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Docker deployment |
+| [WORKFLOW.md](WORKFLOW.md) | Working agreement: plan identity, execution cadence, verification budget, reporting contract |
 | [TESTING.md](TESTING.md) | Test strategy and how to run tests |
 | [screenshots/](screenshots/README.md) | App screenshots |
 
