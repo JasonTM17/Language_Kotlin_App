@@ -60,7 +60,9 @@ class AiIntegrationTest {
     @Test
     fun `chat returns a reply and persists history`() = withApp {
         val token = registerAndLogin()
-        val auth = { r: io.ktor.client.request.HttpRequestBuilder -> r.header(HttpHeaders.Authorization, "Bearer $token") }
+        val auth = { r: io.ktor.client.request.HttpRequestBuilder ->
+            r.header(HttpHeaders.Authorization, "Bearer $token")
+        }
 
         val chat = client.post("/api/v1/ai/chat") {
             auth(this)

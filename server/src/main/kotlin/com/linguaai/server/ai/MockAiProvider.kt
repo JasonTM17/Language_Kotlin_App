@@ -52,9 +52,19 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
             if (grammarHint) append("About the grammar point you are studying: ")
             append(
                 when {
-                    lastUser.contains("ように") -> "～ように attaches to dictionary or negative forms to express purpose or hope, e.g. 忘れないようにメモします (I take notes so I won't forget). Unlike ～ために it also works with potential verbs and natural outcomes."
-                    lastUser.contains("行きませんでしたから") || lastUser.endsWith("。") && lastUser.contains("から") -> "Your sentence reads unnaturally: 昨日学校に行きませんでしたから病気でした。A natural version is 病気だったので、学校に行きませんでした。Use ので/から after a plain reason clause, not after the past-tense result."
-                    else -> "Let's break it down step by step, keeping your current level in mind. Try building one example sentence with the pattern and I will correct it."
+                    lastUser.contains("ように") ->
+                        "～ように attaches to dictionary or negative forms " +
+                            "to express purpose or hope, e.g. 忘れないようにメモします " +
+                            "(I take notes so I won't forget). Unlike ～ために it also works with " +
+                            "potential verbs and natural outcomes."
+                    lastUser.contains("行きませんでしたから") ||
+                        lastUser.endsWith("。") && lastUser.contains("から") ->
+                        "Your sentence reads unnaturally: 昨日学校に行きませんでしたから病気でした。" +
+                            "A natural version is 病気だったので、学校に行きませんでした。" +
+                            "Use ので/から after a plain reason clause, not after the past-tense result."
+                    else ->
+                        "Let's break it down step by step, keeping your current level in mind. " +
+                            "Try building one example sentence with the pattern and I will correct it."
                 },
             )
         }

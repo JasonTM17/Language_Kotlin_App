@@ -209,7 +209,13 @@ class AiService(
         ensureRateLimit(userId)
         val conversation = requireOwnership(userId, conversationId)
         val builder = promptBuilder(userId)
-        val system = builder.systemPrompt("practice-score", authRepository.findProfile(userId), null, null, conversation.summary)
+        val system = builder.systemPrompt(
+            "practice-score",
+            authRepository.findProfile(userId),
+            null,
+            null,
+            conversation.summary,
+        )
         val messages = builder.buildMessages(system, conversation.id, conversation.summarizedUntil) +
             AiMessage("user", "Score this conversation now. Return only the JSON object.")
         val response = provider.chat(

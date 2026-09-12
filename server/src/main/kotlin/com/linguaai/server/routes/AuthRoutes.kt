@@ -143,7 +143,11 @@ private fun validateRegistration(request: RegisterRequest) {
         throw ApiException(HttpStatusCode.UnprocessableEntity, ErrorCodes.VALIDATION, "Username too short")
     }
     if (request.password.length < 8) {
-        throw ApiException(HttpStatusCode.UnprocessableEntity, ErrorCodes.VALIDATION, "Password must be at least 8 characters")
+        throw ApiException(
+            HttpStatusCode.UnprocessableEntity,
+            ErrorCodes.VALIDATION,
+            "Password must be at least 8 characters",
+        )
     }
 }
 

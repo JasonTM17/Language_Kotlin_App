@@ -48,7 +48,8 @@ class PromptQualityIntegrationTest {
     private fun withApp(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         val config = AppConfig.fromEnv { key ->
             mapOf(
-                "DB_URL" to "jdbc:h2:mem:prompt_${UUID.randomUUID()};MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+                "DB_URL" to "jdbc:h2:mem:prompt_${UUID.randomUUID()}" +
+                    ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
                 "DB_USER" to "sa",
                 "DB_PASSWORD" to "",
                 "JWT_SECRET" to "test-secret-for-integration-tests-only-0123456789",
