@@ -1,0 +1,62 @@
+# detekt configuration for the LinguaAI server.
+#
+# Built on detekt's defaults. Every deviation below states why it is here. A
+# config entry without a reason is how a lint gate quietly stops meaning
+# anything.
+
+naming:
+  TopLevelPropertyNaming:
+    # The codebase names constants such as CLAIM_USER_ID in SCREAMING_SNAKE case,
+    # which is correct for them. The default would force camelCase.
+    active: false
+
+complexity:
+  TooManyFunctions:
+    # Services and repositories here legitimately exceed the default 11: an
+    # AuthRepository is a data-access surface, not a domain object. Raised rather
+    # than disabled, so a genuinely bloated class is still flagged.
+    thresholdInFiles: 25
+    thresholdInClasses: 25
+  LongMethod:
+    # ProgressRepository.summary aggregates one read across several tables;
+    # splitting it would scatter a single query sequence into many.
+    threshold: 70
+
+style:
+  MagicNumber:
+    # Extracting a named constant is the behaviour this rule exists to encourage.
+    # Flagging the declaration itself means the reward for doing the right thing
+    # is still a warning, so constants get left inline instead.
+    ignorePropertyDeclaration: true
+    # Self-evident bounds and unit factors where a name adds nothing.
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '24'
+      - '60'
+      - '100'
+      - '1000'
+
+  ThrowsCount:
+    # Ktor routing signals validation failures with `throw`; that is the
+    # framework's idiom. A route configuration function will legitimately throw
+    # several times, and the default of 2 makes any real route file fail.
+    max: 10
+
+  ReturnCount:
+    # Early returns and guard clauses read better than nested conditionals, which
+    # is the style used through the AI gateway and the prompt builder.
+    max: 6
+
+exceptions:
+  TooGenericExceptionCaught:
+    # Catching Exception at the provider boundary is deliberate: any provider
+    # failure maps to one stable 502. Every such catch carries the cause, so no
+    # diagnostic information is lost.
+    active: false
+
+# NOTE: SwallowedException stays active. It found four real defects in which the
+# original exception was dropped, and those fixes are now load-bearing for
+# diagnosing AI failures. Do not disable it to make a count go down.

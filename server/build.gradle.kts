@@ -21,6 +21,13 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     jvmTarget = "17"
 }
 
+// Rules that genuinely do not fit this codebase, each with its reason, live in
+// detekt.yml. Defaults still apply for everything the file does not mention.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("config/detekt/detekt.yml"))
+}
+
 // detekt attaches itself to `check`, which `build` depends on, so landing the
 // plugin with an unclean baseline would break the existing CI immediately. The
 // task is therefore manual while the baseline is worked down:
