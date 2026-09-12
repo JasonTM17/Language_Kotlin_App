@@ -35,17 +35,25 @@ private const val CONNECT_TIMEOUT_MILLIS = 5_000L
  * Authenticated AI endpoints. Every handler resolves the user principal; the
  * client never picks the system prompt or provider.
  */
-fun Application.configureAiRoutes(
-    config: com.linguaai.server.config.AppConfig,
-    authRepository: AuthRepository,
-    contentRepository: ContentRepository,
-) {
-    val provider: com.linguaai.server.ai.AiProvider = when (config.aiProvider) {
+/**
+ * Chooses the AI provider from configuration. Kept out of configureAiRoutes
+ * because selecting a provider is a wiring decision, not a routing one, and the
+ * two had made that function the longest in the routes package.
+ */
+private fun buildProvider(config: com.linguaai.server.config.AppConfig): com.linguaai.server.ai.AiProvider =
+    when (config.aiProvider) {
         com.linguaai.server.config.AppConfig.AiProviderKind.MOCK ->
             com.linguaai.server.ai.MockAiProvider(config.aiMockScenario)
         com.linguaai.server.config.AppConfig.AiProviderKind.OPENAI_COMPATIBLE ->
             com.linguaai.server.ai.OpenAiCompatibleProvider(config, aiHttpClient(config))
     }
+
+fun Application.configureAiRoutes(
+    config: com.linguaai.server.config.AppConfig,
+    authRepository: AuthRepository,
+    contentRepository: ContentRepository,
+) {
+    val provider: com.linguaai.server.ai.AiProvider = buildProvider(config)
     val service = com.linguaai.server.ai.AiService(
         config = config,
         provider = provider,

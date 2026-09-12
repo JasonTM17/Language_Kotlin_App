@@ -28,18 +28,13 @@ detekt {
     config.setFrom(files("config/detekt/detekt.yml"))
 }
 
-// detekt attaches itself to `check`, which `build` depends on, so landing the
-// plugin with an unclean baseline would break the existing CI immediately. The
-// task is therefore manual while the baseline is worked down:
+// detekt runs as part of `check`, and therefore as part of `build`. It was
+// deliberately detached while the baseline was worked down from 126 findings to
+// zero, on the principle that a gate should not be switched on before it can
+// pass. Now that detekt passes, it is back in the build: `./gradlew build` fails
+// on a lint regression.
 //
-//     ./gradlew detekt
-//
-// Re-attach it to `check` — and make it a blocking CI step — only once the
-// baseline is clean. Detaching is sequencing, not suppression: the gate is not
-// being weakened, it is simply not switched on before it can pass.
-tasks.matching { it.name == "check" }.configureEach {
-    dependsOn.removeAll { it.toString().contains("detekt") }
-}
+// Do not detach this again to land a change faster. Fix the finding.
 
 kotlin {
     compilerOptions {
