@@ -7,7 +7,9 @@ import io.ktor.server.application.Application
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import org.slf4j.LoggerFactory
-import java.util.Locale
+
+/** Flyway migration location, shared by every supported dialect. */
+private const val MIGRATION_LOCATION = "classpath:db/migration"
 
 /** HikariCP pool size. Sized for a single instance; scale with it. */
 private const val MAX_POOL_SIZE = 10
@@ -47,15 +49,12 @@ object DatabaseFactory {
     }
 
     private fun migrate(dataSource: HikariDataSource, dbUrl: String) {
-        val locations = if (dbUrl.lowercase(Locale.ROOT).startsWith("jdbc:h2")) {
-            // H2-compatible subset (V1 schema + seed are written for both dialects)
-            listOf("classpath:db/migration")
-        } else {
-            listOf("classpath:db/migration")
-        }
+        // V1 schema and seed are written for both dialects, so H2 and MySQL share
+        // one location. This used to be a conditional whose two branches were
+        // identical, which read as a dialect difference that did not exist.
         Flyway.configure()
             .dataSource(dataSource)
-            .locations(*locations.toTypedArray())
+            .locations(MIGRATION_LOCATION)
             .load()
             .migrate()
         log.info("Database migrations applied")
