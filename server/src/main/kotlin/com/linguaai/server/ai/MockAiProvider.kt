@@ -44,10 +44,22 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
             return AiChatResponse(content = quizJson)
         }
 
+        return AiChatResponse(content = tutorReply(request))
+    }
+
+    /**
+     * Deterministic tutoring reply, keyed on the learner's last message.
+     *
+     * Split out of [chat] because that function was carrying the failure-injection
+     * dispatch, the JSON quiz branch and this reply selection together, which put
+     * it well past the complexity threshold. The dispatch is inherently branchy;
+     * this part is not, and it did not belong in the same function.
+     */
+    private fun tutorReply(request: AiChatRequest): String {
         val lastUser = request.messages.lastOrNull { it.role == "user" }?.content.orEmpty()
         val grammarHint = request.messages.firstOrNull()?.content
             ?.contains(PromptBuilder.HEADING_GRAMMAR) == true
-        val reply = buildString {
+        return buildString {
             append("Good question! ")
             if (grammarHint) append("About the grammar point you are studying: ")
             append(
@@ -68,6 +80,5 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
                 },
             )
         }
-        return AiChatResponse(content = reply)
     }
 }
