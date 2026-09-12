@@ -41,12 +41,13 @@ data class ExplainRequestDto(
 @Serializable
 data class CorrectRequestDto(
     val sentence: String,
+    val conversationId: Long? = null,
 )
 
 @Serializable
 data class GenerateQuizRequestDto(
-    val languageId: Long = 1,
-    val level: String = "N3",
+    val languageId: Long? = null,
+    val level: String? = null,
     val topic: String? = null,
     val count: Int = 5,
 )

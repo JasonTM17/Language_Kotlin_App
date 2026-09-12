@@ -104,6 +104,7 @@ fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
     retryLabel: String? = null,
+    retryModifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
 ) {
     StateScaffold(
@@ -112,6 +113,7 @@ fun ErrorState(
         title = "Something went wrong",
         message = message,
         actionLabel = retryLabel,
+        actionModifier = retryModifier,
         onAction = onRetry,
         tint = MaterialTheme.colorScheme.error,
     )
@@ -124,6 +126,7 @@ private fun StateScaffold(
     title: String,
     message: String,
     actionLabel: String?,
+    actionModifier: Modifier = Modifier,
     onAction: (() -> Unit)?,
     tint: Color,
 ) {
@@ -157,7 +160,7 @@ private fun StateScaffold(
         if (actionLabel != null && onAction != null) {
             OutlinedButton(
                 onClick = onAction,
-                modifier = Modifier.padding(top = Spacing.md),
+                modifier = actionModifier.padding(top = Spacing.md),
             ) {
                 Text(actionLabel)
             }

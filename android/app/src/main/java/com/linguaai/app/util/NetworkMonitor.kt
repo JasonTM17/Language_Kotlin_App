@@ -11,14 +11,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** Read-only connectivity contract so state consumers are deterministic in tests. */
+interface ConnectivityMonitor {
+    val isOnline: StateFlow<Boolean>
+}
+
 /** Connectivity signal used by offline banners and sync scheduling. */
 @Singleton
 class NetworkMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : ConnectivityMonitor {
 
     private val _isOnline = MutableStateFlow(isCurrentlyOnline())
-    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
     init {
         val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager

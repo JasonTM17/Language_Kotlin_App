@@ -3,6 +3,7 @@ package com.linguaai.app.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import com.linguaai.app.data.local.entity.PendingSyncOpEntity
 import com.linguaai.app.data.local.entity.SyncOpState
 import kotlinx.coroutines.flow.Flow
@@ -49,14 +50,21 @@ interface AiMessageCacheDao {
     @Insert
     suspend fun insertAll(messages: List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>)
 
-    @Insert
-    suspend fun insert(message: com.linguaai.app.data.local.entity.AiMessageCacheEntity)
-
     @Query("SELECT * FROM ai_message_cache WHERE conversationId = :conversationId ORDER BY id")
     suspend fun byConversation(conversationId: Long): List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>
 
     @Query("DELETE FROM ai_message_cache WHERE conversationId = :conversationId")
     suspend fun clearConversation(conversationId: Long)
+
+    /** Replaces one server-owned history atomically so a failed insert cannot erase the old cache. */
+    @Transaction
+    suspend fun replaceConversation(
+        conversationId: Long,
+        messages: List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>,
+    ) {
+        clearConversation(conversationId)
+        insertAll(messages)
+    }
 
     /** Wipes cached conversation content. Used on sign-out. */
     @Query("DELETE FROM ai_message_cache")

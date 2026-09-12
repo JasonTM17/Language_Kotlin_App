@@ -4,6 +4,7 @@ import com.linguaai.server.config.AppConfig
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -11,6 +12,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
@@ -47,10 +49,10 @@ class AiIntegrationTest {
         block()
     }
 
-    private suspend fun ApplicationTestBuilder.registerAndLogin(): String {
+    private suspend fun ApplicationTestBuilder.registerAndLogin(email: String = "ai-learner@example.com"): String {
         val register =
             client.post("/api/v1/auth/register") {
-                setBody("""{"email":"ai-learner@example.com","username":"Learner","password":"ai-fixture-secret"}""")
+                setBody("""{"email":"$email","username":"Learner","password":"ai-fixture-secret"}""")
                 header(HttpHeaders.ContentType, "application/json")
             }
         assertEquals(HttpStatusCode.Created, register.status)
@@ -161,6 +163,50 @@ class AiIntegrationTest {
         }
 
     @Test
+    fun `generated quiz derives language and level from the learner profile`() =
+        withApp(mockScenario = "echo_quiz_prompt") {
+            val token = registerAndLogin()
+            val profile =
+                client.put("/api/v1/profile") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"languageId":2,"level":"A2","goal":"conversation","dailyGoalMinutes":20}""")
+                }
+            assertEquals(HttpStatusCode.OK, profile.status)
+
+            val quiz =
+                client.post("/api/v1/ai/generate-quiz") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"count":3}""")
+                }
+            assertEquals(HttpStatusCode.OK, quiz.status)
+            val prompt =
+                json
+                    .parseToJsonElement(quiz.bodyAsText())
+                    .jsonObject["questions"]!!
+                    .jsonArray
+                    .first()
+                    .jsonObject["prompt"]!!
+                    .jsonPrimitive.content
+            assertTrue(prompt.contains("A2 learner of English"), prompt)
+            assertTrue(!prompt.contains("N3 learner of Japanese"), prompt)
+        }
+
+    @Test
+    fun `generated quiz without request identity or learner profile is rejected`() =
+        withApp {
+            val token = registerAndLogin()
+            val quiz =
+                client.post("/api/v1/ai/generate-quiz") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"count":3}""")
+                }
+            assertEquals(HttpStatusCode.BadRequest, quiz.status)
+        }
+
+    @Test
     fun `invalid structured output maps to 502`() =
         withApp(mockScenario = "invalid_json") {
             val token = registerAndLogin()
@@ -186,5 +232,272 @@ class AiIntegrationTest {
                 }
             assertEquals(HttpStatusCode.OK, correct.status)
             assertTrue(correct.bodyAsText().contains("conversationId"))
+        }
+
+    @Test
+    fun `practice start sends only the requested scenario to the provider`() =
+        withApp(mockScenario = "echo_user") {
+            val token = registerAndLogin()
+
+            val response =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering lunch politely"}""")
+                }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val reply =
+                json.parseToJsonElement(response.bodyAsText()).jsonObject
+            val conversationId = reply["conversationId"]!!.jsonPrimitive.content
+            assertEquals(
+                "Let's practice: ordering lunch politely. Please start the conversation.",
+                reply["reply"]!!.jsonPrimitive.content,
+            )
+
+            val history =
+                client.get("/api/v1/ai/conversations/$conversationId/messages") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            val firstMessage =
+                json
+                    .parseToJsonElement(history.bodyAsText())
+                    .jsonArray
+                    .first()
+                    .jsonObject
+            assertEquals("USER", firstMessage["role"]!!.jsonPrimitive.content)
+            assertEquals("ordering lunch politely", firstMessage["content"]!!.jsonPrimitive.content)
+        }
+
+    @Test
+    fun `practice conversation can continue and be scored by the mock provider`() =
+        withApp {
+            val token = registerAndLogin()
+            val start =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering lunch"}""")
+                }
+            assertEquals(HttpStatusCode.OK, start.status)
+            val conversationId =
+                json
+                    .parseToJsonElement(start.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+
+            val reply =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"message":"ラーメンを一つお願いします。"}""")
+                }
+            assertEquals(HttpStatusCode.OK, reply.status)
+
+            val score =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/score") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, score.status)
+            val scoreBody = json.parseToJsonElement(score.bodyAsText()).jsonObject
+            assertTrue(scoreBody["score"]!!.jsonPrimitive.content.toInt() in 0..100)
+            assertTrue(scoreBody.containsKey("recommendations"))
+        }
+
+    @Test
+    fun `blank chat and practice inputs are rejected at the server boundary`() =
+        withApp {
+            val token = registerAndLogin()
+
+            val blankChat =
+                client.post("/api/v1/ai/chat") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"mode":"general","message":"   "}""")
+                }
+            assertEquals(HttpStatusCode.BadRequest, blankChat.status)
+
+            val blankScenario =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"   "}""")
+                }
+            assertEquals(HttpStatusCode.BadRequest, blankScenario.status)
+
+            val start =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering lunch"}""")
+                }
+            val conversationId =
+                json
+                    .parseToJsonElement(start.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+            val blankReply =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"message":"   "}""")
+                }
+            assertEquals(HttpStatusCode.BadRequest, blankReply.status)
+        }
+
+    @Test
+    fun `provider failure does not leave an empty conversation in history`() =
+        withApp(mockScenario = "timeout") {
+            val token = registerAndLogin()
+            val failed =
+                client.post("/api/v1/ai/chat") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"mode":"general","message":"please explain this"}""")
+                }
+            assertEquals(HttpStatusCode.ServiceUnavailable, failed.status)
+
+            val conversations =
+                client.get("/api/v1/ai/conversations") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, conversations.status)
+            assertTrue(json.parseToJsonElement(conversations.bodyAsText()).jsonArray.isEmpty())
+        }
+
+    @Test
+    fun `another learner cannot continue or score a practice conversation`() =
+        withApp {
+            val ownerToken = registerAndLogin()
+            val otherToken = registerAndLogin("other-ai-learner@example.com")
+            val start =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $ownerToken")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering lunch"}""")
+                }
+            val conversationId =
+                json
+                    .parseToJsonElement(start.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+
+            val reply =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
+                    header(HttpHeaders.Authorization, "Bearer $otherToken")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"message":"hello"}""")
+                }
+            assertEquals(HttpStatusCode.NotFound, reply.status)
+
+            val score =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/score") {
+                    header(HttpHeaders.Authorization, "Bearer $otherToken")
+                }
+            assertEquals(HttpStatusCode.NotFound, score.status)
+        }
+
+    @Test
+    fun `correction history is reused and cannot be claimed by another learner`() =
+        withApp {
+            val ownerToken = registerAndLogin()
+            val otherToken = registerAndLogin("other-correction-learner@example.com")
+            val first =
+                client.post("/api/v1/ai/correct") {
+                    header(HttpHeaders.Authorization, "Bearer $ownerToken")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"sentence":"昨日学校へ行きますた。"}""")
+                }
+            assertEquals(HttpStatusCode.OK, first.status)
+            val conversationId =
+                json
+                    .parseToJsonElement(first.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+
+            val second =
+                client.post("/api/v1/ai/correct") {
+                    header(HttpHeaders.Authorization, "Bearer $ownerToken")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"sentence":"今日学校へ行きますた。","conversationId":$conversationId}""")
+                }
+            assertEquals(HttpStatusCode.OK, second.status)
+            assertEquals(
+                conversationId,
+                json
+                    .parseToJsonElement(second.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content,
+            )
+
+            val history =
+                client.get("/api/v1/ai/conversations/$conversationId/messages") {
+                    header(HttpHeaders.Authorization, "Bearer $ownerToken")
+                }
+            assertEquals(4, json.parseToJsonElement(history.bodyAsText()).jsonArray.size)
+
+            val crossUser =
+                client.post("/api/v1/ai/correct") {
+                    header(HttpHeaders.Authorization, "Bearer $otherToken")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"sentence":"claim this","conversationId":$conversationId}""")
+                }
+            assertEquals(HttpStatusCode.NotFound, crossUser.status)
+        }
+
+    @Test
+    fun `practice reply and score reject a non-practice conversation`() =
+        withApp {
+            val token = registerAndLogin()
+            val chat =
+                client.post("/api/v1/ai/chat") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"mode":"general","message":"hello"}""")
+                }
+            val conversationId =
+                json
+                    .parseToJsonElement(chat.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+
+            val reply =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"message":"not a role-play"}""")
+                }
+            assertEquals(HttpStatusCode.BadRequest, reply.status)
+
+            val score =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/score") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.BadRequest, score.status)
+        }
+
+    @Test
+    fun `practice score rejects provider values outside the accepted range`() =
+        withApp(mockScenario = "invalid_practice_score") {
+            val token = registerAndLogin()
+            val start =
+                client.post("/api/v1/ai/conversation-practice") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering lunch"}""")
+                }
+            assertEquals(HttpStatusCode.OK, start.status)
+            val conversationId =
+                json
+                    .parseToJsonElement(start.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+
+            val score =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/score") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.BadGateway, score.status)
+            assertTrue(score.bodyAsText().contains("AI_UNAVAILABLE"))
         }
 }

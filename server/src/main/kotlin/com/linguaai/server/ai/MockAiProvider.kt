@@ -1,42 +1,20 @@
 package com.linguaai.server.ai
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
 /**
  * Deterministic provider for demos, tests and offline development.
  * Failure injection via the `AI_MOCK_SCENARIO` env (or request scenarioHint):
- * timeout | rate_limit | invalid_json | empty.
+ * timeout | rate_limit | invalid_json | empty | echo_system | echo_user.
  */
 class MockAiProvider(
     private val defaultScenario: String? = null,
 ) : AiProvider {
     override suspend fun chat(request: AiChatRequest): AiChatResponse {
-        val scenario = request.scenarioHint ?: defaultScenario
-        when (scenario) {
-            "timeout" -> throw AiProviderException(
-                AiProviderException.Kind.TIMEOUT,
-                "Mock provider timeout",
-            )
-            "rate_limit" -> throw AiProviderException(
-                AiProviderException.Kind.RATE_LIMITED,
-                "Mock provider rate limited",
-                retryAfterSeconds = 30,
-            )
-            "invalid_json" -> {
-                if (request.jsonMode) {
-                    return AiChatResponse(content = "this is not json at all")
-                }
-            }
-            "empty" -> return AiChatResponse(content = "")
-            // Test-support scenario: echoes the assembled system prompt back as
-            // the reply, so an integration test can assert on what the tutor was
-            // actually told rather than on a separately constructed string.
-            "echo_system" -> return AiChatResponse(
-                content =
-                    request.messages
-                        .firstOrNull { it.role == "system" }
-                        ?.content
-                        .orEmpty(),
-            )
-        }
+        val scenario = defaultScenario ?: request.scenarioHint
+        val scenarioResponse = resolveScenario(request, scenario)
+        if (scenarioResponse != null) return scenarioResponse
 
         if (request.jsonMode) {
             val quizJson =
@@ -51,6 +29,103 @@ class MockAiProvider(
         }
 
         return AiChatResponse(content = tutorReply(request))
+    }
+
+    private fun resolveScenario(
+        request: AiChatRequest,
+        scenario: String?,
+    ): AiChatResponse? =
+        when (scenario) {
+            "timeout" -> throw AiProviderException(
+                AiProviderException.Kind.TIMEOUT,
+                "Mock provider timeout",
+            )
+            "rate_limit" -> throw AiProviderException(
+                AiProviderException.Kind.RATE_LIMITED,
+                "Mock provider rate limited",
+                retryAfterSeconds = 30,
+            )
+            "invalid_json" -> {
+                if (request.jsonMode) {
+                    AiChatResponse(content = "this is not json at all")
+                } else {
+                    null
+                }
+            }
+            "empty" -> AiChatResponse(content = "")
+            // Test-support scenario: echoes the assembled system prompt back as
+            // the reply, so an integration test can assert on what the tutor was
+            // actually told rather than on a separately constructed string.
+            "echo_system" ->
+                AiChatResponse(
+                    content =
+                        request.messages
+                            .firstOrNull { it.role == "system" }
+                            ?.content
+                            .orEmpty(),
+                )
+            // Test-support scenario for transport/templating contracts. It
+            // deliberately echoes the exact last user message so integration
+            // tests can detect accidental DTO rendering or prefix changes.
+            "echo_user" ->
+                AiChatResponse(
+                    content =
+                        request.messages
+                            .lastOrNull { it.role == "user" }
+                            ?.content
+                            .orEmpty(),
+                )
+            "practice-score" -> practiceScoreResponse(valid = true)
+            "invalid_practice_score" -> practiceScoreResponse(valid = false)
+            "echo_quiz_prompt" -> {
+                val prompt =
+                    request.messages
+                        .lastOrNull { it.role == "user" }
+                        ?.content
+                        .orEmpty()
+                AiChatResponse(
+                    content =
+                        """
+                        {
+                          "questions":[{
+                            "prompt":${Json.encodeToString(prompt)},
+                            "options":["A","B","C","D"],
+                            "correctAnswer":"A",
+                            "explanation":"Prompt probe"
+                          }]
+                        }
+                        """.trimIndent(),
+                )
+            }
+            else -> null
+        }
+
+    private fun practiceScoreResponse(valid: Boolean): AiChatResponse {
+        val content =
+            if (valid) {
+                """
+                {
+                  "score":84,
+                  "grammarScore":82,
+                  "vocabularyScore":86,
+                  "naturalness":83,
+                  "mistakes":["Use a softer request ending in formal situations."],
+                  "recommendations":["Practice one more restaurant role-play."]
+                }
+                """.trimIndent()
+            } else {
+                """
+                {
+                  "score":140,
+                  "grammarScore":-1,
+                  "vocabularyScore":86,
+                  "naturalness":83,
+                  "mistakes":[],
+                  "recommendations":[]
+                }
+                """.trimIndent()
+            }
+        return AiChatResponse(content = content)
     }
 
     /**

@@ -5,6 +5,7 @@ import com.linguaai.server.ai.AiService
 import com.linguaai.server.ai.CorrectRequestDto
 import com.linguaai.server.ai.ExplainRequestDto
 import com.linguaai.server.ai.GenerateQuizRequestDto
+import com.linguaai.server.ai.PracticeReplyRequestDto
 import com.linguaai.server.ai.PracticeStartRequestDto
 import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.AuthRepository
@@ -112,9 +113,8 @@ fun Application.configureAiRoutes(
                                 com.linguaai.server.api.ErrorCodes.VALIDATION,
                                 "Invalid conversation id",
                             )
-                    val body = call.receive<Map<String, String>>()
-                    val message = body["message"].orEmpty()
-                    call.respond(service.practiceReply(call.userId(), id, message))
+                    val body = call.receive<PracticeReplyRequestDto>()
+                    call.respond(service.practiceReply(call.userId(), id, body.message))
                 }
 
                 post("/conversation-practice/{id}/score") {

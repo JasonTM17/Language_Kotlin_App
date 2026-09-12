@@ -140,13 +140,9 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
             }
             composable<AiTutorRoute> {
                 com.linguaai.app.ui.screens.ai.AiHomeScreen(
-                    onOpenConversation = { selection ->
-                        when (selection) {
-                            null -> navController.navigate(AiChatRoute(mode = "general"))
-                            -1L -> navController.navigate(AiChatRoute(mode = "conversation-practice"))
-                            -2L -> navController.navigate(AiChatRoute(mode = "sentence-correction"))
-                            else -> navController.navigate(AiChatRoute(conversationId = selection, mode = "conversation"))
-                        }
+                    onOpenConversation = { conversationId, mode ->
+                        val routeMode = chatRouteMode(conversationId, mode)
+                        navController.navigate(AiChatRoute(conversationId = conversationId, mode = routeMode))
                     },
                 )
             }
@@ -216,6 +212,18 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
         }
     }
 }
+
+internal fun chatRouteMode(
+    conversationId: Long?,
+    mode: String,
+): String =
+    if (conversationId != null && mode !in SPECIALIZED_HISTORY_MODES) {
+        "conversation"
+    } else {
+        mode
+    }
+
+private val SPECIALIZED_HISTORY_MODES = setOf("conversation-practice", "sentence-correction")
 
 /** Tab navigation preserves each tab's back stack state. */
 private fun NavHostController.navigateToTopLevel(routeClass: KClass<*>) {

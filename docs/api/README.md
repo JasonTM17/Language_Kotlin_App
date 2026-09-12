@@ -194,6 +194,25 @@ never leaves the server.
 Modes: `general`, `grammar-explain`, `sentence-correction`,
 `conversation-practice`, `practice-score`, `mistakes-review`.
 
+### Specialized tutor requests
+
+Sentence correction accepts an optional owned correction conversation so the
+Android client can continue the same history:
+
+```json
+{ "sentence": "昨日学校へ行きますた。", "conversationId": 7 }
+```
+
+Role-play starts with `{ "scenario": "ordering lunch politely" }`, continues
+with `{ "message": "ラーメンを一つお願いします。" }` on the `/reply` endpoint,
+and returns a 0–100 score breakdown from `/score`. Replying to or scoring a
+conversation whose mode is not `conversation-practice` returns `400`.
+
+Generated quizzes accept optional `languageId`, `level`, `topic`, and `count`.
+When language or level is omitted, the backend resolves it from the authenticated
+learner profile; it returns `400` if neither request nor profile supplies a valid
+learning identity.
+
 ### Rate limiting
 
 Each user gets `AI_RATE_LIMIT_PER_MINUTE` requests (default 20). Beyond that the
@@ -208,6 +227,7 @@ to a shared store is documented in the
 | Provider timeout | `503 AI_UNAVAILABLE` |
 | Provider returned nothing | `502` |
 | Provider returned unparseable structured output | `502` |
+| Provider returned a practice score outside 0–100 | `502` |
 
 See [ADR-0005](../architecture/adr/0005-ai-provider-abstraction.md) for why the
 provider sits behind an interface.

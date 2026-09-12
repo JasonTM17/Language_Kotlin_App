@@ -4,9 +4,9 @@
 
 | Suite | Command | Count | Needs |
 | --- | --- | --- | --- |
-| Server integration | `cd server && ./gradlew test` | 35 | Nothing — H2 in-memory |
-| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | 34 | Nothing |
-| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | 4 | A device or emulator |
+| Server integration | `cd server && ./gradlew test` | 45 | Nothing — H2 in-memory |
+| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | 48 | Nothing |
+| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | 10 | A device or emulator |
 
 The server suite runs against a real Ktor module with real Flyway migrations on
 H2 in MySQL mode, so it exercises routing, serialization, auth, persistence and
@@ -20,7 +20,7 @@ migrations together. Each test gets an isolated in-memory database.
 | --- | --- |
 | Auth | register, duplicate email, wrong password, refresh rotation, replay of a rotated token, protected endpoints without a token |
 | Content | vocabulary search filtering, profile update, quiz submit |
-| AI gateway | success path, provider timeout → `503`, empty response → `502`, unparseable structured output → `502`, rate limit → `429` |
+| AI gateway | success/history, specialized correction and practice routing, ownership and mode isolation, profile-derived quiz identity, blank input, practice-score range validation, atomic completed turns, provider timeout → `503`, empty/unparseable output → `502`, rate limit → `429` |
 | Progress | empty state, a meaningful event opening the streak, **operation-id replay being idempotent**, an unrecognised event type not extending the streak, auth and validation rejection |
 | Prompt quality | the tutor is told the target language, no bare numeric id leaks, level guidance is present and descriptive, each mode has its own output contract, an unset profile asks rather than guesses |
 | Summary folding | the cap holds across 50 eviction rounds, newest content survives, trimming respects line boundaries |
@@ -34,11 +34,13 @@ migrations together. Each test gets an isolated in-memory database.
 | `TokenAuthenticator` | refresh-then-retry carries the new token, a failed refresh clears the session without retrying, unauthenticated requests are not refreshed, an auth-endpoint 401 never recurses |
 | `Validators` | email, password and username rules at their boundaries |
 | Auth use cases | an invalid form never reaches the network, values are normalised before being sent, field-check order is stable |
+| AI Tutor | correction and practice start/reply/score routing, correction-history reuse, connectivity transitions, Room fallback, retry without duplicate messages, best-effort cache failures, loading-state send guard, generated-quiz profile handoff, and navigation mode preservation |
 
 ## Why the mock provider matters
 
 `MockAiProvider` makes the AI paths testable without a network, a key, or money.
-Failure injection (`timeout`, `empty`, `invalid_json`, `rate_limit`) is what makes
+Failure injection (`timeout`, `empty`, `invalid_json`, `rate_limit`, invalid
+practice scores) is what makes
 the error-mapping tests possible at all.
 
 It also supports an `echo_system` scenario that returns the assembled system
@@ -49,7 +51,7 @@ real prompt was wrong.
 
 ## Tests that are missing, and why
 
-Two things cannot be verified in a headless environment. They are recorded here
+The following cannot be verified in a headless environment. They are recorded here
 rather than quietly skipped:
 
 1. **Room migrations have never actually run.** `LinguaDatabaseMigrationTest`
@@ -57,7 +59,11 @@ rather than quietly skipped:
    diffing its DDL against the exported schema. A schema diff cannot catch a
    migration that throws or leaves the database unopenable. Run
    `connectedDebugAndroidTest` on a machine with an emulator.
-2. **Compose UI tests for login and onboarding.** `LoginScreen` takes
+2. **The six chatbot Compose tests compile but have not run.** They exercise
+   send, retry, loading, offline cached content, duplicate messages, and practice
+   score semantics through the stateless `AiChatContent`. Run the same
+   `connectedDebugAndroidTest` command on the configured emulator.
+3. **Compose UI tests for login and onboarding.** `LoginScreen` takes
    `viewModel: LoginViewModel = hiltViewModel()` and its content composable is
    private, so a UI test needs either a production refactor (extract a stateless
    content composable, as `ProgressScreen` and `HomeScreen` already do) or a Hilt

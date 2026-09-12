@@ -3,7 +3,9 @@ package com.linguaai.server.repository
 import com.linguaai.server.db.AiConversations
 import com.linguaai.server.db.AiMessages
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -113,25 +115,37 @@ class AiRepository {
                 }
         }
 
-    fun addMessage(
+    /** Stores a completed turn atomically so history never contains half an exchange. */
+    fun addExchange(
         conversationId: Long,
-        role: String,
-        content: String,
-        tokenCount: Int? = null,
-    ): MessageRow =
+        userContent: String,
+        assistantContent: String,
+    ) = transaction {
+        val now = LocalDateTime.now()
+        AiMessages.insert { row ->
+            row[AiMessages.conversationId] = conversationId
+            row[AiMessages.role] = "USER"
+            row[AiMessages.content] = userContent
+            row[AiMessages.tokenCount] = null
+            row[AiMessages.createdAt] = now
+        }
+        AiMessages.insert { row ->
+            row[AiMessages.conversationId] = conversationId
+            row[AiMessages.role] = "ASSISTANT"
+            row[AiMessages.content] = assistantContent
+            row[AiMessages.tokenCount] = null
+            row[AiMessages.createdAt] = now
+        }
+        AiConversations.update({ AiConversations.id eq conversationId }) {
+            it[AiConversations.updatedAt] = now
+        }
+    }
+
+    /** Removes a newly-created conversation when its first provider turn fails. */
+    fun deleteConversation(conversationId: Long) =
         transaction {
-            val id =
-                AiMessages.insert { row ->
-                    row[AiMessages.conversationId] = conversationId
-                    row[AiMessages.role] = role
-                    row[AiMessages.content] = content
-                    row[AiMessages.tokenCount] = tokenCount
-                    row[AiMessages.createdAt] = LocalDateTime.now()
-                } get AiMessages.id
-            AiConversations.update({ AiConversations.id eq conversationId }) {
-                it[AiConversations.updatedAt] = LocalDateTime.now()
-            }
-            MessageRow(id, conversationId, role, content, tokenCount)
+            AiMessages.deleteWhere { AiMessages.conversationId eq conversationId }
+            AiConversations.deleteWhere { AiConversations.id eq conversationId }
         }
 
     fun messages(

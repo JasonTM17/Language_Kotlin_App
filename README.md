@@ -13,7 +13,7 @@ key inside the app.
 | Backend | Kotlin, Ktor 3, Exposed, Flyway, JWT (access + refresh rotation), bcrypt |
 | Database | MySQL 8 in Docker; H2 in-memory (MySQL mode) for integration tests |
 | AI | Provider-agnostic gateway (OpenAI-compatible / Mock), server-built prompts, bounded conversation memory, per-user rate limiting |
-| Quality | 69 tests — JUnit 5 + ktor-server-test-host + H2 on the server, JUnit 4 + MockWebServer + Room `MigrationTestHelper` on Android; detekt blocking on the server at a zero baseline; GitHub Actions CI |
+| Quality | 93 host tests plus 10 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt blocking on the server at a zero baseline; GitHub Actions CI |
 | Delivery | Docker Compose, multi-stage backend image, Conventional Commits, Mermaid documentation |
 
 ## Features
@@ -81,16 +81,16 @@ emulator.
 ## Tests
 
 ```bash
-cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 35 tests
-cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 34 tests
+cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 45 tests
+cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 48 tests
 ```
 
 Both suites run offline — no network, no database, no AI key. The AI paths are exercised through
 the mock provider, including the failure modes (timeout, empty response, unparseable output, rate
 limiting).
 
-Four Room migration tests exist but need a device or emulator
-(`connectedDebugAndroidTest`). **They have not been run yet** — see
+Ten instrumented tests (four Room migration and six chatbot Compose cases) need
+a device or emulator (`connectedDebugAndroidTest`). **They have not been run yet** — see
 [docs/TESTING.md](docs/TESTING.md#tests-that-are-missing-and-why), which lists what is missing
 rather than quietly omitting it.
 

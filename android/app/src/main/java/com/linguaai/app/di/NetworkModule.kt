@@ -5,6 +5,8 @@ import com.linguaai.app.data.remote.AuthInterceptor
 import com.linguaai.app.data.remote.TokenAuthenticator
 import com.linguaai.app.data.remote.api.AuthApi
 import com.linguaai.app.data.remote.api.ContentApi
+import com.linguaai.app.util.ConnectivityMonitor
+import com.linguaai.app.util.NetworkMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -110,4 +112,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun progressApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.ProgressApi = retrofit.create(com.linguaai.app.data.remote.api.ProgressApi::class.java)
+
+    @Provides
+    @Singleton
+    fun connectivityMonitor(networkMonitor: NetworkMonitor): ConnectivityMonitor = networkMonitor
 }
