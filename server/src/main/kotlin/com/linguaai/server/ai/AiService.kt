@@ -149,7 +149,7 @@ class AiService(
         val profile = authRepository.findProfile(userId)
         val conversation = aiRepository.createConversation(
             userId = userId,
-            title = "Explain: ${request.text?.take(40) ?: "grammar #${request.grammarId}"}",
+            title = "Explain: ${request.text?.take(TITLE_PREVIEW_LENGTH) ?: "grammar #${request.grammarId}"}",
             mode = "grammar-explain",
             contextLessonId = null,
             contextGrammarId = request.grammarId,
@@ -163,7 +163,7 @@ class AiService(
         val profile = authRepository.findProfile(userId)
         val conversation = aiRepository.createConversation(
             userId = userId,
-            title = "Correction: ${request.sentence.take(40)}",
+            title = "Correction: ${request.sentence.take(TITLE_PREVIEW_LENGTH)}",
             mode = "sentence-correction",
             contextLessonId = null,
             contextGrammarId = null,
@@ -172,7 +172,7 @@ class AiService(
         transaction {
             UserMistakes.insert {
                 it[UserMistakes.userId] = userId
-                it[UserMistakes.topic] = request.sentence.take(190)
+                it[UserMistakes.topic] = request.sentence.take(MAX_TOPIC_LENGTH)
                 it[UserMistakes.detail] = "Submitted for correction"
                 it[UserMistakes.sourceType] = "CORRECTION"
                 it[UserMistakes.createdAt] = java.time.LocalDateTime.now()
@@ -229,7 +229,7 @@ class AiService(
         val profile = authRepository.findProfile(userId)
         val builder = promptBuilder(userId)
         val system = builder.systemPrompt("general", profile, null, null, null)
-        val count = request.count.coerceIn(1, 10)
+        val count = request.count.coerceIn(MIN_QUIZ_QUESTIONS, MAX_QUIZ_QUESTIONS)
         // Resolve the language name. The previous version interpolated the numeric
         // id ("language #1"), which conveys nothing to a model.
         val languageName = runCatching { contentRepository.findLanguageById(request.languageId) }
@@ -344,7 +344,7 @@ class AiService(
             UserMistakes.selectAll()
                 .andWhere { UserMistakes.userId eq userId }
                 .orderBy(UserMistakes.id, org.jetbrains.exposed.sql.SortOrder.DESC)
-                .limit(5)
+                .limit(WEAK_TOPIC_LIMIT.toInt())
                 .map { it[UserMistakes.topic] }
         }
         return PromptBuilder(aiRepository, contentRepository, topics)
@@ -369,7 +369,7 @@ class AiService(
         require(payload.questions.isNotEmpty()) { "empty questions" }
         payload.questions.forEach { q ->
             require(q.prompt.isNotBlank()) { "blank prompt" }
-            require(q.options.size in 2..6) { "bad options size" }
+            require(q.options.size in QUIZ_OPTIONS_RANGE) { "bad options size" }
             require(q.correctAnswer in q.options) { "correctAnswer must be one of options" }
         }
         payload
@@ -398,5 +398,27 @@ class AiService(
 
     private companion object {
         const val SUMMARIZE_THRESHOLD = 20
+
+        /** How much of the learner's text becomes an auto-generated title. */
+        const val TITLE_PREVIEW_LENGTH = 40
+
+        /**
+         * Must match the width of user_mistakes.topic in db/Tables.kt. A longer
+         * value fails the insert rather than being clipped, so the two are coupled.
+         */
+        const val MAX_TOPIC_LENGTH = 190
+
+        /** Generated quiz size bounds. */
+        const val MIN_QUIZ_QUESTIONS = 1
+        const val MAX_QUIZ_QUESTIONS = 10
+
+        /** Recurring mistake topics fed into the prompt as weak topics. */
+        const val WEAK_TOPIC_LIMIT = 5
+
+        /**
+         * Options per generated question. Two is the minimum for a choice and
+         * more than six stops being a usable question.
+         */
+        val QUIZ_OPTIONS_RANGE = 2..6
     }
 }
