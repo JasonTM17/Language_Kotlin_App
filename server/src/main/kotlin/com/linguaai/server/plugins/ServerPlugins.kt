@@ -1,7 +1,12 @@
 package com.linguaai.server.plugins
 
+import com.linguaai.server.api.ApiException
+import com.linguaai.server.api.ErrorBody
+import com.linguaai.server.api.ErrorCodes
+import com.linguaai.server.api.ErrorResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
@@ -15,14 +20,9 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
 import io.ktor.server.response.respondText
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.AttributeKey
-import java.util.UUID
 import kotlinx.serialization.json.Json
-import com.linguaai.server.api.ApiException
-import com.linguaai.server.api.ErrorBody
-import com.linguaai.server.api.ErrorCodes
-import com.linguaai.server.api.ErrorResponse
+import java.util.UUID
 
 /** Short request id for logs — long enough to correlate, short enough to read. */
 private const val REQUEST_ID_LENGTH = 8
@@ -88,15 +88,17 @@ private suspend fun ApplicationCall.respondError(
     message: String,
 ) {
     respondText(
-        text = jsonMapper.encodeToString(
-            ErrorResponse.serializer(),
-            ErrorResponse(ErrorBody(code = code, message = message, requestId = requestId)),
-        ),
+        text =
+            jsonMapper.encodeToString(
+                ErrorResponse.serializer(),
+                ErrorResponse(ErrorBody(code = code, message = message, requestId = requestId)),
+            ),
         contentType = ContentType.Application.Json,
         status = status,
     )
 }
 
-private val jsonMapper = Json {
-    encodeDefaults = true
-}
+private val jsonMapper =
+    Json {
+        encodeDefaults = true
+    }

@@ -97,6 +97,7 @@ object GrammarLessons : Table("grammar_lessons") {
     val title = varchar("title", 200)
     val structure = varchar("structure", 500).nullable()
     val meaning = varchar("meaning", 1000).nullable()
+
     // "usage" is a MySQL reserved word; the column is named usage_notes
     val usageNotes = text("usage_notes").nullable()
     val examples = text("examples").nullable()
@@ -182,6 +183,7 @@ object UserProgress : Table("user_progress") {
     val occurredAt = datetime("occurred_at")
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(id)
+
     init {
         uniqueIndex("uq_progress_operation", userId, clientOperationId)
     }
@@ -200,6 +202,7 @@ object UserVocabularyProgress : Table("user_vocabulary_progress") {
     val nextReviewAt = datetime("next_review_at").nullable()
     val updatedAt = datetime("updated_at")
     override val primaryKey = PrimaryKey(id)
+
     init {
         uniqueIndex("uq_uvp_user_vocab", userId, vocabularyId)
     }
@@ -211,6 +214,7 @@ object UserMistakes : Table("user_mistakes") {
     val languageId = long("language_id").nullable()
     val topic = varchar("topic", 200)
     val detail = text("detail").nullable()
+
     // named sourceType in Kotlin: "source" clashes with an Exposed supertype member
     val sourceType = varchar("source", 30).nullable()
     val createdAt = datetime("created_at")
@@ -224,6 +228,7 @@ object LearningStreaks : Table("learning_streaks") {
     val activityDate = date("activity_date")
     val minutes = integer("minutes").default(0)
     override val primaryKey = PrimaryKey(id)
+
     init {
         uniqueIndex("uq_streak_user_date", userId, activityDate)
     }

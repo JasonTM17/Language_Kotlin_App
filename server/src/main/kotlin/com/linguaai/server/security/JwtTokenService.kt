@@ -14,8 +14,9 @@ import java.util.Date
  * Issues and verifies short-lived access JWTs plus opaque refresh tokens.
  * Refresh tokens are stored hashed; a database leak must not leak sessions.
  */
-class JwtTokenService(private val config: AppConfig) {
-
+class JwtTokenService(
+    private val config: AppConfig,
+) {
     companion object {
         const val ISSUER = "linguaai-server"
         const val AUDIENCE = "linguaai-app"
@@ -25,10 +26,12 @@ class JwtTokenService(private val config: AppConfig) {
 
     private val algorithm: Algorithm = Algorithm.HMAC256(config.jwtSecret)
 
-    fun accessTokenVerifier(): JWTVerifier = JWT.require(algorithm)
-        .withIssuer(ISSUER)
-        .withAudience(AUDIENCE)
-        .build()
+    fun accessTokenVerifier(): JWTVerifier =
+        JWT
+            .require(algorithm)
+            .withIssuer(ISSUER)
+            .withAudience(AUDIENCE)
+            .build()
 
     // Unit factors named because a bare 60_000 or 86_400 does not say which unit
     // it converts, and getting one wrong silently changes every token lifetime
@@ -42,7 +45,8 @@ class JwtTokenService(private val config: AppConfig) {
 
     fun generateAccessToken(userId: Long): String {
         val expiresAt = Date(System.currentTimeMillis() + config.accessTokenTtlMinutes * millisPerMinute)
-        return JWT.create()
+        return JWT
+            .create()
             .withIssuer(ISSUER)
             .withAudience(AUDIENCE)
             .withClaim(CLAIM_USER_ID, userId.toString())
@@ -60,10 +64,10 @@ class JwtTokenService(private val config: AppConfig) {
     }
 
     fun hashToken(token: String): String =
-        MessageDigest.getInstance("SHA-256")
+        MessageDigest
+            .getInstance("SHA-256")
             .digest(token.toByteArray())
             .joinToString("") { "%02x".format(it) }
 
-    fun refreshExpiryInstant(from: Instant = Instant.now()): Instant =
-        from.plusSeconds(config.refreshTokenTtlDays * secondsPerDay)
+    fun refreshExpiryInstant(from: Instant = Instant.now()): Instant = from.plusSeconds(config.refreshTokenTtlDays * secondsPerDay)
 }

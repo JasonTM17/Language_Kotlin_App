@@ -9,16 +9,14 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
-import java.io.IOException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlinx.serialization.json.add
+import java.io.IOException
 
 /** HTTP 429, spelled out so the rate-limit branch reads without a lookup. */
 private const val HTTP_TOO_MANY_REQUESTS = 429
@@ -31,12 +29,16 @@ class OpenAiCompatibleProvider(
     private val config: AppConfig,
     private val client: HttpClient,
 ) : AiProvider {
+    @Serializable
+    private data class ProviderMessage(
+        val role: String,
+        val content: String,
+    )
 
     @Serializable
-    private data class ProviderMessage(val role: String, val content: String)
-
-    @Serializable
-    private data class ProviderChoice(val message: ProviderMessage)
+    private data class ProviderChoice(
+        val message: ProviderMessage,
+    )
 
     @Serializable
     private data class ProviderUsage(
@@ -51,33 +53,35 @@ class OpenAiCompatibleProvider(
     )
 
     override suspend fun chat(request: AiChatRequest): AiChatResponse {
-        val payload = buildJsonObject {
-            put("model", config.aiModel)
-            put("temperature", request.temperature)
-            put("max_tokens", request.maxTokens)
-            putJsonArray("messages") {
-                request.messages.forEach { message ->
-                    add(
-                        buildJsonObject {
-                            put("role", message.role)
-                            put("content", message.content)
-                        },
-                    )
+        val payload =
+            buildJsonObject {
+                put("model", config.aiModel)
+                put("temperature", request.temperature)
+                put("max_tokens", request.maxTokens)
+                putJsonArray("messages") {
+                    request.messages.forEach { message ->
+                        add(
+                            buildJsonObject {
+                                put("role", message.role)
+                                put("content", message.content)
+                            },
+                        )
+                    }
+                }
+                if (request.jsonMode) {
+                    putJsonObject("response_format") { put("type", "json_object") }
                 }
             }
-            if (request.jsonMode) {
-                putJsonObject("response_format") { put("type", "json_object") }
-            }
-        }
 
         var attempt = 0
         while (true) {
             attempt++
             try {
-                val response: HttpResponse = client.post("${config.aiBaseUrl.trimEnd('/')}/chat/completions") {
-                    headers { append(HttpHeaders.Authorization, "Bearer ${config.aiApiKey}") }
-                    setBody(payload)
-                }
+                val response: HttpResponse =
+                    client.post("${config.aiBaseUrl.trimEnd('/')}/chat/completions") {
+                        headers { append(HttpHeaders.Authorization, "Bearer ${config.aiApiKey}") }
+                        setBody(payload)
+                    }
                 if (response.status.value == HTTP_TOO_MANY_REQUESTS) {
                     throw AiProviderException(
                         AiProviderException.Kind.RATE_LIMITED,
@@ -92,7 +96,11 @@ class OpenAiCompatibleProvider(
                     )
                 }
                 val body = response.body<ProviderResponse>()
-                val content = body.choices.firstOrNull()?.message?.content
+                val content =
+                    body.choices
+                        .firstOrNull()
+                        ?.message
+                        ?.content
                 if (content.isNullOrBlank()) {
                     throw AiProviderException(
                         AiProviderException.Kind.EMPTY_RESPONSE,

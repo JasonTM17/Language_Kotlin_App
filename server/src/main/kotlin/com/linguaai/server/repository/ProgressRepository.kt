@@ -15,14 +15,14 @@ import com.linguaai.server.db.QuizAttempts
 import com.linguaai.server.db.UserMistakes
 import com.linguaai.server.db.UserProgress
 import com.linguaai.server.db.UserVocabularyProgress
-import java.time.LocalDate
-import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * Progress aggregation and event recording.
@@ -40,7 +40,6 @@ import org.jetbrains.exposed.sql.update
  *    cannot inflate it.
  */
 class ProgressRepository {
-
     /** Longest window of activity days considered when computing streaks. */
     private val streakWindowDays = 400L
 
@@ -66,12 +65,17 @@ class ProgressRepository {
      * Records one learning event. Only [ProgressEventTypes.all] count toward a
      * streak; anything else is stored but does not extend activity.
      */
-    fun recordEvent(userId: Long, request: RecordProgressEventRequest): RecordProgressEventResponse =
+    fun recordEvent(
+        userId: Long,
+        request: RecordProgressEventRequest,
+    ): RecordProgressEventResponse =
         transaction {
-            val existing = UserProgress.selectAll()
-                .andWhere { UserProgress.userId eq userId }
-                .andWhere { UserProgress.clientOperationId eq request.clientOperationId }
-                .firstOrNull()
+            val existing =
+                UserProgress
+                    .selectAll()
+                    .andWhere { UserProgress.userId eq userId }
+                    .andWhere { UserProgress.clientOperationId eq request.clientOperationId }
+                    .firstOrNull()
             if (existing != null) {
                 return@transaction RecordProgressEventResponse(
                     eventId = existing[UserProgress.id],
@@ -83,15 +87,16 @@ class ProgressRepository {
             val isMeaningful = request.eventType in ProgressEventTypes.all
             val minutes = if (isMeaningful) request.minutes.coerceAtLeast(0) else 0
 
-            val eventId = UserProgress.insert { row ->
-                row[UserProgress.userId] = userId
-        row[UserProgress.clientOperationId] = request.clientOperationId.take(maxOperationIdLength)
-        row[UserProgress.eventType] = request.eventType.take(maxEventTypeLength)
-                row[UserProgress.refId] = request.refId
-                row[UserProgress.minutes] = minutes
-                row[UserProgress.occurredAt] = now
-                row[UserProgress.createdAt] = now
-            } get UserProgress.id
+            val eventId =
+                UserProgress.insert { row ->
+                    row[UserProgress.userId] = userId
+                    row[UserProgress.clientOperationId] = request.clientOperationId.take(maxOperationIdLength)
+                    row[UserProgress.eventType] = request.eventType.take(maxEventTypeLength)
+                    row[UserProgress.refId] = request.refId
+                    row[UserProgress.minutes] = minutes
+                    row[UserProgress.occurredAt] = now
+                    row[UserProgress.createdAt] = now
+                } get UserProgress.id
 
             if (isMeaningful) {
                 creditActivityDay(userId, LocalDate.now(), minutes)
@@ -106,11 +111,17 @@ class ProgressRepository {
      * (`uq_streak_user_date`) is honoured without relying on dialect-specific
      * upsert support.
      */
-    private fun creditActivityDay(userId: Long, day: LocalDate, minutes: Int) {
-        val row = LearningStreaks.selectAll()
-            .andWhere { LearningStreaks.userId eq userId }
-            .andWhere { LearningStreaks.activityDate eq day }
-            .firstOrNull()
+    private fun creditActivityDay(
+        userId: Long,
+        day: LocalDate,
+        minutes: Int,
+    ) {
+        val row =
+            LearningStreaks
+                .selectAll()
+                .andWhere { LearningStreaks.userId eq userId }
+                .andWhere { LearningStreaks.activityDate eq day }
+                .firstOrNull()
 
         if (row == null) {
             LearningStreaks.insert { insert ->
@@ -127,74 +138,89 @@ class ProgressRepository {
         }
     }
 
-    fun summary(userId: Long): ProgressSummaryDto = transaction {
-        val activityRows = LearningStreaks.selectAll()
-            .andWhere { LearningStreaks.userId eq userId }
-            .andWhere { LearningStreaks.activityDate greaterEq LocalDate.now().minusDays(streakWindowDays) }
-            .orderBy(LearningStreaks.activityDate, SortOrder.DESC)
-            .map { it[LearningStreaks.activityDate] to it[LearningStreaks.minutes] }
+    fun summary(userId: Long): ProgressSummaryDto =
+        transaction {
+            val activityRows =
+                LearningStreaks
+                    .selectAll()
+                    .andWhere { LearningStreaks.userId eq userId }
+                    .andWhere { LearningStreaks.activityDate greaterEq LocalDate.now().minusDays(streakWindowDays) }
+                    .orderBy(LearningStreaks.activityDate, SortOrder.DESC)
+                    .map { it[LearningStreaks.activityDate] to it[LearningStreaks.minutes] }
 
-        val minutesByDay = activityRows.toMap()
-        val activityDays = activityRows.map { it.first }.toSet()
+            val minutesByDay = activityRows.toMap()
+            val activityDays = activityRows.map { it.first }.toSet()
 
-        val quizAttempts = QuizAttempts.selectAll()
-            .andWhere { QuizAttempts.userId eq userId }
-            .map { it[QuizAttempts.score] to it[QuizAttempts.total] }
+            val quizAttempts =
+                QuizAttempts
+                    .selectAll()
+                    .andWhere { QuizAttempts.userId eq userId }
+                    .map { it[QuizAttempts.score] to it[QuizAttempts.total] }
 
-        val aiConversations = AiConversations.selectAll()
-            .andWhere { AiConversations.userId eq userId }
-            .count()
+            val aiConversations =
+                AiConversations
+                    .selectAll()
+                    .andWhere { AiConversations.userId eq userId }
+                    .count()
 
-        val vocabulary = UserVocabularyProgress.selectAll()
-            .andWhere { UserVocabularyProgress.userId eq userId }
-            .map {
-                Triple(
-                    it[UserVocabularyProgress.masteryLevel],
-                    it[UserVocabularyProgress.reviewCount],
-                    it[UserVocabularyProgress.nextReviewAt],
-                )
-            }
+            val vocabulary =
+                UserVocabularyProgress
+                    .selectAll()
+                    .andWhere { UserVocabularyProgress.userId eq userId }
+                    .map {
+                        Triple(
+                            it[UserVocabularyProgress.masteryLevel],
+                            it[UserVocabularyProgress.reviewCount],
+                            it[UserVocabularyProgress.nextReviewAt],
+                        )
+                    }
 
-        val now = LocalDateTime.now()
-        val weakTopics = UserMistakes.selectAll()
-            .andWhere { UserMistakes.userId eq userId }
-            .andWhere { UserMistakes.resolved eq false }
-            .map { it[UserMistakes.topic] }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
-            .take(weakTopicLimit)
-            .map { WeakTopicDto(topic = it.key, occurrences = it.value) }
+            val now = LocalDateTime.now()
+            val weakTopics =
+                UserMistakes
+                    .selectAll()
+                    .andWhere { UserMistakes.userId eq userId }
+                    .andWhere { UserMistakes.resolved eq false }
+                    .map { it[UserMistakes.topic] }
+                    .groupingBy { it }
+                    .eachCount()
+                    .entries
+                    .sortedByDescending { it.value }
+                    .take(weakTopicLimit)
+                    .map { WeakTopicDto(topic = it.key, occurrences = it.value) }
 
-        val activityStrip = (activityWindowDays - 1 downTo 0).map { offset ->
-            val day = LocalDate.now().minusDays(offset.toLong())
-            ActivityDayDto(date = day.toString(), minutes = minutesByDay[day] ?: 0)
+            val activityStrip =
+                (activityWindowDays - 1 downTo 0).map { offset ->
+                    val day = LocalDate.now().minusDays(offset.toLong())
+                    ActivityDayDto(date = day.toString(), minutes = minutesByDay[day] ?: 0)
+                }
+
+            ProgressSummaryDto(
+                streak = computeStreak(activityDays),
+                totals =
+                    ProgressTotalsDto(
+                        minutesStudied = activityRows.sumOf { it.second },
+                        activeDays = activityDays.size,
+                        quizAttempts = quizAttempts.size,
+                        quizAverageScore =
+                            quizAttempts
+                                .filter { it.second > 0 }
+                                .takeIf { it.isNotEmpty() }
+                                ?.let { attempts -> attempts.sumOf { it.first.toDouble() / it.second } / attempts.size },
+                        aiConversations = aiConversations.toInt(),
+                    ),
+                vocabulary =
+                    VocabularyProgressDto(
+                        tracked = vocabulary.size,
+                        mastered = vocabulary.count { it.first >= masteryLearnedFloor },
+                        learning = vocabulary.count { it.first in learningBand },
+                        fresh = vocabulary.count { it.first <= 0 },
+                        dueForReview = vocabulary.count { it.third != null && it.third!! <= now },
+                    ),
+                recentActivity = activityStrip,
+                weakTopics = weakTopics,
+            )
         }
-
-        ProgressSummaryDto(
-            streak = computeStreak(activityDays),
-            totals = ProgressTotalsDto(
-                minutesStudied = activityRows.sumOf { it.second },
-                activeDays = activityDays.size,
-                quizAttempts = quizAttempts.size,
-                quizAverageScore = quizAttempts
-                    .filter { it.second > 0 }
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { attempts -> attempts.sumOf { it.first.toDouble() / it.second } / attempts.size },
-                aiConversations = aiConversations.toInt(),
-            ),
-            vocabulary = VocabularyProgressDto(
-                tracked = vocabulary.size,
-            mastered = vocabulary.count { it.first >= masteryLearnedFloor },
-            learning = vocabulary.count { it.first in learningBand },
-                fresh = vocabulary.count { it.first <= 0 },
-                dueForReview = vocabulary.count { it.third != null && it.third!! <= now },
-            ),
-            recentActivity = activityStrip,
-            weakTopics = weakTopics,
-        )
-    }
 
     /**
      * Current streak counts back from today, or from yesterday when the learner
@@ -207,11 +233,12 @@ class ProgressRepository {
         }
 
         val today = LocalDate.now()
-        val anchor = when {
-            activityDays.contains(today) -> today
-            activityDays.contains(today.minusDays(1)) -> today.minusDays(1)
-            else -> null
-        }
+        val anchor =
+            when {
+                activityDays.contains(today) -> today
+                activityDays.contains(today.minusDays(1)) -> today.minusDays(1)
+                else -> null
+            }
 
         var current = 0
         if (anchor != null) {

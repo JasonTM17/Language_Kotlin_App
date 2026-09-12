@@ -2,8 +2,6 @@ package com.linguaai.server.routes
 
 import com.linguaai.server.api.ApiException
 import com.linguaai.server.api.ErrorCodes
-import com.linguaai.server.api.ErrorResponse
-import com.linguaai.server.api.ErrorBody
 import com.linguaai.server.api.dto.AuthResponseDto
 import com.linguaai.server.api.dto.LoginRequest
 import com.linguaai.server.api.dto.LogoutRequest
@@ -12,28 +10,20 @@ import com.linguaai.server.api.dto.RefreshRequest
 import com.linguaai.server.api.dto.RefreshResponseDto
 import com.linguaai.server.api.dto.RegisterRequest
 import com.linguaai.server.api.dto.TokenPairDto
-import com.linguaai.server.api.dto.UpdateProfileRequest
 import com.linguaai.server.api.dto.UserDto
 import com.linguaai.server.config.AppConfig
-import com.linguaai.server.plugins.requestId
 import com.linguaai.server.repository.AuthRepository
-import com.linguaai.server.repository.ContentRepository
 import com.linguaai.server.security.JwtTokenService
 import com.linguaai.server.security.PasswordHasher
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.install
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
-import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import java.time.LocalDateTime
@@ -55,7 +45,10 @@ fun Application.configureAuthRoutes(
         authRepository.saveRefreshToken(
             userId = userId,
             tokenHash = tokenService.hashToken(refreshToken),
-            familyId = java.util.UUID.randomUUID().toString(),
+            familyId =
+                java.util.UUID
+                    .randomUUID()
+                    .toString(),
             expiresAt = LocalDateTime.ofInstant(tokenService.refreshExpiryInstant(), ZoneOffset.UTC),
         )
         return TokenPairDto(
@@ -70,11 +63,12 @@ fun Application.configureAuthRoutes(
             post("/register") {
                 val request = call.receive<RegisterRequest>()
                 validateRegistration(request)
-                val user = authRepository.createUser(
-                    email = request.email,
-                    username = request.username,
-                    passwordHash = PasswordHasher.hash(request.password),
-                )
+                val user =
+                    authRepository.createUser(
+                        email = request.email,
+                        username = request.username,
+                        passwordHash = PasswordHasher.hash(request.password),
+                    )
                 call.respond(HttpStatusCode.Created, AuthResponseDto(user = user, tokens = issueTokens(user.id)))
             }
 
@@ -96,12 +90,13 @@ fun Application.configureAuthRoutes(
             post("/refresh") {
                 val request = call.receive<RefreshRequest>()
                 val hash = tokenService.hashToken(request.refreshToken)
-                val stored = authRepository.findRefreshToken(hash)
-                    ?: throw ApiException(
-                        HttpStatusCode.Unauthorized,
-                        ErrorCodes.UNAUTHORIZED,
-                        "Invalid refresh token",
-                    )
+                val stored =
+                    authRepository.findRefreshToken(hash)
+                        ?: throw ApiException(
+                            HttpStatusCode.Unauthorized,
+                            ErrorCodes.UNAUTHORIZED,
+                            "Invalid refresh token",
+                        )
                 if (stored.revoked) {
                     // Token replay: someone reused a rotated token -> kill the family.
                     authRepository.revokeFamily(stored.familyId)
@@ -163,13 +158,17 @@ private fun validateRegistration(request: RegisterRequest) {
 }
 
 internal fun requireUserId(call: ApplicationCall): Long =
-    call.principal<JWTPrincipal>()
+    call
+        .principal<JWTPrincipal>()
         ?.payload
         ?.getClaim(JwtTokenService.CLAIM_USER_ID)
         ?.asString()
         ?.toLongOrNull()
         ?: throw ApiException(HttpStatusCode.Unauthorized, ErrorCodes.UNAUTHORIZED, "Missing principal")
 
-internal fun requireProfile(call: ApplicationCall, authRepository: AuthRepository): ProfileDto =
+internal fun requireProfile(
+    call: ApplicationCall,
+    authRepository: AuthRepository,
+): ProfileDto =
     authRepository.findProfile(requireUserId(call))
         ?: throw ApiException(HttpStatusCode.NotFound, ErrorCodes.NOT_FOUND, "User not found")

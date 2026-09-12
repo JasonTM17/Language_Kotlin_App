@@ -19,7 +19,6 @@ private const val MAX_POOL_SIZE = 10
  * of DDL truth — Exposed never auto-creates schema.
  */
 object DatabaseFactory {
-
     private val log = LoggerFactory.getLogger(DatabaseFactory::class.java)
 
     fun init(config: AppConfig): HikariDataSource {
@@ -30,21 +29,23 @@ object DatabaseFactory {
     }
 
     private fun createDataSource(config: AppConfig): HikariDataSource {
-        val driverClass = when {
-            config.dbUrl.startsWith("jdbc:h2") -> "org.h2.Driver"
-            else -> "com.mysql.cj.jdbc.Driver"
-        }
-        val hikariConfig = HikariConfig().apply {
-            jdbcUrl = config.dbUrl
-            username = config.dbUser
-            password = config.dbPassword
-            driverClassName = driverClass
-            maximumPoolSize = MAX_POOL_SIZE
-            isAutoCommit = false
-            transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-            poolName = "linguaai-pool"
-            validate()
-        }
+        val driverClass =
+            when {
+                config.dbUrl.startsWith("jdbc:h2") -> "org.h2.Driver"
+                else -> "com.mysql.cj.jdbc.Driver"
+            }
+        val hikariConfig =
+            HikariConfig().apply {
+                jdbcUrl = config.dbUrl
+                username = config.dbUser
+                password = config.dbPassword
+                driverClassName = driverClass
+                maximumPoolSize = MAX_POOL_SIZE
+                isAutoCommit = false
+                transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+                poolName = "linguaai-pool"
+                validate()
+            }
         return HikariDataSource(hikariConfig)
     }
 
@@ -52,7 +53,8 @@ object DatabaseFactory {
         // V1 schema and seed are written for both dialects, so H2 and MySQL share
         // one location. This used to be a conditional whose two branches were
         // identical, which read as a dialect difference that did not exist.
-        Flyway.configure()
+        Flyway
+            .configure()
             .dataSource(dataSource)
             .locations(MIGRATION_LOCATION)
             .load()

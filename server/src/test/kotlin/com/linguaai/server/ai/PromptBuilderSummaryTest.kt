@@ -12,7 +12,6 @@ import kotlin.test.assertTrue
  * without bound, eventually costing more tokens than the messages it replaced.
  */
 class PromptBuilderSummaryTest {
-
     private val cap = PromptBuilder.MAX_SUMMARY_CHARS
 
     @Test
@@ -38,10 +37,11 @@ class PromptBuilderSummaryTest {
     fun `the summary never exceeds the cap`() {
         var summary: String? = null
         repeat(50) { round ->
-            summary = PromptBuilder.foldSummary(
-                summary,
-                (1..10).joinToString("\n") { "Learner: message $round-$it" },
-            )
+            summary =
+                PromptBuilder.foldSummary(
+                    summary,
+                    (1..10).joinToString("\n") { "Learner: message $round-$it" },
+                )
         }
 
         assertTrue(

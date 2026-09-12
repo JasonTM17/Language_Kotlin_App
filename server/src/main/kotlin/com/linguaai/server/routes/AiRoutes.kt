@@ -1,15 +1,10 @@
 package com.linguaai.server.routes
 
 import com.linguaai.server.ai.AiChatRequestDto
-import com.linguaai.server.ai.AiChatResponseDto
-import com.linguaai.server.ai.AiMessageDto
 import com.linguaai.server.ai.AiService
-import com.linguaai.server.ai.ConversationDto
 import com.linguaai.server.ai.CorrectRequestDto
 import com.linguaai.server.ai.ExplainRequestDto
-import com.linguaai.server.ai.GeneratedQuizDto
 import com.linguaai.server.ai.GenerateQuizRequestDto
-import com.linguaai.server.ai.PracticeScoreDto
 import com.linguaai.server.ai.PracticeStartRequestDto
 import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.AuthRepository
@@ -31,10 +26,11 @@ import kotlinx.serialization.json.Json
 /** Connect timeout for server-to-server calls, in milliseconds. */
 private const val CONNECT_TIMEOUT_MILLIS = 5_000L
 
-/**
+/*
  * Authenticated AI endpoints. Every handler resolves the user principal; the
  * client never picks the system prompt or provider.
  */
+
 /**
  * Chooses the AI provider from configuration. Kept out of configureAiRoutes
  * because selecting a provider is a wiring decision, not a routing one, and the
@@ -43,9 +39,11 @@ private const val CONNECT_TIMEOUT_MILLIS = 5_000L
 private fun buildProvider(config: com.linguaai.server.config.AppConfig): com.linguaai.server.ai.AiProvider =
     when (config.aiProvider) {
         com.linguaai.server.config.AppConfig.AiProviderKind.MOCK ->
-            com.linguaai.server.ai.MockAiProvider(config.aiMockScenario)
+            com.linguaai.server.ai
+                .MockAiProvider(config.aiMockScenario)
         com.linguaai.server.config.AppConfig.AiProviderKind.OPENAI_COMPATIBLE ->
-            com.linguaai.server.ai.OpenAiCompatibleProvider(config, aiHttpClient(config))
+            com.linguaai.server.ai
+                .OpenAiCompatibleProvider(config, aiHttpClient(config))
     }
 
 fun Application.configureAiRoutes(
@@ -54,14 +52,17 @@ fun Application.configureAiRoutes(
     contentRepository: ContentRepository,
 ) {
     val provider: com.linguaai.server.ai.AiProvider = buildProvider(config)
-    val service = com.linguaai.server.ai.AiService(
-        config = config,
-        provider = provider,
-        aiRepository = AiRepository(),
-        authRepository = authRepository,
-        contentRepository = contentRepository,
-        rateLimiter = com.linguaai.server.ai.AiRateLimiter(config.aiRateLimitPerMinute),
-    )
+    val service =
+        com.linguaai.server.ai.AiService(
+            config = config,
+            provider = provider,
+            aiRepository = AiRepository(),
+            authRepository = authRepository,
+            contentRepository = contentRepository,
+            rateLimiter =
+                com.linguaai.server.ai
+                    .AiRateLimiter(config.aiRateLimitPerMinute),
+        )
     val json = Json { ignoreUnknownKeys = true }
 
     routing {
@@ -72,12 +73,13 @@ fun Application.configureAiRoutes(
                 }
 
                 get("/conversations/{id}/messages") {
-                    val id = call.parameters["id"]?.toLongOrNull()
-                        ?: throw com.linguaai.server.api.ApiException(
-                            io.ktor.http.HttpStatusCode.BadRequest,
-                            com.linguaai.server.api.ErrorCodes.VALIDATION,
-                            "Invalid conversation id",
-                        )
+                    val id =
+                        call.parameters["id"]?.toLongOrNull()
+                            ?: throw com.linguaai.server.api.ApiException(
+                                io.ktor.http.HttpStatusCode.BadRequest,
+                                com.linguaai.server.api.ErrorCodes.VALIDATION,
+                                "Invalid conversation id",
+                            )
                     call.respond(service.messages(call.userId(), id))
                 }
 
@@ -103,24 +105,26 @@ fun Application.configureAiRoutes(
                 }
 
                 post("/conversation-practice/{id}/reply") {
-                    val id = call.parameters["id"]?.toLongOrNull()
-                        ?: throw com.linguaai.server.api.ApiException(
-                            io.ktor.http.HttpStatusCode.BadRequest,
-                            com.linguaai.server.api.ErrorCodes.VALIDATION,
-                            "Invalid conversation id",
-                        )
+                    val id =
+                        call.parameters["id"]?.toLongOrNull()
+                            ?: throw com.linguaai.server.api.ApiException(
+                                io.ktor.http.HttpStatusCode.BadRequest,
+                                com.linguaai.server.api.ErrorCodes.VALIDATION,
+                                "Invalid conversation id",
+                            )
                     val body = call.receive<Map<String, String>>()
                     val message = body["message"].orEmpty()
                     call.respond(service.practiceReply(call.userId(), id, message))
                 }
 
                 post("/conversation-practice/{id}/score") {
-                    val id = call.parameters["id"]?.toLongOrNull()
-                        ?: throw com.linguaai.server.api.ApiException(
-                            io.ktor.http.HttpStatusCode.BadRequest,
-                            com.linguaai.server.api.ErrorCodes.VALIDATION,
-                            "Invalid conversation id",
-                        )
+                    val id =
+                        call.parameters["id"]?.toLongOrNull()
+                            ?: throw com.linguaai.server.api.ApiException(
+                                io.ktor.http.HttpStatusCode.BadRequest,
+                                com.linguaai.server.api.ErrorCodes.VALIDATION,
+                                "Invalid conversation id",
+                            )
                     call.respond(service.scorePractice(call.userId(), id))
                 }
             }

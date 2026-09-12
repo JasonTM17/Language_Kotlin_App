@@ -4,7 +4,6 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 
 /** Password hashing boundary. Plain-text passwords never leave this class. */
 object PasswordHasher {
-
     /**
      * BCrypt cost factor. 12 is roughly 250ms per hash on current hardware, which
      * is the usual recommendation. Raising it slows every login, so the value is
@@ -17,6 +16,8 @@ object PasswordHasher {
 
     fun hash(plain: String): String = hasher.hashToString(BCRYPT_COST, plain.toCharArray())
 
-    fun verify(plain: String, hash: String): Boolean =
-        verifier.verify(plain.toCharArray(), hash.toByteArray()).verified
+    fun verify(
+        plain: String,
+        hash: String,
+    ): Boolean = verifier.verify(plain.toCharArray(), hash.toByteArray()).verified
 }

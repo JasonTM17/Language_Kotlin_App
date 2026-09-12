@@ -23,12 +23,13 @@ fun Application.configureQuizRoutes(contentRepository: ContentRepository) {
         authenticate("auth-jwt") {
             post("/api/v1/quizzes/{id}/submit") {
                 val userId = requireUserId(call)
-                val quizId = call.parameters["id"]?.toLongOrNull()
-                    ?: throw ApiException(
-                        HttpStatusCode.BadRequest,
-                        ErrorCodes.VALIDATION,
-                        "Invalid quiz id",
-                    )
+                val quizId =
+                    call.parameters["id"]?.toLongOrNull()
+                        ?: throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            ErrorCodes.VALIDATION,
+                            "Invalid quiz id",
+                        )
                 val submission = call.receive<QuizSubmissionDto>()
                 call.respond(contentRepository.submitQuiz(userId, quizId, submission))
             }

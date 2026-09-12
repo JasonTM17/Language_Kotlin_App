@@ -31,25 +31,25 @@ class PromptBuilder(
     private val contentRepository: ContentRepository,
     private val mistakeTopics: List<String>,
 ) {
-
     fun systemPrompt(
         mode: String,
         profile: ProfileDto?,
         contextLessonId: Long?,
         contextGrammarId: Long?,
         summary: String?,
-    ): String = buildString {
-        append(ROLE)
-        appendLearner(profile)
-        appendTeachingMethod()
-        appendLevelGuidance(profile?.level)
-        appendGrammarContext(contextGrammarId)
-        appendLessonContext(contextLessonId)
-        appendWeakTopics()
-        appendHistory(summary)
-        append("\n## Mode: $mode\n${modeInstruction(mode)}\n")
-        append(GUARDRAILS)
-    }
+    ): String =
+        buildString {
+            append(ROLE)
+            appendLearner(profile)
+            appendTeachingMethod()
+            appendLevelGuidance(profile?.level)
+            appendGrammarContext(contextGrammarId)
+            appendLessonContext(contextLessonId)
+            appendWeakTopics()
+            appendHistory(summary)
+            append("\n## Mode: $mode\n${modeInstruction(mode)}\n")
+            append(GUARDRAILS)
+        }
 
     // ---- sections ----
 
@@ -61,9 +61,10 @@ class PromptBuilder(
             return
         }
 
-        val language = profile.languageId?.let { id ->
-            runCatching { contentRepository.findLanguageById(id) }.getOrNull()
-        }
+        val language =
+            profile.languageId?.let { id ->
+                runCatching { contentRepository.findLanguageById(id) }.getOrNull()
+            }
         append("- Target language: ${describeLanguage(language)}\n")
         append("- Level: ${profile.level ?: "not set — ask before choosing difficulty"}\n")
         append("- Stated goal: ${profile.goal ?: "general improvement"}\n")
@@ -86,8 +87,9 @@ class PromptBuilder(
     }
 
     private fun StringBuilder.appendLevelGuidance(level: String?) {
-        val guidance = LEVEL_GUIDANCE[level?.trim()?.uppercase()]
-            ?: "Match the learner's demonstrated level. When unsure, start simpler " +
+        val guidance =
+            LEVEL_GUIDANCE[level?.trim()?.uppercase()]
+                ?: "Match the learner's demonstrated level. When unsure, start simpler " +
                 "and increase difficulty if the learner handles it easily."
         append("\n## Level guidance (${level ?: "unknown"})\n$guidance\n")
     }
@@ -124,62 +126,63 @@ class PromptBuilder(
 
     // ---- modes ----
 
-    private fun modeInstruction(mode: String): String = when (mode) {
-        "grammar-explain" ->
-            """
+    private fun modeInstruction(mode: String): String =
+        when (mode) {
+            "grammar-explain" ->
+                """
             |Explain the requested grammar point in this order:
             |1. One sentence: what it means and when to use it.
             |2. Its structure, written plainly.
             |3. Two example sentences at the learner's level, each with a short gloss.
             |4. Two mistakes learners at this level typically make with it.
             |5. One short question that makes the learner produce the form themselves.
-            """.trimMargin()
+                """.trimMargin()
 
-        "sentence-correction" ->
-            """
+            "sentence-correction" ->
+                """
             |Correct the learner's sentence and reply in exactly this shape:
             |1. **Corrected:** the corrected sentence.
             |2. **What changed:** one bullet per fix, each naming the rule.
             |3. **Why:** one short sentence per fix, only where the rule is not obvious.
             |4. **Try this:** one similar sentence for the learner to write.
             |If the sentence is already correct, say so plainly and offer one way to make it sound more natural.
-            """.trimMargin()
+                """.trimMargin()
 
-        "conversation-practice" ->
-            """
+            "conversation-practice" ->
+                """
             |Role-play the scenario in the target language, one turn at a time, at the learner's level.
             |- Stay in character. Keep each turn to one or two sentences.
             |- Do not correct the learner mid-conversation; note errors silently and address them when the role-play ends.
             |- If the learner is stuck, offer two options they could say rather than telling them the answer.
-            """.trimMargin()
+                """.trimMargin()
 
-        "practice-score" ->
-            """
+            "practice-score" ->
+                """
             |Assess the practice conversation that follows.
             |Return STRICT JSON only, no prose and no code fences:
             |{"score":0-100,"grammarScore":0-100,"vocabularyScore":0-100,"naturalness":0-100,"mistakes":[{"said":"...","better":"...","why":"..."}],"recommendations":["..."]}
             |- Scores are integers 0-100 and must reflect the transcript, not encouragement.
             |- "mistakes" lists at most 5 items, most important first. Use [] when there are none.
             |- "recommendations" lists 2-3 concrete next actions, not general advice.
-            """.trimMargin()
+                """.trimMargin()
 
-        "mistakes-review" ->
-            """
+            "mistakes-review" ->
+                """
             |The learner has just finished a quiz. For each weak topic, in order of importance:
             |1. Name the topic in one line.
             |2. Give one worked example showing the correct form.
             |3. Point out the specific confusion that likely caused the mistake.
             |Finish with one question that tests the topic they struggled with most.
-            """.trimMargin()
+                """.trimMargin()
 
-        else ->
-            """
+            else ->
+                """
             |Answer as their tutor.
             |- Keep replies compact: a few sentences, not an essay.
             |- If the request is ambiguous, ask one clarifying question instead of guessing.
             |- If the learner asks something outside language learning, answer briefly and steer back to practice.
-            """.trimMargin()
-    }
+                """.trimMargin()
+        }
 
     private fun describeLanguage(language: LanguageDto?): String =
         if (language == null) {
@@ -199,9 +202,10 @@ class PromptBuilder(
         recentLimit: Int = 12,
     ): List<AiMessage> {
         val history = aiRepository.messages(conversationId, limit = 200)
-        val recent = history
-            .filter { it.id > (summarizedUntil ?: 0L) }
-            .takeLast(recentLimit)
+        val recent =
+            history
+                .filter { it.id > (summarizedUntil ?: 0L) }
+                .takeLast(recentLimit)
         return listOf(AiMessage("system", system)) +
             recent.map { AiMessage(role = it.role.lowercase(), content = it.content) }
     }
@@ -239,36 +243,38 @@ class PromptBuilder(
          * model very little about how long a reply should be or which grammar is
          * in scope, which is what made earlier replies either trivial or
          * overwhelming.
+         *
+         * Strings are concatenated rather than written as raw multi-line literals
+         * so the guidance stays a single line in the prompt it produces.
          */
-        // Strings are wrapped with + rather than raw multi-line literals so the
-        // guidance stays a single line in the prompt it produces.
-        private val LEVEL_GUIDANCE = mapOf(
-            "N5" to "Absolute beginner. Roughly 800 words and the two basic scripts. " +
-                "Use short sentences, present and past tense only. " +
-                "Reply in 1-2 sentences. Romanise alongside the script.",
-            "N4" to "Elementary. Around 1,500 words, basic verb forms and simple subordinate clauses. " +
-                "Reply in 2-3 short sentences. Introduce one particle or conjugation at a time.",
-            "N3" to "Lower intermediate. Around 3,700 words, te-form, conditionals, passive and causative. " +
-                "Reply in 3-4 sentences. " +
-                "Assume the learner can read the standard script without romanisation.",
-            "N2" to "Upper intermediate. Around 6,000 words, keigo and nuanced register. " +
-                "Reply in 4-6 sentences. Distinguish formal and casual usage explicitly.",
-            "N1" to "Advanced. Around 10,000 words plus literary and formal registers. " +
-                "Reply naturally at native speed. Correct only genuine errors, not stylistic preferences.",
-            "A1" to "Beginner. Present tense, everyday nouns, fixed phrases. " +
-                "Reply in 1-2 short sentences and gloss anything new.",
-            "A2" to "Elementary. Past and future forms, common connectors. " +
-                "Reply in 2-3 sentences. Introduce one structure at a time.",
-            "B1" to "Intermediate. Can sustain a simple conversation and explain opinions. " +
-                "Reply in 3-4 sentences and expect the learner to reply in the target language.",
-            "B2" to "Upper intermediate. Fluent on familiar topics with some errors. " +
-                "Reply in 4-6 sentences. " +
-                "Correct errors that affect meaning or sound clearly non-native.",
-            "C1" to "Advanced. Fluent and spontaneous. Reply naturally. " +
-                "Focus on register, idiom and nuance rather than basic accuracy.",
-            "C2" to "Near-native. Reply at full natural speed. " +
-                "Discuss style and connotation, not correctness.",
-        )
+        private val LEVEL_GUIDANCE =
+            mapOf(
+                "N5" to "Absolute beginner. Roughly 800 words and the two basic scripts. " +
+                    "Use short sentences, present and past tense only. " +
+                    "Reply in 1-2 sentences. Romanise alongside the script.",
+                "N4" to "Elementary. Around 1,500 words, basic verb forms and simple subordinate clauses. " +
+                    "Reply in 2-3 short sentences. Introduce one particle or conjugation at a time.",
+                "N3" to "Lower intermediate. Around 3,700 words, te-form, conditionals, passive and causative. " +
+                    "Reply in 3-4 sentences. " +
+                    "Assume the learner can read the standard script without romanisation.",
+                "N2" to "Upper intermediate. Around 6,000 words, keigo and nuanced register. " +
+                    "Reply in 4-6 sentences. Distinguish formal and casual usage explicitly.",
+                "N1" to "Advanced. Around 10,000 words plus literary and formal registers. " +
+                    "Reply naturally at native speed. Correct only genuine errors, not stylistic preferences.",
+                "A1" to "Beginner. Present tense, everyday nouns, fixed phrases. " +
+                    "Reply in 1-2 short sentences and gloss anything new.",
+                "A2" to "Elementary. Past and future forms, common connectors. " +
+                    "Reply in 2-3 sentences. Introduce one structure at a time.",
+                "B1" to "Intermediate. Can sustain a simple conversation and explain opinions. " +
+                    "Reply in 3-4 sentences and expect the learner to reply in the target language.",
+                "B2" to "Upper intermediate. Fluent on familiar topics with some errors. " +
+                    "Reply in 4-6 sentences. " +
+                    "Correct errors that affect meaning or sound clearly non-native.",
+                "C1" to "Advanced. Fluent and spontaneous. Reply naturally. " +
+                    "Focus on register, idiom and nuance rather than basic accuracy.",
+                "C2" to "Near-native. Reply at full natural speed. " +
+                    "Discuss style and connotation, not correctness.",
+            )
 
         /** Extractive rolling summary of the messages being evicted. */
         fun summarize(evicted: List<MessageRow>): String =
@@ -288,7 +294,10 @@ class PromptBuilder(
          * content is dropped first because it is the least relevant to the next
          * reply.
          */
-        fun foldSummary(existing: String?, addition: String): String {
+        fun foldSummary(
+            existing: String?,
+            addition: String,
+        ): String {
             if (addition.isBlank()) return existing.orEmpty()
             val combined = if (existing.isNullOrBlank()) addition else "$existing\n$addition"
             if (combined.length <= MAX_SUMMARY_CHARS) return combined

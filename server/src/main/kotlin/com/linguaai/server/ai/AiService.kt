@@ -4,16 +4,16 @@ import com.linguaai.server.api.ApiException
 import com.linguaai.server.api.ErrorCodes
 import com.linguaai.server.api.dto.ProfileDto
 import com.linguaai.server.config.AppConfig
+import com.linguaai.server.db.UserMistakes
 import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.AuthRepository
 import com.linguaai.server.repository.ContentRepository
-import com.linguaai.server.db.UserMistakes
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 
 // ---- request/response DTOs for the AI area ----
@@ -109,7 +109,6 @@ class AiService(
     private val contentRepository: ContentRepository,
     private val rateLimiter: AiRateLimiter,
 ) {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     fun conversations(userId: Long): List<ConversationDto> =
@@ -117,57 +116,72 @@ class AiService(
             ConversationDto(id = it.id, title = it.title, mode = it.mode)
         }
 
-    fun messages(userId: Long, conversationId: Long): List<AiMessageDto> {
+    fun messages(
+        userId: Long,
+        conversationId: Long,
+    ): List<AiMessageDto> {
         requireOwnership(userId, conversationId)
         return aiRepository.messages(conversationId).map {
             AiMessageDto(id = it.id, role = it.role, content = it.content)
         }
     }
 
-    suspend fun chat(userId: Long, request: AiChatRequestDto): AiChatResponseDto {
+    suspend fun chat(
+        userId: Long,
+        request: AiChatRequestDto,
+    ): AiChatResponseDto {
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
         val context = aiRepository.findConversation(request.conversationId ?: 0L, userId)
 
-        val conversation = if (context != null) {
-            context
-        } else {
-            aiRepository.createConversation(
-                userId = userId,
-                title = request.message.take(60),
-                mode = request.mode,
-                contextLessonId = request.contextLessonId,
-                contextGrammarId = request.contextGrammarId,
-            )
-        }
+        val conversation =
+            if (context != null) {
+                context
+            } else {
+                aiRepository.createConversation(
+                    userId = userId,
+                    title = request.message.take(60),
+                    mode = request.mode,
+                    contextLessonId = request.contextLessonId,
+                    contextGrammarId = request.contextGrammarId,
+                )
+            }
 
         return exchange(userId, conversation, profile, request.message)
     }
 
-    suspend fun explain(userId: Long, request: ExplainRequestDto): AiChatResponseDto {
+    suspend fun explain(
+        userId: Long,
+        request: ExplainRequestDto,
+    ): AiChatResponseDto {
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
-        val conversation = aiRepository.createConversation(
-            userId = userId,
-            title = "Explain: ${request.text?.take(TITLE_PREVIEW_LENGTH) ?: "grammar #${request.grammarId}"}",
-            mode = "grammar-explain",
-            contextLessonId = null,
-            contextGrammarId = request.grammarId,
-        )
+        val conversation =
+            aiRepository.createConversation(
+                userId = userId,
+                title = "Explain: ${request.text?.take(TITLE_PREVIEW_LENGTH) ?: "grammar #${request.grammarId}"}",
+                mode = "grammar-explain",
+                contextLessonId = null,
+                contextGrammarId = request.grammarId,
+            )
         val question = request.text ?: "Please explain grammar point #${request.grammarId}."
         return exchange(userId, conversation, profile, question)
     }
 
-    suspend fun correct(userId: Long, request: CorrectRequestDto): AiChatResponseDto {
+    suspend fun correct(
+        userId: Long,
+        request: CorrectRequestDto,
+    ): AiChatResponseDto {
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
-        val conversation = aiRepository.createConversation(
-            userId = userId,
-            title = "Correction: ${request.sentence.take(TITLE_PREVIEW_LENGTH)}",
-            mode = "sentence-correction",
-            contextLessonId = null,
-            contextGrammarId = null,
-        )
+        val conversation =
+            aiRepository.createConversation(
+                userId = userId,
+                title = "Correction: ${request.sentence.take(TITLE_PREVIEW_LENGTH)}",
+                mode = "sentence-correction",
+                contextLessonId = null,
+                contextGrammarId = null,
+            )
         // Corrected sentences double as mistake records for future context.
         transaction {
             UserMistakes.insert {
@@ -181,16 +195,20 @@ class AiService(
         return exchange(userId, conversation, profile, request.sentence)
     }
 
-    suspend fun startPractice(userId: Long, request: PracticeStartRequestDto): AiChatResponseDto {
+    suspend fun startPractice(
+        userId: Long,
+        request: PracticeStartRequestDto,
+    ): AiChatResponseDto {
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
-        val conversation = aiRepository.createConversation(
-            userId = userId,
-            title = "Practice: ${request.scenario}",
-            mode = "conversation-practice",
-            contextLessonId = null,
-            contextGrammarId = null,
-        )
+        val conversation =
+            aiRepository.createConversation(
+                userId = userId,
+                title = "Practice: ${request.scenario}",
+                mode = "conversation-practice",
+                contextLessonId = null,
+                contextGrammarId = null,
+            )
         return exchange(
             userId,
             conversation,
@@ -199,32 +217,45 @@ class AiService(
         )
     }
 
-    suspend fun practiceReply(userId: Long, conversationId: Long, message: String): AiChatResponseDto {
+    suspend fun practiceReply(
+        userId: Long,
+        conversationId: Long,
+        message: String,
+    ): AiChatResponseDto {
         ensureRateLimit(userId)
         val conversation = requireOwnership(userId, conversationId)
         return exchange(userId, conversation, authRepository.findProfile(userId), message)
     }
 
-    suspend fun scorePractice(userId: Long, conversationId: Long): PracticeScoreDto {
+    suspend fun scorePractice(
+        userId: Long,
+        conversationId: Long,
+    ): PracticeScoreDto {
         ensureRateLimit(userId)
         val conversation = requireOwnership(userId, conversationId)
         val builder = promptBuilder(userId)
-        val system = builder.systemPrompt(
-            "practice-score",
-            authRepository.findProfile(userId),
-            null,
-            null,
-            conversation.summary,
-        )
-        val messages = builder.buildMessages(system, conversation.id, conversation.summarizedUntil) +
-            AiMessage("user", "Score this conversation now. Return only the JSON object.")
-        val response = provider.chat(
-            AiChatRequest(messages = messages, temperature = 0.2, jsonMode = true, scenarioHint = "practice-score"),
-        )
+        val system =
+            builder.systemPrompt(
+                "practice-score",
+                authRepository.findProfile(userId),
+                null,
+                null,
+                conversation.summary,
+            )
+        val messages =
+            builder.buildMessages(system, conversation.id, conversation.summarizedUntil) +
+                AiMessage("user", "Score this conversation now. Return only the JSON object.")
+        val response =
+            provider.chat(
+                AiChatRequest(messages = messages, temperature = 0.2, jsonMode = true, scenarioHint = "practice-score"),
+            )
         return parsePracticeScore(response.content)
     }
 
-    suspend fun generateQuiz(userId: Long, request: GenerateQuizRequestDto): GeneratedQuizDto {
+    suspend fun generateQuiz(
+        userId: Long,
+        request: GenerateQuizRequestDto,
+    ): GeneratedQuizDto {
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
         val builder = promptBuilder(userId)
@@ -232,11 +263,13 @@ class AiService(
         val count = request.count.coerceIn(MIN_QUIZ_QUESTIONS, MAX_QUIZ_QUESTIONS)
         // Resolve the language name. The previous version interpolated the numeric
         // id ("language #1"), which conveys nothing to a model.
-        val languageName = runCatching { contentRepository.findLanguageById(request.languageId) }
-            .getOrNull()
-            ?.name
-            ?: "the learner's target language"
-        val prompt = """
+        val languageName =
+            runCatching { contentRepository.findLanguageById(request.languageId) }
+                .getOrNull()
+                ?.name
+                ?: "the learner's target language"
+        val prompt =
+            """
             Create $count multiple-choice questions for a ${request.level} learner of $languageName.
             ${request.topic?.let { "Focus on: $it." } ?: ""}
             Requirements:
@@ -244,14 +277,15 @@ class AiService(
             - Do not reuse the same distractor pattern across questions.
             - "explanation" states the rule or reason in one sentence, in English.
             Return STRICT JSON: {"questions":[{"prompt":...,"options":[4 strings],"correctAnswer":one option verbatim,"explanation":...}]}
-        """.trimIndent()
-        val response = provider.chat(
-            AiChatRequest(
-                messages = listOf(AiMessage("system", system), AiMessage("user", prompt)),
-                temperature = 0.6,
-                jsonMode = true,
-            ),
-        )
+            """.trimIndent()
+        val response =
+            provider.chat(
+                AiChatRequest(
+                    messages = listOf(AiMessage("system", system), AiMessage("user", prompt)),
+                    temperature = 0.6,
+                    jsonMode = true,
+                ),
+            )
         return validateQuizPayload(response.content)
     }
 
@@ -264,44 +298,49 @@ class AiService(
         userText: String,
     ): AiChatResponseDto {
         val builder = promptBuilder(userId)
-        val system = builder.systemPrompt(
-            mode = conversation.mode,
-            profile = profile,
-            contextLessonId = conversation.contextLessonId,
-            contextGrammarId = conversation.contextGrammarId,
-            summary = conversation.summary,
-        )
+        val system =
+            builder.systemPrompt(
+                mode = conversation.mode,
+                profile = profile,
+                contextLessonId = conversation.contextLessonId,
+                contextGrammarId = conversation.contextGrammarId,
+                summary = conversation.summary,
+            )
         val history = builder.buildMessages(system, conversation.id, conversation.summarizedUntil)
 
         aiRepository.addMessage(conversation.id, "USER", userText)
         val fullMessages = history + AiMessage("user", userText)
 
-        val response = try {
-            provider.chat(AiChatRequest(messages = fullMessages))
-        } catch (e: AiProviderException) {
-            // Carry the cause through the mapping, otherwise the provider's own
-            // failure reason is lost at exactly the point it matters most.
-            throw when (e.kind) {
-                AiProviderException.Kind.RATE_LIMITED -> ApiException(
-                    HttpStatusCode.TooManyRequests,
-                    ErrorCodes.RATE_LIMITED,
-                    "The AI tutor is busy. Please retry shortly.",
-                    cause = e,
-                )
-                AiProviderException.Kind.TIMEOUT -> ApiException(
-                    HttpStatusCode.ServiceUnavailable,
-                    ErrorCodes.AI_UNAVAILABLE,
-                    "The AI tutor took too long to respond. Please try again.",
-                    cause = e,
-                )
-                else -> ApiException(
-                    HttpStatusCode.BadGateway,
-                    ErrorCodes.AI_UNAVAILABLE,
-                    "The AI tutor is unavailable right now.",
-                    cause = e,
-                )
+        val response =
+            try {
+                provider.chat(AiChatRequest(messages = fullMessages))
+            } catch (e: AiProviderException) {
+                // Carry the cause through the mapping, otherwise the provider's own
+                // failure reason is lost at exactly the point it matters most.
+                throw when (e.kind) {
+                    AiProviderException.Kind.RATE_LIMITED ->
+                        ApiException(
+                            HttpStatusCode.TooManyRequests,
+                            ErrorCodes.RATE_LIMITED,
+                            "The AI tutor is busy. Please retry shortly.",
+                            cause = e,
+                        )
+                    AiProviderException.Kind.TIMEOUT ->
+                        ApiException(
+                            HttpStatusCode.ServiceUnavailable,
+                            ErrorCodes.AI_UNAVAILABLE,
+                            "The AI tutor took too long to respond. Please try again.",
+                            cause = e,
+                        )
+                    else ->
+                        ApiException(
+                            HttpStatusCode.BadGateway,
+                            ErrorCodes.AI_UNAVAILABLE,
+                            "The AI tutor is unavailable right now.",
+                            cause = e,
+                        )
+                }
             }
-        }
 
         val reply = response.content
         if (reply.isBlank()) {
@@ -329,10 +368,11 @@ class AiService(
             val evicted = pending.take(pending.size / 2)
             // foldSummary caps the total size; appending directly let the summary
             // grow without bound across a long conversation.
-            val newSummary = PromptBuilder.foldSummary(
-                existing = conversation.summary,
-                addition = PromptBuilder.summarize(evicted),
-            )
+            val newSummary =
+                PromptBuilder.foldSummary(
+                    existing = conversation.summary,
+                    addition = PromptBuilder.summarize(evicted),
+                )
             aiRepository.updateSummary(conversation.id, newSummary, evicted.last().id)
         } catch (_: Exception) {
             // Summarization is best-effort; the chat flow continues.
@@ -340,13 +380,15 @@ class AiService(
     }
 
     private fun promptBuilder(userId: Long): PromptBuilder {
-        val topics = transaction {
-            UserMistakes.selectAll()
-                .andWhere { UserMistakes.userId eq userId }
-                .orderBy(UserMistakes.id, org.jetbrains.exposed.sql.SortOrder.DESC)
-                .limit(WEAK_TOPIC_LIMIT.toInt())
-                .map { it[UserMistakes.topic] }
-        }
+        val topics =
+            transaction {
+                UserMistakes
+                    .selectAll()
+                    .andWhere { UserMistakes.userId eq userId }
+                    .orderBy(UserMistakes.id, org.jetbrains.exposed.sql.SortOrder.DESC)
+                    .limit(WEAK_TOPIC_LIMIT.toInt())
+                    .map { it[UserMistakes.topic] }
+            }
         return PromptBuilder(aiRepository, contentRepository, topics)
     }
 
@@ -360,41 +402,52 @@ class AiService(
         }
     }
 
-    private fun requireOwnership(userId: Long, conversationId: Long): com.linguaai.server.repository.ConversationRow =
+    private fun requireOwnership(
+        userId: Long,
+        conversationId: Long,
+    ): com.linguaai.server.repository.ConversationRow =
         aiRepository.findConversation(conversationId, userId)
             ?: throw ApiException(HttpStatusCode.NotFound, ErrorCodes.NOT_FOUND, "Conversation not found")
 
-    private fun validateQuizPayload(raw: String): GeneratedQuizDto = try {
-        val payload = json.decodeFromString<GeneratedQuizDto>(raw.trim())
-        require(payload.questions.isNotEmpty()) { "empty questions" }
-        payload.questions.forEach { q ->
-            require(q.prompt.isNotBlank()) { "blank prompt" }
-            require(q.options.size in QUIZ_OPTIONS_RANGE) { "bad options size" }
-            require(q.correctAnswer in q.options) { "correctAnswer must be one of options" }
+    private fun validateQuizPayload(raw: String): GeneratedQuizDto =
+        try {
+            val payload = json.decodeFromString<GeneratedQuizDto>(raw.trim())
+            require(payload.questions.isNotEmpty()) { "empty questions" }
+            payload.questions.forEach { q ->
+                require(q.prompt.isNotBlank()) { "blank prompt" }
+                require(q.options.size in QUIZ_OPTIONS_RANGE) { "bad options size" }
+                require(q.correctAnswer in q.options) { "correctAnswer must be one of options" }
+            }
+            payload
+        } catch (e: Exception) {
+            // Carry the cause. Without it a 502 gives the operator no trace of what
+            // the provider actually returned or which require() rejected it.
+            throw ApiException(
+                HttpStatusCode.BadGateway,
+                ErrorCodes.AI_UNAVAILABLE,
+                "The AI tutor returned an invalid quiz. Please retry.",
+                cause = e,
+            )
         }
-        payload
-    } catch (e: Exception) {
-        // Carry the cause. Without it a 502 gives the operator no trace of what
-        // the provider actually returned or which require() rejected it.
-        throw ApiException(
-            HttpStatusCode.BadGateway,
-            ErrorCodes.AI_UNAVAILABLE,
-            "The AI tutor returned an invalid quiz. Please retry.",
-            cause = e,
-        )
-    }
 
-    private fun parsePracticeScore(raw: String): PracticeScoreDto = try {
-        val cleaned = raw.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
-        json.decodeFromString<PracticeScoreDto>(cleaned)
-    } catch (e: Exception) {
-        throw ApiException(
-            HttpStatusCode.BadGateway,
-            ErrorCodes.AI_UNAVAILABLE,
-            "Could not score the conversation. Please retry.",
-            cause = e,
-        )
-    }
+    private fun parsePracticeScore(raw: String): PracticeScoreDto =
+        try {
+            val cleaned =
+                raw
+                    .trim()
+                    .removePrefix("```json")
+                    .removePrefix("```")
+                    .removeSuffix("```")
+                    .trim()
+            json.decodeFromString<PracticeScoreDto>(cleaned)
+        } catch (e: Exception) {
+            throw ApiException(
+                HttpStatusCode.BadGateway,
+                ErrorCodes.AI_UNAVAILABLE,
+                "Could not score the conversation. Please retry.",
+                cause = e,
+            )
+        }
 
     private companion object {
         const val SUMMARIZE_THRESHOLD = 20

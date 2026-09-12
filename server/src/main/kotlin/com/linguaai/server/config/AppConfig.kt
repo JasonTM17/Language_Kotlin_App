@@ -35,18 +35,30 @@ data class AppConfig(
         const val DEFAULT_AI_RATE_LIMIT_PER_MINUTE = 20
 
         fun fromEnv(env: (String) -> String? = System::getenv): AppConfig {
-            fun str(key: String, default: String) = env(key)?.takeIf { it.isNotBlank() } ?: default
-            fun int(key: String, default: Int) = env(key)?.toIntOrNull() ?: default
-            fun long(key: String, default: Long) = env(key)?.toLongOrNull() ?: default
+            fun str(
+                key: String,
+                default: String,
+            ) = env(key)?.takeIf { it.isNotBlank() } ?: default
+
+            fun int(
+                key: String,
+                default: Int,
+            ) = env(key)?.toIntOrNull() ?: default
+
+            fun long(
+                key: String,
+                default: Long,
+            ) = env(key)?.toLongOrNull() ?: default
 
             return AppConfig(
                 serverPort = int("SERVER_PORT", DEFAULT_SERVER_PORT),
-                dbUrl = str(
-                    "DB_URL",
-                    "jdbc:mysql://${str("DB_HOST", "localhost")}:${int("DB_PORT", DEFAULT_DB_PORT)}/" +
-                        str("DB_NAME", "linguaai") +
-                        "?connectionTimeZone=UTC&useSSL=false&allowPublicKeyRetrieval=true",
-                ),
+                dbUrl =
+                    str(
+                        "DB_URL",
+                        "jdbc:mysql://${str("DB_HOST", "localhost")}:${int("DB_PORT", DEFAULT_DB_PORT)}/" +
+                            str("DB_NAME", "linguaai") +
+                            "?connectionTimeZone=UTC&useSSL=false&allowPublicKeyRetrieval=true",
+                    ),
                 dbUser = str("DB_USER", "linguaai"),
                 dbPassword = str("DB_PASSWORD", "linguaai"),
                 runMigrations = str("RUN_MIGRATIONS", "true").toBoolean(),
@@ -55,10 +67,11 @@ data class AppConfig(
                     long("JWT_ACCESS_TOKEN_EXPIRY_MINUTES", DEFAULT_ACCESS_TOKEN_TTL_MINUTES),
                 refreshTokenTtlDays =
                     long("JWT_REFRESH_TOKEN_EXPIRY_DAYS", DEFAULT_REFRESH_TOKEN_TTL_DAYS),
-                aiProvider = when (str("AI_PROVIDER", "mock").lowercase()) {
-                    "openai-compatible", "openai", "deepseek" -> AiProviderKind.OPENAI_COMPATIBLE
-                    else -> AiProviderKind.MOCK
-                },
+                aiProvider =
+                    when (str("AI_PROVIDER", "mock").lowercase()) {
+                        "openai-compatible", "openai", "deepseek" -> AiProviderKind.OPENAI_COMPATIBLE
+                        else -> AiProviderKind.MOCK
+                    },
                 aiBaseUrl = str("AI_BASE_URL", "https://api.openai.com/v1"),
                 aiApiKey = str("AI_API_KEY", ""),
                 aiModel = str("AI_MODEL", "gpt-4o-mini"),

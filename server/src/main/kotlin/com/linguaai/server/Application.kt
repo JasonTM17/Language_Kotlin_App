@@ -6,7 +6,6 @@ import com.linguaai.server.plugins.configureAuthentication
 import com.linguaai.server.plugins.configureMonitoring
 import com.linguaai.server.plugins.configureSerialization
 import com.linguaai.server.plugins.configureStatusPages
-import com.linguaai.server.repository.AiRepository
 import com.linguaai.server.repository.AuthRepository
 import com.linguaai.server.repository.ContentRepository
 import com.linguaai.server.routes.configureAiRoutes

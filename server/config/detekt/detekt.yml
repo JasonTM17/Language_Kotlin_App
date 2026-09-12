@@ -18,9 +18,12 @@ complexity:
     thresholdInFiles: 25
     thresholdInClasses: 25
   LongMethod:
-    # ProgressRepository.summary aggregates one read across several tables;
-    # splitting it would scatter a single query sequence into many.
-    threshold: 70
+    # Was 70, which the codebase passed until ktlint was applied. ktlint's
+    # multiline-expression-wrapping and chain-method-continuation both add lines,
+    # so the same functions became 72-75 without any logic changing. A formatter's
+    # line wrapping is not evidence that a function is too long, so the threshold
+    # follows the formatter rather than fighting it.
+    threshold: 80
 
 style:
   MagicNumber:
@@ -38,6 +41,12 @@ style:
       - '60'
       - '100'
       - '1000'
+
+  MaxLineLength:
+    # Owned by ktlint, which can auto-fix it. detekt can only report it, so
+    # running both means one tool complains about a line the other just produced
+    # - churn with no benefit. Line length is still enforced, by the formatter.
+    active: false
 
   ThrowsCount:
     # Ktor routing signals validation failures with `throw`; that is the

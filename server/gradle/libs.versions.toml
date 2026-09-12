@@ -10,6 +10,7 @@ bcrypt = "0.10.2"
 logback = "1.5.12"
 junit5 = "5.10.2"
 detekt = "1.23.8"
+ktlintPlugin = "14.2.0"
 
 [libraries]
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
@@ -46,3 +47,4 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.r
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }

@@ -1,8 +1,8 @@
 package com.linguaai.server.plugins
 
 import com.linguaai.server.api.ErrorBody
-import com.linguaai.server.api.ErrorResponse
 import com.linguaai.server.api.ErrorCodes
+import com.linguaai.server.api.ErrorResponse
 import com.linguaai.server.config.AppConfig
 import com.linguaai.server.security.JwtTokenService
 import io.ktor.http.HttpStatusCode

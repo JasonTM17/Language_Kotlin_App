@@ -5,8 +5,9 @@ package com.linguaai.server.ai
  * Failure injection via the `AI_MOCK_SCENARIO` env (or request scenarioHint):
  * timeout | rate_limit | invalid_json | empty.
  */
-class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
-
+class MockAiProvider(
+    private val defaultScenario: String? = null,
+) : AiProvider {
     override suspend fun chat(request: AiChatRequest): AiChatResponse {
         val scenario = request.scenarioHint ?: defaultScenario
         when (scenario) {
@@ -29,18 +30,23 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
             // the reply, so an integration test can assert on what the tutor was
             // actually told rather than on a separately constructed string.
             "echo_system" -> return AiChatResponse(
-                content = request.messages.firstOrNull { it.role == "system" }?.content.orEmpty(),
+                content =
+                    request.messages
+                        .firstOrNull { it.role == "system" }
+                        ?.content
+                        .orEmpty(),
             )
         }
 
         if (request.jsonMode) {
-            val quizJson = """
+            val quizJson =
+                """
                 {"questions":[
                   {"prompt":"風邪を（　）ように気をつけて。","options":["ひか","ひかない","ひいた","ひこう"],"correctAnswer":"ひかない","explanation":"ように with a negative verb expresses avoiding an outcome."},
                   {"prompt":"買えないわけではない means what?","options":["Cannot buy","Not that I cannot buy it","Will definitely buy","Refuse to buy"],"correctAnswer":"Not that I cannot buy it","explanation":"わけではない is a partial negation."},
                   {"prompt":"Company-decided outcomes use which pattern?","options":["ことにする","ことになる","ようにする","ことにしている"],"correctAnswer":"ことになる","explanation":"ことになる marks decisions made by circumstances."}
                 ]}
-            """.trimIndent()
+                """.trimIndent()
             return AiChatResponse(content = quizJson)
         }
 
@@ -56,9 +62,16 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
      * this part is not, and it did not belong in the same function.
      */
     private fun tutorReply(request: AiChatRequest): String {
-        val lastUser = request.messages.lastOrNull { it.role == "user" }?.content.orEmpty()
-        val grammarHint = request.messages.firstOrNull()?.content
-            ?.contains(PromptBuilder.HEADING_GRAMMAR) == true
+        val lastUser =
+            request.messages
+                .lastOrNull { it.role == "user" }
+                ?.content
+                .orEmpty()
+        val grammarHint =
+            request.messages
+                .firstOrNull()
+                ?.content
+                ?.contains(PromptBuilder.HEADING_GRAMMAR) == true
         return buildString {
             append("Good question! ")
             if (grammarHint) append("About the grammar point you are studying: ")
@@ -70,7 +83,8 @@ class MockAiProvider(private val defaultScenario: String? = null) : AiProvider {
                             "(I take notes so I won't forget). Unlike ～ために it also works with " +
                             "potential verbs and natural outcomes."
                     lastUser.contains("行きませんでしたから") ||
-                        lastUser.endsWith("。") && lastUser.contains("から") ->
+                        lastUser.endsWith("。") &&
+                        lastUser.contains("から") ->
                         "Your sentence reads unnaturally: 昨日学校に行きませんでしたから病気でした。" +
                             "A natural version is 病気だったので、学校に行きませんでした。" +
                             "Use ので/から after a plain reason clause, not after the past-tense result."
