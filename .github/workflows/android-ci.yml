@@ -10,6 +10,7 @@ on:
     paths:
       - 'android/**'
       - '.github/workflows/android-ci.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-test:
