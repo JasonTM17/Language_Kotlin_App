@@ -13,7 +13,7 @@ key inside the app.
 | Backend | Kotlin, Ktor 3, Exposed, Flyway, JWT (access + refresh rotation), bcrypt |
 | Database | MySQL 8 in Docker; H2 in-memory (MySQL mode) for integration tests |
 | AI | Provider-agnostic gateway (OpenAI-compatible / Mock), server-built prompts, bounded conversation memory, per-user rate limiting |
-| Quality | 93 host tests plus 10 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt blocking on the server at a zero baseline; GitHub Actions CI |
+| Quality | 93 host tests plus 10 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt and ktlint blocking on both builds, each at a reviewed zero baseline with every exception justified in its config; GitHub Actions CI |
 | Delivery | Docker Compose, multi-stage backend image, Conventional Commits, Mermaid documentation |
 
 ## Features
@@ -134,9 +134,6 @@ Stated rather than glossed over:
 - **Conversation memory is bounded, and the summary is extractive.** It preserves topic
   continuity, not nuance.
 - **Room migrations have never executed.** They are validated against the exported schema only.
-- **detekt covers the server only.** It runs in `build` and fails on a regression, at a
-  baseline of zero. The Android build has no static analysis yet, and ktlint is not
-  configured — see below.
 - **No TLS termination** in the Compose stack, and no database backup.
 
 ## Contributing
