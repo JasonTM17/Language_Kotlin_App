@@ -1,7 +1,6 @@
 package com.linguaai.app.data.remote
 
 import com.linguaai.app.domain.repository.SessionStore
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
@@ -19,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * The 401 -> refresh -> retry flow.
@@ -30,7 +30,6 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  * chains.
  */
 class TokenAuthenticatorTest {
-
     private lateinit var server: MockWebServer
     private lateinit var sessionStore: FakeSessionStore
     private lateinit var bareRetrofit: Retrofit
@@ -42,10 +41,12 @@ class TokenAuthenticatorTest {
         server = MockWebServer()
         server.start()
         sessionStore = FakeSessionStore(access = "stale-access", refresh = "refresh-1")
-        bareRetrofit = Retrofit.Builder()
-            .baseUrl(server.url("/api/v1/"))
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
+        bareRetrofit =
+            Retrofit
+                .Builder()
+                .baseUrl(server.url("/api/v1/"))
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
     }
 
     @After
@@ -54,23 +55,31 @@ class TokenAuthenticatorTest {
     }
 
     /** Client with the Authorization header attached, as the real app does. */
-    private fun authedClient(): OkHttpClient = OkHttpClient.Builder()
-        .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
-        .addInterceptor { chain ->
-            val token = sessionStore.accessTokenSync()
-            chain.proceed(
-                chain.request().newBuilder()
-                    .header("Authorization", "Bearer $token")
-                    .build(),
-            )
-        }
-        .build()
+    private fun authedClient(): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
+            .addInterceptor { chain ->
+                val token = sessionStore.accessTokenSync()
+                chain.proceed(
+                    chain
+                        .request()
+                        .newBuilder()
+                        .header("Authorization", "Bearer $token")
+                        .build(),
+                )
+            }.build()
 
-    private fun protectedRequest() = Request.Builder()
-        .url(server.url("/api/v1/lessons"))
-        .build()
+    private fun protectedRequest() =
+        Request
+            .Builder()
+            .url(server.url("/api/v1/lessons"))
+            .build()
 
-    private fun refreshResponse(access: String, refresh: String): MockResponse =
+    private fun refreshResponse(
+        access: String,
+        refresh: String,
+    ): MockResponse =
         MockResponse()
             .setResponseCode(200)
             .setHeader("Content-Type", "application/json")
@@ -131,9 +140,11 @@ class TokenAuthenticatorTest {
         server.enqueue(MockResponse().setResponseCode(401))
 
         // No auth interceptor: the request goes out unauthenticated.
-        val client = OkHttpClient.Builder()
-            .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
-            .build()
+        val client =
+            OkHttpClient
+                .Builder()
+                .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
+                .build()
 
         client.newCall(protectedRequest()).execute().use { response ->
             assertEquals(401, response.code)
@@ -149,16 +160,19 @@ class TokenAuthenticatorTest {
     fun `an auth endpoint 401 is never refreshed`() {
         server.enqueue(MockResponse().setResponseCode(401))
 
-        val client = OkHttpClient.Builder()
-            .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder()
-                        .header("Authorization", "Bearer stale-access")
-                        .build(),
-                )
-            }
-            .build()
+        val client =
+            OkHttpClient
+                .Builder()
+                .authenticator(TokenAuthenticator(sessionStore, bareRetrofit))
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("Authorization", "Bearer stale-access")
+                            .build(),
+                    )
+                }.build()
 
         val request = Request.Builder().url(server.url("/api/v1/auth/login")).build()
         client.newCall(request).execute().use { response ->
@@ -171,7 +185,10 @@ class TokenAuthenticatorTest {
     }
 
     /** The authenticator clears the session on a background scope, so poll briefly. */
-    private fun awaitCondition(timeoutMs: Long = 2_000, condition: () -> Boolean): Boolean {
+    private fun awaitCondition(
+        timeoutMs: Long = 2_000,
+        condition: () -> Boolean,
+    ): Boolean {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             if (condition()) return true
@@ -185,7 +202,6 @@ class TokenAuthenticatorTest {
         access: String? = null,
         refresh: String? = null,
     ) : SessionStore {
-
         private val accessState = MutableStateFlow(access)
         private val refreshState = MutableStateFlow(refresh)
 
@@ -196,7 +212,10 @@ class TokenAuthenticatorTest {
         override val accessFlow: Flow<String?> = accessState
         override val refreshFlow: Flow<String?> = refreshState
 
-        override suspend fun saveTokens(accessToken: String, refreshToken: String) {
+        override suspend fun saveTokens(
+            accessToken: String,
+            refreshToken: String,
+        ) {
             accessState.value = accessToken
             refreshState.value = refreshToken
         }

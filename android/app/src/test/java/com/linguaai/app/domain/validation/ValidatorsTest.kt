@@ -14,7 +14,6 @@ import org.junit.Test
  * what the user expects.
  */
 class ValidatorsTest {
-
     // ---- email ----
 
     @Test

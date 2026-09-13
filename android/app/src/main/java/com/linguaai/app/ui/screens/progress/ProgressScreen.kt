@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +43,16 @@ import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
 
+/** The server reports quiz accuracy as a 0..1 ratio; the UI shows a percentage. */
+private const val PERCENT_SCALE = 100
+
+/**
+ * Activity chart geometry: the tallest bar, and the height a day with any
+ * activity at all gets so a one-minute day is still visible.
+ */
+private const val CHART_MAX_BAR_HEIGHT_DP = 48
+private const val CHART_MIN_BAR_HEIGHT_DP = 4f
+
 @Composable
 fun ProgressScreen(
     modifier: Modifier = Modifier,
@@ -70,10 +79,11 @@ private fun ProgressContent(
     val summary = state.summary
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.md),
     ) {
         OfflineBanner(visible = !isOnline || state.isStale, modifier = Modifier.padding(top = Spacing.sm))
 
@@ -82,18 +92,20 @@ private fun ProgressContent(
         when {
             state.isLoading && summary == null -> LoadingIndicator(modifier = Modifier.padding(top = Spacing.xxl))
 
-            summary == null && state.error != null -> ErrorState(
-                message = state.error,
-                modifier = Modifier.padding(top = Spacing.lg),
-                retryLabel = "Try again",
-                onRetry = onRetry,
-            )
+            summary == null && state.error != null ->
+                ErrorState(
+                    message = state.error,
+                    modifier = Modifier.padding(top = Spacing.lg),
+                    retryLabel = "Try again",
+                    onRetry = onRetry,
+                )
 
-            summary == null -> EmptyState(
-                title = "No progress yet",
-                message = "Study a few cards or take a quiz and your progress will appear here.",
-                modifier = Modifier.padding(top = Spacing.lg),
-            )
+            summary == null ->
+                EmptyState(
+                    title = "No progress yet",
+                    message = "Study a few cards or take a quiz and your progress will appear here.",
+                    modifier = Modifier.padding(top = Spacing.lg),
+                )
 
             else -> ProgressBody(summary = summary)
         }
@@ -134,9 +146,10 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
         )
         StatTile(
             label = "Avg score",
-            value = summary.totals.quizAverageScore
-                ?.let { "${(it * 100).toInt()}%" }
-                ?: "—",
+            value =
+                summary.totals.quizAverageScore
+                    ?.let { "${(it * PERCENT_SCALE).toInt()}%" }
+                    ?: "—",
             icon = Icons.Filled.School,
             modifier = Modifier.weight(1f),
         )
@@ -162,9 +175,10 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
 private fun StreakCard(summary: ProgressSummaryDto) {
     LinguaCard {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -180,19 +194,21 @@ private fun StreakCard(summary: ProgressSummaryDto) {
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = buildString {
-                        append("Longest: ${summary.streak.longest}")
-                        summary.streak.lastActiveDate?.let { append(" · last active $it") }
-                    },
+                    text =
+                        buildString {
+                            append("Longest: ${summary.streak.longest}")
+                            summary.streak.lastActiveDate?.let { append(" · last active $it") }
+                        },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -283,11 +299,12 @@ private fun MasteryRow(
             progress = { if (total == 0) 0f else count.toFloat() / total.toFloat() },
             color = color,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.xs)
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.xs)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
         )
     }
 }
@@ -297,9 +314,10 @@ private fun ActivityCard(days: List<ActivityDayDto>) {
     val peak = days.maxOfOrNull { it.minutes }?.coerceAtLeast(1) ?: 1
     LinguaCard {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md),
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             verticalAlignment = Alignment.Bottom,
         ) {
@@ -310,23 +328,28 @@ private fun ActivityCard(days: List<ActivityDayDto>) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(CHART_MAX_BAR_HEIGHT_DP.dp),
                         contentAlignment = Alignment.BottomCenter,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height((48 * fraction).coerceAtLeast(if (day.minutes > 0) 4f else 2f).dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(
-                                    if (day.minutes > 0) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    },
-                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(
+                                        (CHART_MAX_BAR_HEIGHT_DP * fraction)
+                                            .coerceAtLeast(if (day.minutes > 0) CHART_MIN_BAR_HEIGHT_DP else 2f)
+                                            .dp,
+                                    ).clip(RoundedCornerShape(3.dp))
+                                    .background(
+                                        if (day.minutes > 0) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                        },
+                                    ),
                         )
                     }
                 }
@@ -343,17 +366,19 @@ private fun WeakTopicsCard(summary: ProgressSummaryDto) {
                 if (index > 0) Spacer(modifier = Modifier.height(Spacing.sm))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.tertiary),
+                        modifier =
+                            Modifier
+                                .size(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(MaterialTheme.colorScheme.tertiary),
                     )
                     Text(
                         text = topic.topic,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = Spacing.sm),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(start = Spacing.sm),
                     )
                     Text(
                         text = "×${topic.occurrences}",

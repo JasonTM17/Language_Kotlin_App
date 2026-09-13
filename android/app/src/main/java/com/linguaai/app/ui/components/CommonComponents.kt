@@ -37,9 +37,10 @@ fun LinguaButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = text },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = text },
         enabled = enabled && !isLoading,
     ) {
         if (isLoading) {
@@ -131,9 +132,10 @@ private fun StateScaffold(
     tint: Color,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(Spacing.xl),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (icon != null) {
@@ -176,9 +178,10 @@ fun SectionHeader(
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = Spacing.sm),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

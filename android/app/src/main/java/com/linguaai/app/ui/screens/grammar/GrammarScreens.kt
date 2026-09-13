@@ -45,30 +45,32 @@ fun GrammarScreen(
         OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(horizontal = Spacing.md))
         when {
             state.isLoading && state.items.isEmpty() -> LoadingIndicator()
-            state.items.isEmpty() -> EmptyState(
-                title = "No grammar lessons yet",
-                message = state.error ?: "Grammar points for your level will appear here.",
-                actionLabel = "Retry",
-                onAction = viewModel::refresh,
-            )
-            else -> LazyColumn(
-                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                items(state.items, key = { it.id }) { item ->
-                    LinguaCard(onClick = { onOpenGrammar(item.id) }) {
-                        Column(modifier = Modifier.padding(Spacing.md)) {
-                            Text(item.title, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = item.meaning.orEmpty(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                            )
+            state.items.isEmpty() ->
+                EmptyState(
+                    title = "No grammar lessons yet",
+                    message = state.error ?: "Grammar points for your level will appear here.",
+                    actionLabel = "Retry",
+                    onAction = viewModel::refresh,
+                )
+            else ->
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    items(state.items, key = { it.id }) { item ->
+                        LinguaCard(onClick = { onOpenGrammar(item.id) }) {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
+                                Text(item.title, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    text = item.meaning.orEmpty(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                )
+                            }
                         }
                     }
                 }
-            }
         }
     }
 }
@@ -96,73 +98,77 @@ fun GrammarDetailScreen(
     ) { padding ->
         when {
             state.isLoading -> LoadingIndicator()
-            state.grammar == null -> EmptyState(
-                title = "Unavailable",
-                message = state.error ?: "This grammar point could not be loaded.",
-            )
-            else -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.md),
-            ) {
-                val grammar = state.grammar!!
-                if (grammar.structure != null) {
-                    Text("Structure", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = grammar.structure,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
-                    )
-                }
-                if (grammar.meaning != null) {
-                    Text("Meaning", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = grammar.meaning,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
-                    )
-                }
-                if (grammar.usage != null) {
-                    Text("Usage", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = grammar.usage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
-                    )
-                }
-                if (grammar.examples.isNotEmpty()) {
-                    Text("Examples", style = MaterialTheme.typography.titleSmall)
-                    grammar.examples.forEach { example ->
+            state.grammar == null ->
+                EmptyState(
+                    title = "Unavailable",
+                    message = state.error ?: "This grammar point could not be loaded.",
+                )
+            else ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = Spacing.md),
+                ) {
+                    val grammar = state.grammar!!
+                    if (grammar.structure != null) {
+                        Text("Structure", style = MaterialTheme.typography.titleSmall)
                         Text(
-                            text = example.sentence,
+                            text = grammar.structure,
                             style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = Spacing.sm),
-                        )
-                        Text(
-                            text = example.translation,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
                         )
                     }
-                }
-                if (grammar.notes != null) {
-                    Text("Notes", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Spacing.md))
-                    Text(
-                        text = grammar.notes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Spacing.xs),
+                    if (grammar.meaning != null) {
+                        Text("Meaning", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = grammar.meaning,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
+                        )
+                    }
+                    if (grammar.usage != null) {
+                        Text("Usage", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = grammar.usage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
+                        )
+                    }
+                    if (grammar.examples.isNotEmpty()) {
+                        Text("Examples", style = MaterialTheme.typography.titleSmall)
+                        grammar.examples.forEach { example ->
+                            Text(
+                                text = example.sentence,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(top = Spacing.sm),
+                            )
+                            Text(
+                                text = example.translation,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    if (grammar.notes != null) {
+                        Text("Notes", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Spacing.md))
+                        Text(
+                            text = grammar.notes,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = Spacing.xs),
+                        )
+                    }
+                    com.linguaai.app.ui.components.LinguaButton(
+                        text = "Ask AI to explain",
+                        onClick = { onAskAi(grammar.id) },
+                        modifier = Modifier.padding(top = Spacing.lg),
                     )
+                    androidx.compose.foundation.layout
+                        .Spacer(modifier = Modifier.padding(bottom = Spacing.xl))
                 }
-                com.linguaai.app.ui.components.LinguaButton(
-                    text = "Ask AI to explain",
-                    onClick = { onAskAi(grammar.id) },
-                    modifier = Modifier.padding(top = Spacing.lg),
-                )
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = Spacing.xl))
-            }
         }
     }
 }

@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
  * their own threads and cannot suspend.
  */
 interface SessionStore {
-
     /** Current access token, or null when signed out. Non-suspending by design. */
     fun accessTokenSync(): String?
 
@@ -23,7 +22,10 @@ interface SessionStore {
 
     val refreshFlow: Flow<String?>
 
-    suspend fun saveTokens(accessToken: String, refreshToken: String)
+    suspend fun saveTokens(
+        accessToken: String,
+        refreshToken: String,
+    )
 
     suspend fun clear()
 }

@@ -28,7 +28,6 @@ import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiHomeViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -52,14 +51,15 @@ class AiHomeViewModelTest {
     @Test
     fun `quiz failure is kept separate from conversation loading state`() =
         runTest(mainDispatcherRule.dispatcher) {
-            val api = RecordingAiApi().apply {
-                quizResponse =
-                    Response.error(
-                        503,
-                        """{"error":{"code":"AI_UNAVAILABLE","message":"unavailable","requestId":"test"}}"""
-                            .toResponseBody("application/json".toMediaType()),
-                    )
-            }
+            val api =
+                RecordingAiApi().apply {
+                    quizResponse =
+                        Response.error(
+                            503,
+                            """{"error":{"code":"AI_UNAVAILABLE","message":"unavailable","requestId":"test"}}"""
+                                .toResponseBody("application/json".toMediaType()),
+                        )
+                }
             val viewModel = AiHomeViewModel(api)
             advanceUntilIdle()
 
@@ -99,8 +99,7 @@ class AiHomeViewModelTest {
         override suspend fun practiceReply(
             conversationId: Long,
             body: PracticeReplyRequestDto,
-        ): Response<AiChatResponseDto> =
-            Response.success(AiChatResponseDto(conversationId, "answer", "conversation-practice"))
+        ): Response<AiChatResponseDto> = Response.success(AiChatResponseDto(conversationId, "answer", "conversation-practice"))
 
         override suspend fun scorePractice(conversationId: Long): Response<PracticeScoreDto> =
             Response.success(PracticeScoreDto(80, 80, 80, 80))

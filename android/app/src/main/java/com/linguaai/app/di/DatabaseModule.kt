@@ -17,17 +17,18 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
     @Provides
     @Singleton
-    fun database(@ApplicationContext context: Context): LinguaDatabase =
-        Room.databaseBuilder(context, LinguaDatabase::class.java, LinguaDatabase.NAME)
+    fun database(
+        @ApplicationContext context: Context,
+    ): LinguaDatabase =
+        Room
+            .databaseBuilder(context, LinguaDatabase::class.java, LinguaDatabase.NAME)
             .addMigrations(
                 LinguaDatabase.MIGRATION_1_2,
                 LinguaDatabase.MIGRATION_2_3,
                 LinguaDatabase.MIGRATION_3_4,
-            )
-            .fallbackToDestructiveMigrationOnDowngrade()
+            ).fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
     @Provides
@@ -43,10 +44,8 @@ object DatabaseModule {
     fun syncDao(database: LinguaDatabase): SyncDao = database.syncDao()
 
     @Provides
-    fun aiMessageCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.AiMessageCacheDao =
-        database.aiMessageCacheDao()
+    fun aiMessageCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.AiMessageCacheDao = database.aiMessageCacheDao()
 
     @Provides
-    fun progressCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.ProgressCacheDao =
-        database.progressCacheDao()
+    fun progressCacheDao(database: LinguaDatabase): com.linguaai.app.data.local.dao.ProgressCacheDao = database.progressCacheDao()
 }

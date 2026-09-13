@@ -13,112 +13,124 @@ import kotlinx.serialization.json.Json
 
 private val examplesJson = Json { ignoreUnknownKeys = true }
 
-fun LessonSummaryDto.toEntity() = LessonEntity(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    description = description,
-    type = type,
-    estimatedMinutes = estimatedMinutes,
-    difficulty = difficulty,
-    content = null,
-)
+fun LessonSummaryDto.toEntity() =
+    LessonEntity(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        description = description,
+        type = type,
+        estimatedMinutes = estimatedMinutes,
+        difficulty = difficulty,
+        content = null,
+    )
 
-fun LessonDto.toEntity() = LessonEntity(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    description = description,
-    type = type,
-    estimatedMinutes = estimatedMinutes,
-    difficulty = difficulty,
-    content = content,
-)
+fun LessonDto.toEntity() =
+    LessonEntity(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        description = description,
+        type = type,
+        estimatedMinutes = estimatedMinutes,
+        difficulty = difficulty,
+        content = content,
+    )
 
-fun LessonEntity.toSummaryDto() = LessonSummaryDto(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    description = description,
-    type = type,
-    estimatedMinutes = estimatedMinutes,
-    difficulty = difficulty,
-)
+fun LessonEntity.toSummaryDto() =
+    LessonSummaryDto(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        description = description,
+        type = type,
+        estimatedMinutes = estimatedMinutes,
+        difficulty = difficulty,
+    )
 
-fun LessonEntity.toDto() = LessonDto(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    description = description,
-    type = type,
-    estimatedMinutes = estimatedMinutes,
-    difficulty = difficulty,
-    content = content,
-)
+fun LessonEntity.toDto() =
+    LessonDto(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        description = description,
+        type = type,
+        estimatedMinutes = estimatedMinutes,
+        difficulty = difficulty,
+        content = content,
+    )
 
-fun VocabularyDto.toEntity() = VocabularyEntity(
-    id = id,
-    languageId = languageId,
-    level = level,
-    word = word,
-    reading = reading,
-    pronunciation = pronunciation,
-    meaning = meaning,
-    example = example,
-    exampleTranslation = exampleTranslation,
-    category = category,
-)
+fun VocabularyDto.toEntity() =
+    VocabularyEntity(
+        id = id,
+        languageId = languageId,
+        level = level,
+        word = word,
+        reading = reading,
+        pronunciation = pronunciation,
+        meaning = meaning,
+        example = example,
+        exampleTranslation = exampleTranslation,
+        category = category,
+    )
 
-fun VocabularyEntity.toDto() = VocabularyDto(
-    id = id,
-    languageId = languageId,
-    level = level,
-    word = word,
-    reading = reading,
-    pronunciation = pronunciation,
-    meaning = meaning,
-    example = example,
-    exampleTranslation = exampleTranslation,
-    category = category,
-)
+fun VocabularyEntity.toDto() =
+    VocabularyDto(
+        id = id,
+        languageId = languageId,
+        level = level,
+        word = word,
+        reading = reading,
+        pronunciation = pronunciation,
+        meaning = meaning,
+        example = example,
+        exampleTranslation = exampleTranslation,
+        category = category,
+    )
 
-fun GrammarDto.toEntity() = GrammarEntity(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    structure = structure,
-    meaning = meaning,
-    usage = usage,
-    examplesJson = examples.takeIf { it.isNotEmpty() }
-        ?.let { list -> list.joinToString("\n") { "${it.sentence}|${it.translation}" } },
-    notes = notes,
-    difficulty = difficulty,
-)
+fun GrammarDto.toEntity() =
+    GrammarEntity(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        structure = structure,
+        meaning = meaning,
+        usage = usage,
+        examplesJson =
+            examples
+                .takeIf { it.isNotEmpty() }
+                ?.let { list -> list.joinToString("\n") { "${it.sentence}|${it.translation}" } },
+        notes = notes,
+        difficulty = difficulty,
+    )
 
-fun GrammarEntity.toDto() = GrammarDto(
-    id = id,
-    languageId = languageId,
-    level = level,
-    title = title,
-    structure = structure,
-    meaning = meaning,
-    usage = usage,
-    examples = examplesJson
-        ?.split("\n")
-        ?.mapNotNull { line ->
-            val parts = line.split("|")
-            if (parts.size == 2) {
-                com.linguaai.app.data.remote.dto.GrammarExampleDto(parts[0].trim(), parts[1].trim())
-            } else {
-                null
-            }
-        }
-        ?: emptyList(),
-    notes = notes,
-    difficulty = difficulty,
-)
+fun GrammarEntity.toDto() =
+    GrammarDto(
+        id = id,
+        languageId = languageId,
+        level = level,
+        title = title,
+        structure = structure,
+        meaning = meaning,
+        usage = usage,
+        examples =
+            examplesJson
+                ?.split("\n")
+                ?.mapNotNull { line ->
+                    val parts = line.split("|")
+                    if (parts.size == 2) {
+                        com.linguaai.app.data.remote.dto
+                            .GrammarExampleDto(parts[0].trim(), parts[1].trim())
+                    } else {
+                        null
+                    }
+                }
+                ?: emptyList(),
+        notes = notes,
+        difficulty = difficulty,
+    )

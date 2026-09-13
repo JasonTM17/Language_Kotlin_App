@@ -12,8 +12,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,10 +34,7 @@ import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
 
 @Composable
-fun VocabularyScreen(
-    onOpenFlashcards: () -> Unit,
-    viewModel: VocabularyViewModel = hiltViewModel(),
-) {
+fun VocabularyScreen(viewModel: VocabularyViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -54,9 +51,10 @@ fun VocabularyScreen(
             leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             placeholder = { Text("Search word, reading or meaning") },
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         )
 
         Row(
@@ -83,28 +81,33 @@ fun VocabularyScreen(
 
         when {
             state.isLoading && state.vocabulary.isEmpty() -> LoadingIndicator()
-            state.vocabulary.isEmpty() -> EmptyState(
-                title = if (state.query.isBlank()) "No vocabulary yet" else "No matches",
-                message = state.error ?: "Try a different search or level filter.",
-                actionLabel = "Retry",
-                onAction = viewModel::refresh,
-            )
-            else -> LazyColumn(
-                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                items(state.vocabulary, key = { it.id }) { card ->
-                    VocabularyRow(card = card, onToggleFavorite = {
-                        viewModel.onEvent(VocabularyEvent.ToggleFavorite(card.id))
-                    })
+            state.vocabulary.isEmpty() ->
+                EmptyState(
+                    title = if (state.query.isBlank()) "No vocabulary yet" else "No matches",
+                    message = state.error ?: "Try a different search or level filter.",
+                    actionLabel = "Retry",
+                    onAction = viewModel::refresh,
+                )
+            else ->
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    items(state.vocabulary, key = { it.id }) { card ->
+                        VocabularyRow(card = card, onToggleFavorite = {
+                            viewModel.onEvent(VocabularyEvent.ToggleFavorite(card.id))
+                        })
+                    }
                 }
-            }
         }
     }
 }
 
 @Composable
-private fun VocabularyRow(card: VocabularyCard, onToggleFavorite: () -> Unit) {
+private fun VocabularyRow(
+    card: VocabularyCard,
+    onToggleFavorite: () -> Unit,
+) {
     LinguaCard {
         Row(
             verticalAlignment = Alignment.CenterVertically,

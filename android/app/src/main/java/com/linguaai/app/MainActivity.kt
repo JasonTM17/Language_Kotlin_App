@@ -17,7 +17,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var settingsDataStore: SettingsDataStore
 
@@ -31,11 +30,12 @@ class MainActivity : ComponentActivity() {
             val themeMode by settingsDataStore.themeMode.collectAsStateWithLifecycle(
                 initialValue = SettingsDataStore.THEME_SYSTEM,
             )
-            val darkTheme = when (themeMode) {
-                SettingsDataStore.THEME_DARK -> true
-                SettingsDataStore.THEME_LIGHT -> false
-                else -> isSystemInDarkTheme()
-            }
+            val darkTheme =
+                when (themeMode) {
+                    SettingsDataStore.THEME_DARK -> true
+                    SettingsDataStore.THEME_LIGHT -> false
+                    else -> isSystemInDarkTheme()
+                }
 
             LinguaAiTheme(darkTheme = darkTheme) {
                 LinguaApp()

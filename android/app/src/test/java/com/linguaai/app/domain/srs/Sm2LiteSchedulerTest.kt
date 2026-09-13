@@ -13,7 +13,6 @@ import org.junit.Test
  * actually enforced, intervals that stop growing, and mastery escaping its range.
  */
 class Sm2LiteSchedulerTest {
-
     private val scheduler = Sm2LiteScheduler()
 
     @Test

@@ -14,7 +14,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AuthModule {
-
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: RemoteAuthRepository): AuthRepository

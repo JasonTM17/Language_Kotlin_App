@@ -22,23 +22,24 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class LinguaDatabaseMigrationTest {
-
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        LinguaDatabase::class.java,
-    )
+    val helper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            LinguaDatabase::class.java,
+        )
 
     @Test
     fun migrate1To2_addsAiMessageCache() {
         helper.createDatabase(TEST_DB, 1).close()
 
-        val db = helper.runMigrationsAndValidate(
-            TEST_DB,
-            2,
-            true,
-            LinguaDatabase.MIGRATION_1_2,
-        )
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                2,
+                true,
+                LinguaDatabase.MIGRATION_1_2,
+            )
 
         // The table must exist and be usable, not merely present in the schema.
         db.query("SELECT COUNT(*) FROM ai_message_cache").use { cursor ->
@@ -52,12 +53,13 @@ class LinguaDatabaseMigrationTest {
     fun migrate2To3_addsProgressCache() {
         helper.createDatabase(TEST_DB, 2).close()
 
-        val db = helper.runMigrationsAndValidate(
-            TEST_DB,
-            3,
-            true,
-            LinguaDatabase.MIGRATION_2_3,
-        )
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                3,
+                true,
+                LinguaDatabase.MIGRATION_2_3,
+            )
 
         db.query("SELECT COUNT(*) FROM progress_cache").use { cursor ->
             assertTrue(cursor.moveToFirst())
@@ -70,12 +72,13 @@ class LinguaDatabaseMigrationTest {
     fun migrate3To4_addsOutboxAttemptsWithDefault() {
         helper.createDatabase(TEST_DB, 3).close()
 
-        val db = helper.runMigrationsAndValidate(
-            TEST_DB,
-            4,
-            true,
-            LinguaDatabase.MIGRATION_3_4,
-        )
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                4,
+                true,
+                LinguaDatabase.MIGRATION_3_4,
+            )
 
         // The whole point of the column is that pre-existing outbox rows get a
         // sane retry count rather than null, so assert the default was applied.
@@ -95,14 +98,15 @@ class LinguaDatabaseMigrationTest {
     fun migrate1To4_runsTheWholeChain() {
         helper.createDatabase(TEST_DB, 1).close()
 
-        val db = helper.runMigrationsAndValidate(
-            TEST_DB,
-            4,
-            true,
-            LinguaDatabase.MIGRATION_1_2,
-            LinguaDatabase.MIGRATION_2_3,
-            LinguaDatabase.MIGRATION_3_4,
-        )
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                4,
+                true,
+                LinguaDatabase.MIGRATION_1_2,
+                LinguaDatabase.MIGRATION_2_3,
+                LinguaDatabase.MIGRATION_3_4,
+            )
 
         db.close()
     }

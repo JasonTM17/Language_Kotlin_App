@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SmartToy
@@ -20,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -46,10 +46,11 @@ fun LoginScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
         verticalArrangement = Arrangement.Center,
     ) {
         BrandHeader()
@@ -62,9 +63,10 @@ fun LoginScreen(
             supportingText = { state.emailError?.let { Text(it) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.lg),
         )
 
         OutlinedTextField(
@@ -76,9 +78,10 @@ fun LoginScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.md),
         )
 
         state.formError?.let { message ->
@@ -100,9 +103,10 @@ fun LoginScreen(
 
         TextButton(
             onClick = onNavigateToRegister,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.sm),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.sm),
         ) {
             Text("New here? Create an account")
         }

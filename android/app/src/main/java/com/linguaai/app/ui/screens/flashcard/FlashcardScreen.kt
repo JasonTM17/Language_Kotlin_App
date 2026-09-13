@@ -34,27 +34,33 @@ fun FlashcardScreen(
 
     when {
         state.isLoading -> LoadingIndicator()
-        state.finished -> EmptyState(
-            title = if (state.reviewedCount > 0) "Session complete!" else "Nothing due right now",
-            message = if (state.reviewedCount > 0) {
-                "You reviewed ${state.reviewedCount} words. Come back later for the next batch."
-            } else {
-                "All caught up — new words unlock as review times arrive."
-            },
-            actionLabel = "Done",
-            onAction = onBack,
-        )
+        state.finished ->
+            EmptyState(
+                title = if (state.reviewedCount > 0) "Session complete!" else "Nothing due right now",
+                message =
+                    if (state.reviewedCount > 0) {
+                        "You reviewed ${state.reviewedCount} words. Come back later for the next batch."
+                    } else {
+                        "All caught up — new words unlock as review times arrive."
+                    },
+                actionLabel = "Done",
+                onAction = onBack,
+            )
         else -> FlashcardContent(state, viewModel::onEvent)
     }
 }
 
 @Composable
-private fun FlashcardContent(state: FlashcardUiState, onEvent: (FlashcardEvent) -> Unit) {
+private fun FlashcardContent(
+    state: FlashcardUiState,
+    onEvent: (FlashcardEvent) -> Unit,
+) {
     val card = state.current ?: return
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Spacing.md),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(Spacing.md),
     ) {
         Text(
             text = "${state.currentIndex + 1} / ${state.queue.size}",
@@ -66,9 +72,10 @@ private fun FlashcardContent(state: FlashcardUiState, onEvent: (FlashcardEvent) 
             AnimatedContent(targetState = state.isRevealed, label = "flashcard") { revealed ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Spacing.xl),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.xl),
                 ) {
                     Text(text = card.word, style = MaterialTheme.typography.displaySmall)
                     if (card.reading != null) {

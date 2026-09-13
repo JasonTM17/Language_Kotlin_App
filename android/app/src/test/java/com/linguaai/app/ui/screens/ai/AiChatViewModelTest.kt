@@ -17,7 +17,6 @@ import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.data.remote.dto.PracticeStartRequestDto
 import com.linguaai.app.test.MainDispatcherRule
 import com.linguaai.app.util.ConnectivityMonitor
-import java.util.ArrayDeque
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,110 +32,131 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import retrofit2.Response
+import java.util.ArrayDeque
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiChatViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `sentence correction uses the dedicated endpoint`() = runTest(mainDispatcherRule.dispatcher) {
-        val api = FakeAiApi()
-        val viewModel = viewModel(mode = "sentence-correction", api = api)
-        advanceUntilIdle()
+    fun `sentence correction uses the dedicated endpoint`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            val viewModel = viewModel(mode = "sentence-correction", api = api)
+            advanceUntilIdle()
 
-        viewModel.onInputChanged("  昨日学校に行きませんでしたから病気でした。  ")
-        viewModel.send()
-        advanceUntilIdle()
+            viewModel.onInputChanged("  昨日学校に行きませんでしたから病気でした。  ")
+            viewModel.send()
+            advanceUntilIdle()
 
-        assertEquals(listOf("correct"), api.calls)
-        assertEquals("昨日学校に行きませんでしたから病気でした。", api.correctRequests.single().sentence)
+            assertEquals(listOf("correct"), api.calls)
+            assertEquals("昨日学校に行きませんでしたから病気でした。", api.correctRequests.single().sentence)
 
-        viewModel.onInputChanged("今日は学校へ行った。")
-        viewModel.send()
-        advanceUntilIdle()
-        assertEquals(listOf("correct", "correct"), api.calls)
-        assertEquals(31L, api.correctRequests.last().conversationId)
-    }
-
-    @Test
-    fun `practice first turn starts a scenario and later turns use reply`() = runTest(mainDispatcherRule.dispatcher) {
-        val api = FakeAiApi()
-        val viewModel = viewModel(mode = "conversation-practice", api = api)
-        advanceUntilIdle()
-
-        viewModel.onInputChanged("ordering lunch politely")
-        viewModel.send()
-        advanceUntilIdle()
-        viewModel.onInputChanged("ラーメンを一つお願いします。")
-        viewModel.send()
-        advanceUntilIdle()
-
-        assertEquals(listOf("practice-start", "practice-reply"), api.calls)
-        assertEquals("ordering lunch politely", api.practiceStarts.single().scenario)
-        assertEquals(41L, api.practiceReplies.single().first)
-        assertEquals("ラーメンを一つお願いします。", api.practiceReplies.single().second.message)
-    }
-
-    @Test
-    fun `practice score uses the dedicated endpoint and exposes the result`() = runTest(mainDispatcherRule.dispatcher) {
-        val api = FakeAiApi()
-        val viewModel = viewModel(mode = "conversation-practice", api = api)
-        advanceUntilIdle()
-
-        viewModel.onInputChanged("ordering lunch politely")
-        viewModel.send()
-        advanceUntilIdle()
-        viewModel.scorePractice()
-        advanceUntilIdle()
-
-        assertEquals(listOf("practice-start", "practice-score"), api.calls)
-        assertEquals(listOf(41L), api.practiceScores)
-        assertEquals(84, viewModel.uiState.value.practiceScore?.score)
-        assertFalse(viewModel.uiState.value.isScoring)
-    }
-
-    @Test
-    fun `connectivity changes update the open chat state`() = runTest(mainDispatcherRule.dispatcher) {
-        val connectivity = FakeConnectivityMonitor(initiallyOnline = true)
-        val viewModel = viewModel(connectivity = connectivity)
-        advanceUntilIdle()
-        assertFalse(viewModel.uiState.value.isOffline)
-
-        connectivity.setOnline(false)
-        advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.isOffline)
-
-        connectivity.setOnline(true)
-        advanceUntilIdle()
-        assertFalse(viewModel.uiState.value.isOffline)
-    }
-
-    @Test
-    fun `history falls back to Room when the server is unavailable`() = runTest(mainDispatcherRule.dispatcher) {
-        val api = FakeAiApi().apply {
-            messagesResponse = serverError()
-        }
-        val cache = FakeAiMessageCacheDao().apply {
-            stored += AiMessageCacheEntity(conversationId = 7, role = "USER", content = "cached question")
-            stored += AiMessageCacheEntity(conversationId = 7, role = "ASSISTANT", content = "cached answer")
+            viewModel.onInputChanged("今日は学校へ行った。")
+            viewModel.send()
+            advanceUntilIdle()
+            assertEquals(listOf("correct", "correct"), api.calls)
+            assertEquals(31L, api.correctRequests.last().conversationId)
         }
 
-        val viewModel = viewModel(mode = "conversation", conversationId = 7, api = api, cache = cache)
-        advanceUntilIdle()
+    @Test
+    fun `practice first turn starts a scenario and later turns use reply`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            val viewModel = viewModel(mode = "conversation-practice", api = api)
+            advanceUntilIdle()
 
-        assertEquals(listOf("cached question", "cached answer"), viewModel.uiState.value.messages.map { it.content })
-        assertTrue(viewModel.uiState.value.error != null)
-    }
+            viewModel.onInputChanged("ordering lunch politely")
+            viewModel.send()
+            advanceUntilIdle()
+            viewModel.onInputChanged("ラーメンを一つお願いします。")
+            viewModel.send()
+            advanceUntilIdle()
+
+            assertEquals(listOf("practice-start", "practice-reply"), api.calls)
+            assertEquals("ordering lunch politely", api.practiceStarts.single().scenario)
+            assertEquals(41L, api.practiceReplies.single().first)
+            assertEquals(
+                "ラーメンを一つお願いします。",
+                api.practiceReplies
+                    .single()
+                    .second.message,
+            )
+        }
+
+    @Test
+    fun `practice score uses the dedicated endpoint and exposes the result`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            val viewModel = viewModel(mode = "conversation-practice", api = api)
+            advanceUntilIdle()
+
+            viewModel.onInputChanged("ordering lunch politely")
+            viewModel.send()
+            advanceUntilIdle()
+            viewModel.scorePractice()
+            advanceUntilIdle()
+
+            assertEquals(listOf("practice-start", "practice-score"), api.calls)
+            assertEquals(listOf(41L), api.practiceScores)
+            assertEquals(
+                84,
+                viewModel.uiState.value.practiceScore
+                    ?.score,
+            )
+            assertFalse(viewModel.uiState.value.isScoring)
+        }
+
+    @Test
+    fun `connectivity changes update the open chat state`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val connectivity = FakeConnectivityMonitor(initiallyOnline = true)
+            val viewModel = viewModel(connectivity = connectivity)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isOffline)
+
+            connectivity.setOnline(false)
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.isOffline)
+
+            connectivity.setOnline(true)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isOffline)
+        }
+
+    @Test
+    fun `history falls back to Room when the server is unavailable`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api =
+                FakeAiApi().apply {
+                    messagesResponse = serverError()
+                }
+            val cache =
+                FakeAiMessageCacheDao().apply {
+                    stored += AiMessageCacheEntity(conversationId = 7, role = "USER", content = "cached question")
+                    stored += AiMessageCacheEntity(conversationId = 7, role = "ASSISTANT", content = "cached answer")
+                }
+
+            val viewModel = viewModel(mode = "conversation", conversationId = 7, api = api, cache = cache)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("cached question", "cached answer"),
+                viewModel.uiState.value.messages
+                    .map { it.content },
+            )
+            assertTrue(viewModel.uiState.value.error != null)
+        }
 
     @Test
     fun `retry replaces the failed turn instead of duplicating the user message`() =
         runTest(mainDispatcherRule.dispatcher) {
-            val api = FakeAiApi().apply {
-                chatResponses += serverError()
-                chatResponses += Response.success(AiChatResponseDto(11, "recovered answer", "general"))
-            }
+            val api =
+                FakeAiApi().apply {
+                    chatResponses += serverError()
+                    chatResponses += Response.success(AiChatResponseDto(11, "recovered answer", "general"))
+                }
             val viewModel = viewModel(api = api)
             advanceUntilIdle()
 
@@ -146,37 +166,48 @@ class AiChatViewModelTest {
             viewModel.retryLast()
             advanceUntilIdle()
 
-            assertEquals(listOf("USER", "ASSISTANT"), viewModel.uiState.value.messages.map { it.role })
-            assertEquals(listOf("explain ように", "recovered answer"), viewModel.uiState.value.messages.map { it.content })
+            assertEquals(
+                listOf("USER", "ASSISTANT"),
+                viewModel.uiState.value.messages
+                    .map { it.role },
+            )
+            assertEquals(
+                listOf("explain ように", "recovered answer"),
+                viewModel.uiState.value.messages
+                    .map { it.content },
+            )
         }
 
     @Test
-    fun `general chat persists one completed exchange in the local cache`() = runTest(mainDispatcherRule.dispatcher) {
-        val api = FakeAiApi()
-        val cache = FakeAiMessageCacheDao()
-        val viewModel = viewModel(api = api, cache = cache)
-        advanceUntilIdle()
+    fun `general chat persists one completed exchange in the local cache`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            val cache = FakeAiMessageCacheDao()
+            val viewModel = viewModel(api = api, cache = cache)
+            advanceUntilIdle()
 
-        viewModel.onInputChanged("hello tutor")
-        viewModel.send()
-        advanceUntilIdle()
+            viewModel.onInputChanged("hello tutor")
+            viewModel.send()
+            advanceUntilIdle()
 
-        assertEquals(listOf("chat"), api.calls)
-        assertEquals(listOf("USER", "ASSISTANT"), cache.stored.map { it.role })
-        assertEquals(listOf("hello tutor", "chat answer"), cache.stored.map { it.content })
-    }
+            assertEquals(listOf("chat"), api.calls)
+            assertEquals(listOf("USER", "ASSISTANT"), cache.stored.map { it.role })
+            assertEquals(listOf("hello tutor", "chat answer"), cache.stored.map { it.content })
+        }
 
     @Test
     fun `reopened correction loads history and reuses its conversation id`() =
         runTest(mainDispatcherRule.dispatcher) {
-            val api = FakeAiApi().apply {
-                messagesResponse = Response.success(
-                    listOf(
-                        AiMessageDto(1, "USER", "old sentence"),
-                        AiMessageDto(2, "ASSISTANT", "old correction"),
-                    ),
-                )
-            }
+            val api =
+                FakeAiApi().apply {
+                    messagesResponse =
+                        Response.success(
+                            listOf(
+                                AiMessageDto(1, "USER", "old sentence"),
+                                AiMessageDto(2, "ASSISTANT", "old correction"),
+                            ),
+                        )
+                }
             val viewModel = viewModel(mode = "sentence-correction", conversationId = 7, api = api)
             advanceUntilIdle()
 
@@ -186,7 +217,12 @@ class AiChatViewModelTest {
 
             assertEquals(listOf("messages", "correct"), api.calls)
             assertEquals(7L, api.correctRequests.single().conversationId)
-            assertEquals("old sentence", viewModel.uiState.value.messages.first().content)
+            assertEquals(
+                "old sentence",
+                viewModel.uiState.value.messages
+                    .first()
+                    .content,
+            )
         }
 
     @Test
@@ -201,7 +237,11 @@ class AiChatViewModelTest {
             advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.isSending)
-            assertEquals(listOf("hello tutor", "chat answer"), viewModel.uiState.value.messages.map { it.content })
+            assertEquals(
+                listOf("hello tutor", "chat answer"),
+                viewModel.uiState.value.messages
+                    .map { it.content },
+            )
         }
 
     @Test
@@ -233,7 +273,9 @@ class AiChatViewModelTest {
         return AiChatViewModel(SavedStateHandle(state), api, cache, connectivity)
     }
 
-    private class FakeConnectivityMonitor(initiallyOnline: Boolean) : ConnectivityMonitor {
+    private class FakeConnectivityMonitor(
+        initiallyOnline: Boolean,
+    ) : ConnectivityMonitor {
         private val online = MutableStateFlow(initiallyOnline)
         override val isOnline: StateFlow<Boolean> = online
 

@@ -24,8 +24,9 @@ fun LinguaBottomBar(
 ) {
     NavigationBar(modifier = modifier) {
         destinations.forEach { destination ->
-            val selected = currentDestination != null &&
-                currentDestination.hasRoute(destination.routeClass)
+            val selected =
+                currentDestination != null &&
+                    currentDestination.hasRoute(destination.routeClass)
             NavigationBarItem(
                 selected = selected,
                 onClick = { onNavigate(destination.routeClass) },
@@ -36,9 +37,10 @@ fun LinguaBottomBar(
                     )
                 },
                 label = { Text(destination.label) },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
             )
         }
     }

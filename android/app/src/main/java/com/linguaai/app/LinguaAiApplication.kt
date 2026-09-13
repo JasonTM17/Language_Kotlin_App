@@ -6,12 +6,13 @@ import androidx.work.Configuration
 import com.linguaai.app.work.NotificationChannels
 import com.linguaai.app.work.WorkScheduler
 import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
-class LinguaAiApplication : Application(), Configuration.Provider {
-
+class LinguaAiApplication :
+    Application(),
+    Configuration.Provider {
     /**
      * Supplied to WorkManager so `@HiltWorker` classes can be constructed with
      * injected dependencies. Requires the default WorkManager initializer to be
@@ -21,9 +22,11 @@ class LinguaAiApplication : Application(), Configuration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
 
     override fun onCreate() {
         super.onCreate()

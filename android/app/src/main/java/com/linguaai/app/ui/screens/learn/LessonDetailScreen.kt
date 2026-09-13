@@ -59,42 +59,46 @@ fun LessonDetailScreen(
     ) { padding ->
         when {
             state.isLoading -> LoadingIndicator()
-            state.lesson == null -> ErrorState(
-                message = state.error ?: "Lesson unavailable",
-                retryLabel = "Retry",
-                onRetry = viewModel::load,
-                modifier = Modifier.padding(padding),
-            )
-            else -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.md),
-            ) {
-                Text(
-                    text = state.lesson?.description.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            state.lesson == null ->
+                ErrorState(
+                    message = state.error ?: "Lesson unavailable",
+                    retryLabel = "Retry",
+                    onRetry = viewModel::load,
+                    modifier = Modifier.padding(padding),
                 )
-                Text(
-                    text = state.lesson?.content.orEmpty(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = Spacing.md),
-                )
-                LinguaButton(
-                    text = if (state.completed) "Completed ✓" else "Mark as learned",
-                    onClick = viewModel::markCompleted,
-                    enabled = !state.completed,
-                    modifier = Modifier.padding(top = Spacing.lg),
-                )
-                LinguaButton(
-                    text = "Ask AI about this lesson",
-                    onClick = { onAskAi(state.lesson?.id ?: 0) },
-                    modifier = Modifier.padding(top = Spacing.sm),
-                )
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(32.dp))
-            }
+            else ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = Spacing.md),
+                ) {
+                    Text(
+                        text = state.lesson?.description.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = state.lesson?.content.orEmpty(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = Spacing.md),
+                    )
+                    LinguaButton(
+                        text = if (state.completed) "Completed ✓" else "Mark as learned",
+                        onClick = viewModel::markCompleted,
+                        enabled = !state.completed,
+                        modifier = Modifier.padding(top = Spacing.lg),
+                    )
+                    LinguaButton(
+                        text = "Ask AI about this lesson",
+                        onClick = { onAskAi(state.lesson?.id ?: 0) },
+                        modifier = Modifier.padding(top = Spacing.sm),
+                    )
+                    androidx.compose.foundation.layout
+                        .Spacer(modifier = Modifier.size(32.dp))
+                }
         }
     }
 }

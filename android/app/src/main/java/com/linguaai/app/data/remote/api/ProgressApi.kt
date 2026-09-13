@@ -9,7 +9,6 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface ProgressApi {
-
     @GET("progress")
     suspend fun summary(): Response<ProgressSummaryDto>
 

@@ -7,7 +7,6 @@ import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.remote.dto.QuizDto
 import com.linguaai.app.data.remote.dto.QuizResultDto
 import com.linguaai.app.data.remote.dto.QuizSubmissionDto
-import com.linguaai.app.data.remote.dto.VocabularyDto
 import com.linguaai.app.domain.model.AppResult
 import kotlinx.coroutines.flow.Flow
 
@@ -18,19 +17,50 @@ import kotlinx.coroutines.flow.Flow
 interface LearningContentRepository {
     suspend fun languages(): AppResult<List<LanguageDto>>
 
-    suspend fun refreshLessons(languageId: Long?, level: String?): AppResult<Unit>
-    fun observeLessons(languageId: Long?, level: String?): Flow<List<LessonSummaryDto>>
+    suspend fun refreshLessons(
+        languageId: Long?,
+        level: String?,
+    ): AppResult<Unit>
+
+    fun observeLessons(
+        languageId: Long?,
+        level: String?,
+    ): Flow<List<LessonSummaryDto>>
 
     suspend fun refreshLesson(id: Long): AppResult<LessonDto>
 
-    suspend fun refreshVocabulary(languageId: Long?, level: String?, category: String?, query: String?): AppResult<Unit>
-    fun observeVocabulary(languageId: Long?, level: String?, category: String?, query: String?): Flow<List<com.linguaai.app.domain.model.VocabularyCard>>
+    suspend fun refreshVocabulary(
+        languageId: Long?,
+        level: String?,
+        category: String?,
+        query: String?,
+    ): AppResult<Unit>
+
+    fun observeVocabulary(
+        languageId: Long?,
+        level: String?,
+        category: String?,
+        query: String?,
+    ): Flow<List<com.linguaai.app.domain.model.VocabularyCard>>
+
     suspend fun toggleFavorite(id: Long)
 
-    suspend fun refreshGrammar(languageId: Long?, level: String?): AppResult<Unit>
-    fun observeGrammar(languageId: Long?, level: String?): Flow<List<GrammarDto>>
+    suspend fun refreshGrammar(
+        languageId: Long?,
+        level: String?,
+    ): AppResult<Unit>
+
+    fun observeGrammar(
+        languageId: Long?,
+        level: String?,
+    ): Flow<List<GrammarDto>>
+
     suspend fun grammarById(id: Long): AppResult<GrammarDto>
 
     suspend fun quiz(id: Long): AppResult<QuizDto>
-    suspend fun submitQuiz(id: Long, submission: QuizSubmissionDto): AppResult<QuizResultDto>
+
+    suspend fun submitQuiz(
+        id: Long,
+        submission: QuizSubmissionDto,
+    ): AppResult<QuizResultDto>
 }

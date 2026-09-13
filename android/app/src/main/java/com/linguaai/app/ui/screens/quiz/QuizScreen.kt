@@ -55,72 +55,78 @@ fun QuizScreen(
         },
     ) { padding ->
         when {
-            state.result != null -> QuizResultContent(
-                score = state.result!!.score,
-                total = state.result!!.total,
-                weakTopics = state.result!!.weakTopics,
-                onAskAi = { onAskAiAboutMistakes(state.result!!.quizId) },
-                onDone = onBack,
-                modifier = Modifier.padding(padding),
-            )
+            state.result != null ->
+                QuizResultContent(
+                    score = state.result!!.score,
+                    total = state.result!!.total,
+                    weakTopics = state.result!!.weakTopics,
+                    onAskAi = { onAskAiAboutMistakes(state.result!!.quizId) },
+                    onDone = onBack,
+                    modifier = Modifier.padding(padding),
+                )
             state.isLoading -> LoadingIndicator()
-            state.quiz == null -> EmptyState(
-                title = "Quiz unavailable",
-                message = state.error ?: "This quiz could not be loaded.",
-                actionLabel = "Retry",
-                onAction = viewModel::load,
-                modifier = Modifier.padding(padding),
-            )
-            else -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.md),
-            ) {
-                state.quiz!!.questions.forEach { question ->
-                    LinguaCard(modifier = Modifier.padding(top = Spacing.md)) {
-                        Column(modifier = Modifier.padding(Spacing.md)) {
-                            Text(question.prompt, style = MaterialTheme.typography.titleMedium)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = Spacing.sm),
-                            ) {
-                                question.options.forEach { option ->
-                                    FilterChip(
-                                        selected = state.answers[question.id] == option,
-                                        onClick = {
-                                            viewModel.onEvent(QuizEvent.AnswerSelected(question.id, option))
-                                        },
-                                        label = { Text(option, maxLines = 2) },
-                                        modifier = Modifier.semantics {
-                                            contentDescription = "Option: $option"
-                                        },
-                                    )
+            state.quiz == null ->
+                EmptyState(
+                    title = "Quiz unavailable",
+                    message = state.error ?: "This quiz could not be loaded.",
+                    actionLabel = "Retry",
+                    onAction = viewModel::load,
+                    modifier = Modifier.padding(padding),
+                )
+            else ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = Spacing.md),
+                ) {
+                    state.quiz!!.questions.forEach { question ->
+                        LinguaCard(modifier = Modifier.padding(top = Spacing.md)) {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
+                                Text(question.prompt, style = MaterialTheme.typography.titleMedium)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = Spacing.sm),
+                                ) {
+                                    question.options.forEach { option ->
+                                        FilterChip(
+                                            selected = state.answers[question.id] == option,
+                                            onClick = {
+                                                viewModel.onEvent(QuizEvent.AnswerSelected(question.id, option))
+                                            },
+                                            label = { Text(option, maxLines = 2) },
+                                            modifier =
+                                                Modifier.semantics {
+                                                    contentDescription = "Option: $option"
+                                                },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                state.error?.let {
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = Spacing.sm),
+                    state.error?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = Spacing.sm),
+                        )
+                    }
+                    LinguaButton(
+                        text = "Submit answers",
+                        onClick = { viewModel.onEvent(QuizEvent.Submit) },
+                        enabled = state.allAnswered,
+                        isLoading = state.isSubmitting,
+                        modifier = Modifier.padding(top = Spacing.lg),
                     )
+                    Spacer(modifier = Modifier.height(Spacing.xl))
                 }
-                LinguaButton(
-                    text = "Submit answers",
-                    onClick = { viewModel.onEvent(QuizEvent.Submit) },
-                    enabled = state.allAnswered,
-                    isLoading = state.isSubmitting,
-                    modifier = Modifier.padding(top = Spacing.lg),
-                )
-                Spacer(modifier = Modifier.height(Spacing.xl))
-            }
         }
     }
 }
@@ -135,10 +141,11 @@ private fun QuizResultContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.md),
         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
     ) {
         Text(

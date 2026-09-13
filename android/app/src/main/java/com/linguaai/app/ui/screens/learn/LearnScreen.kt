@@ -49,9 +49,10 @@ fun LearnScreen(
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs),
         ) {
             ToolChip("Vocabulary", Modifier.weight(1f), onOpenVocabulary)
             ToolChip("Grammar", Modifier.weight(1f), onOpenGrammar)
@@ -93,53 +94,62 @@ fun LearnScreen(
 
         when {
             state.isLoading && state.lessons.isEmpty() -> LoadingIndicator()
-            state.lessons.isEmpty() -> EmptyState(
-                title = "No lessons yet",
-                message = state.error ?: "Lessons for your level will appear here.",
-                actionLabel = "Retry",
-                onAction = viewModel::refresh,
-            )
-            else -> LazyColumn(
-                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                items(state.lessons, key = { it.id }) { lesson ->
-                    LinguaCard(onClick = { onOpenLesson(lesson.id) }) {
-                        Column(modifier = Modifier.padding(Spacing.md)) {
-                            Text(lesson.title, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = "${lesson.level} · ${lesson.type.lowercase().replaceFirstChar { it.uppercase() }} · ${lesson.estimatedMinutes} min",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = Spacing.xs),
-                            ) {
+            state.lessons.isEmpty() ->
+                EmptyState(
+                    title = "No lessons yet",
+                    message = state.error ?: "Lessons for your level will appear here.",
+                    actionLabel = "Retry",
+                    onAction = viewModel::refresh,
+                )
+            else ->
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    items(state.lessons, key = { it.id }) { lesson ->
+                        LinguaCard(onClick = { onOpenLesson(lesson.id) }) {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
+                                Text(lesson.title, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    text = lesson.description.orEmpty(),
+                                    text = "${lesson.level} · ${lesson.type.lowercase().replaceFirstChar {
+                                        it.uppercase()
+                                    }} · ${lesson.estimatedMinutes} min",
                                     style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 2,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = Spacing.xs),
+                                ) {
+                                    Text(
+                                        text = lesson.description.orEmpty(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 2,
+                                    )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
         }
     }
 }
 
 @Composable
-private fun ToolChip(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun ToolChip(
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     androidx.compose.material3.ElevatedCard(onClick = onClick, modifier = modifier) {
         Text(
             text = label,

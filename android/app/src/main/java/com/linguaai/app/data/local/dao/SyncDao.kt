@@ -11,22 +11,30 @@ import kotlinx.coroutines.flow.Flow
 /** Outbox DAO for idempotent background synchronization. */
 @Dao
 interface SyncDao {
-
     @Insert
     suspend fun enqueue(op: PendingSyncOpEntity): Long
 
     @Query("SELECT * FROM pending_sync_ops WHERE state = :state ORDER BY id LIMIT :limit")
-    suspend fun byState(state: String, limit: Int): List<PendingSyncOpEntity>
+    suspend fun byState(
+        state: String,
+        limit: Int,
+    ): List<PendingSyncOpEntity>
 
     @Query("SELECT * FROM pending_sync_ops WHERE state != 'SYNCED' ORDER BY id")
     fun observeUnsynced(): Flow<List<PendingSyncOpEntity>>
 
     @Query("UPDATE pending_sync_ops SET state = :state WHERE id = :id")
-    suspend fun updateState(id: Long, state: String)
+    suspend fun updateState(
+        id: Long,
+        state: String,
+    )
 
     /** Records a failed delivery attempt and parks the op for the next run. */
     @Query("UPDATE pending_sync_ops SET attempts = attempts + 1, state = :state WHERE id = :id")
-    suspend fun recordAttempt(id: Long, state: String)
+    suspend fun recordAttempt(
+        id: Long,
+        state: String,
+    )
 
     @Query("SELECT COUNT(*) FROM pending_sync_ops WHERE state = :state")
     suspend fun countByState(state: String): Int
@@ -46,7 +54,6 @@ interface SyncDao {
 
 @Dao
 interface AiMessageCacheDao {
-
     @Insert
     suspend fun insertAll(messages: List<com.linguaai.app.data.local.entity.AiMessageCacheEntity>)
 

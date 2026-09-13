@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,12 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,7 +35,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +47,12 @@ import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
+
+/**
+ * The role-play mode. It is the only mode with a scoring action, and the only
+ * one whose placeholder depends on whether a scenario has been started.
+ */
+private const val CONVERSATION_PRACTICE_MODE = "conversation-practice"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,116 +103,151 @@ fun AiChatContent(
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .imePadding(),
         ) {
             OfflineBanner(
                 visible = state.isOffline,
                 modifier = Modifier.padding(horizontal = Spacing.md),
             )
+            ChatTranscript(state = state, listState = listState, onRetry = onRetry)
+            if (state.mode == CONVERSATION_PRACTICE_MODE && state.conversationId != null) {
+                PracticeScoreAction(state = state, onScorePractice = onScorePractice)
+            }
+            ChatComposer(state = state, onInputChanged = onInputChanged, onSend = onSend)
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-            ) {
-                when {
-                    state.isLoading -> LoadingIndicator()
-                    state.messages.isEmpty() && state.error != null -> ErrorState(
-                        message = state.error.orEmpty(),
-                        retryLabel = "Retry",
-                        retryModifier = Modifier.testTag("ai-chat-retry"),
-                        onRetry = onRetry,
-                    )
-                    else -> LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.md),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    ) {
-                        items(state.messages) { message ->
-                            MessageBubble(message)
-                        }
-                        if (state.error != null) {
-                            item {
-                                Column {
-                                    Text(
-                                        text = state.error.orEmpty(),
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                    TextButton(
-                                        onClick = onRetry,
-                                        modifier = Modifier.testTag("ai-chat-retry"),
-                                    ) {
-                                        Text("Retry")
-                                    }
+/** The scrolling transcript, and the loading and error states it can be in. */
+@Composable
+private fun ColumnScope.ChatTranscript(
+    state: AiChatUiState,
+    listState: LazyListState,
+    onRetry: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+    ) {
+        when {
+            state.isLoading -> LoadingIndicator()
+            state.messages.isEmpty() && state.error != null ->
+                ErrorState(
+                    message = state.error.orEmpty(),
+                    retryLabel = "Retry",
+                    retryModifier = Modifier.testTag("ai-chat-retry"),
+                    onRetry = onRetry,
+                )
+            else ->
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(Spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    items(state.messages) { message ->
+                        MessageBubble(message)
+                    }
+                    if (state.error != null) {
+                        item {
+                            Column {
+                                Text(
+                                    text = state.error.orEmpty(),
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                TextButton(
+                                    onClick = onRetry,
+                                    modifier = Modifier.testTag("ai-chat-retry"),
+                                ) {
+                                    Text("Retry")
                                 }
                             }
                         }
-                        state.practiceScore?.let { score ->
-                            item { PracticeScoreCard(score) }
-                        }
+                    }
+                    state.practiceScore?.let { score ->
+                        item { PracticeScoreCard(score) }
                     }
                 }
-            }
+        }
+    }
+}
 
-            if (state.mode == "conversation-practice" && state.conversationId != null) {
-                TextButton(
-                    onClick = onScorePractice,
-                    enabled = !state.isSending && !state.isScoring,
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(horizontal = Spacing.md)
-                        .testTag("ai-practice-score"),
-                ) {
-                    if (state.isScoring) {
-                        androidx.compose.material3.CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
+/** The role-play scoring action, shown only once a practice conversation exists. */
+@Composable
+private fun ColumnScope.PracticeScoreAction(
+    state: AiChatUiState,
+    onScorePractice: () -> Unit,
+) {
+    TextButton(
+        onClick = onScorePractice,
+        enabled = !state.isSending && !state.isScoring,
+        modifier =
+            Modifier
+                .align(Alignment.End)
+                .padding(horizontal = Spacing.md)
+                .testTag("ai-practice-score"),
+    ) {
+        if (state.isScoring) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Text(if (state.practiceScore == null) "Finish & score" else "Score again")
+        }
+    }
+}
+
+/** The input row: the text field and its send button. */
+@Composable
+private fun ChatComposer(
+    state: AiChatUiState,
+    onInputChanged: (String) -> Unit,
+    onSend: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+    ) {
+        OutlinedTextField(
+            value = state.input,
+            onValueChange = onInputChanged,
+            enabled = !state.isLoading && !state.isSending,
+            placeholder = { Text(chatPlaceholder(state.mode, state.conversationId)) },
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .testTag("ai-chat-input"),
+            maxLines = 3,
+        )
+        IconButton(
+            onClick = onSend,
+            enabled = !state.isLoading && !state.isSending && state.input.isNotBlank(),
+            modifier =
+                Modifier
+                    .padding(start = Spacing.xs)
+                    .testTag("ai-chat-send"),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Send,
+                contentDescription = "Send message",
+                tint =
+                    if (state.input.isNotBlank()) {
+                        MaterialTheme.colorScheme.primary
                     } else {
-                        Text(if (state.practiceScore == null) "Finish & score" else "Score again")
-                    }
-                }
-            }
-
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
-            ) {
-                OutlinedTextField(
-                    value = state.input,
-                    onValueChange = onInputChanged,
-                    enabled = !state.isLoading && !state.isSending,
-                    placeholder = { Text(chatPlaceholder(state.mode, state.conversationId)) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("ai-chat-input"),
-                    maxLines = 3,
-                )
-                IconButton(
-                    onClick = onSend,
-                    enabled = !state.isLoading && !state.isSending && state.input.isNotBlank(),
-                    modifier = Modifier
-                        .padding(start = Spacing.xs)
-                        .testTag("ai-chat-send"),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send message",
-                        tint = if (state.input.isNotBlank()) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                }
-            }
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            )
         }
     }
 }
@@ -211,12 +255,13 @@ fun AiChatContent(
 @Composable
 private fun PracticeScoreCard(score: PracticeScoreDto) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(Spacing.md)
-            .testTag("ai-practice-score-result"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .padding(Spacing.md)
+                .testTag("ai-practice-score-result"),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text("Practice score: ${score.score}/100", style = MaterialTheme.typography.titleMedium)
@@ -234,7 +279,7 @@ private fun PracticeScoreCard(score: PracticeScoreDto) {
 
 private fun chatTitle(mode: String): String =
     when (mode) {
-        "conversation-practice" -> "Conversation practice"
+        CONVERSATION_PRACTICE_MODE -> "Conversation practice"
         "sentence-correction" -> "Sentence correction"
         "grammar-explain" -> "Grammar coach"
         "mistakes" -> "Mistakes review"
@@ -246,8 +291,8 @@ private fun chatPlaceholder(
     conversationId: Long?,
 ): String =
     when {
-        mode == "conversation-practice" && conversationId == null -> "Describe a role-play scenario…"
-        mode == "conversation-practice" -> "Reply in the target language…"
+        mode == CONVERSATION_PRACTICE_MODE && conversationId == null -> "Describe a role-play scenario…"
+        mode == CONVERSATION_PRACTICE_MODE -> "Reply in the target language…"
         mode == "sentence-correction" -> "Enter a sentence to correct…"
         mode == "mistakes" -> "Ask about a mistake…"
         else -> "Ask anything about your lesson…"
@@ -261,20 +306,19 @@ private fun MessageBubble(message: ChatMessage) {
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
         Box(
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isUser) 16.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 16.dp,
-                    ),
-                )
-                .background(
-                    if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                )
-                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            modifier =
+                Modifier
+                    .widthIn(max = 300.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isUser) 16.dp else 4.dp,
+                            bottomEnd = if (isUser) 4.dp else 16.dp,
+                        ),
+                    ).background(
+                        if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
             if (message.isPending) {
                 androidx.compose.material3.CircularProgressIndicator(

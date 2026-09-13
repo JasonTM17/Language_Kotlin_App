@@ -1,9 +1,9 @@
 package com.linguaai.app.work
 
-import java.time.LocalDateTime
-import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 /**
  * Reminder scheduling arithmetic.
@@ -14,7 +14,6 @@ import org.junit.Test
  * reports "it never reminds me".
  */
 class WorkSchedulerTest {
-
     private val reminder = LocalTime.of(19, 0)
 
     @Test

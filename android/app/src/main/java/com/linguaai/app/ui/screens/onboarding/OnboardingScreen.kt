@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -46,17 +44,19 @@ fun OnboardingScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
     ) {
         val stepIndex = OnboardingStep.entries.indexOf(state.step)
         val total = OnboardingStep.entries.size
         LinearProgressIndicator(
             progress = { (stepIndex + 1) / total.toFloat() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = "Onboarding step ${stepIndex + 1} of $total" },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Onboarding step ${stepIndex + 1} of $total" },
         )
         Text(
             text = "Step ${stepIndex + 1} of $total",
@@ -72,28 +72,33 @@ fun OnboardingScreen(
 
         when {
             state.isLoading -> LoadingIndicator()
-            state.error != null -> ErrorState(
-                message = state.error.orEmpty(),
-                retryLabel = "Retry",
-                onRetry = viewModel::loadLanguages,
-            )
-            else -> when (state.step) {
-                OnboardingStep.LANGUAGE -> LanguageStep(state, viewModel::selectLanguage)
-                OnboardingStep.LEVEL -> ChoiceStep(
-                    options = state.currentLevels,
-                    selected = state.selectedLevel,
-                    onSelect = viewModel::selectLevel,
+            state.error != null ->
+                ErrorState(
+                    message = state.error.orEmpty(),
+                    retryLabel = "Retry",
+                    onRetry = viewModel::loadLanguages,
                 )
-                OnboardingStep.GOAL -> ChoiceStep(
-                    options = OnboardingCatalog.goals,
-                    selected = state.selectedGoal,
-                    onSelect = viewModel::selectGoal,
-                )
-                OnboardingStep.DAILY -> DailyGoalStep(
-                    selected = state.selectedDailyGoal,
-                    onSelect = viewModel::selectDailyGoal,
-                )
-            }
+            else ->
+                when (state.step) {
+                    OnboardingStep.LANGUAGE -> LanguageStep(state, viewModel::selectLanguage)
+                    OnboardingStep.LEVEL ->
+                        ChoiceStep(
+                            options = state.currentLevels,
+                            selected = state.selectedLevel,
+                            onSelect = viewModel::selectLevel,
+                        )
+                    OnboardingStep.GOAL ->
+                        ChoiceStep(
+                            options = OnboardingCatalog.goals,
+                            selected = state.selectedGoal,
+                            onSelect = viewModel::selectGoal,
+                        )
+                    OnboardingStep.DAILY ->
+                        DailyGoalStep(
+                            selected = state.selectedDailyGoal,
+                            onSelect = viewModel::selectDailyGoal,
+                        )
+                }
         }
 
         Row(modifier = Modifier.padding(top = Spacing.md)) {
@@ -107,16 +112,20 @@ fun OnboardingScreen(
                 onClick = viewModel::next,
                 enabled = state.canContinue,
                 isLoading = state.isSubmitting,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = Spacing.sm),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(start = Spacing.sm),
             )
         }
     }
 }
 
 @Composable
-private fun LanguageStep(state: OnboardingUiState, onSelect: (Long) -> Unit) {
+private fun LanguageStep(
+    state: OnboardingUiState,
+    onSelect: (Long) -> Unit,
+) {
     if (state.languages.isEmpty()) {
         EmptyState(title = "No languages yet", message = "The server has no language catalogue.")
         return
@@ -152,7 +161,10 @@ private fun ChoiceStep(
 }
 
 @Composable
-private fun DailyGoalStep(selected: Int?, onSelect: (Int) -> Unit) {
+private fun DailyGoalStep(
+    selected: Int?,
+    onSelect: (Int) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Text(
             text = "How many minutes per day do you want to study?",
@@ -181,17 +193,21 @@ private fun SelectableRow(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val container = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
+    val container =
+        if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
     androidx.compose.material3.Card(
         onClick = onClick,
-        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = container),
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = if (selected) "$title selected" else title },
+        colors =
+            androidx.compose.material3.CardDefaults
+                .cardColors(containerColor = container),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = if (selected) "$title selected" else title },
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)

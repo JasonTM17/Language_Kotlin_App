@@ -11,7 +11,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class SrsModule {
-
     @Binds
     @Singleton
     abstract fun bindReviewScheduler(impl: Sm2LiteScheduler): ReviewScheduler

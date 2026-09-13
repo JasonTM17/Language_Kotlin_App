@@ -18,27 +18,28 @@ import javax.inject.Singleton
  * server recognises it as a duplicate instead of counting it twice.
  */
 @Singleton
-class ProgressEventRecorder @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val syncDao: SyncDao,
-) {
-
-    suspend fun record(
-        eventType: String,
-        refId: Long? = null,
-        minutes: Int = 0,
+class ProgressEventRecorder
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val syncDao: SyncDao,
     ) {
-        syncDao.enqueue(
-            PendingSyncOpEntity(
-                operationId = UUID.randomUUID().toString(),
-                eventType = eventType,
-                refId = refId,
-                minutes = minutes,
-                occurredAt = System.currentTimeMillis(),
-            ),
-        )
-        // Kick the drain now; WorkManager coalesces, so a burst of events
-        // results in one sync run rather than one per event.
-        WorkScheduler.enqueueSync(context)
+        suspend fun record(
+            eventType: String,
+            refId: Long? = null,
+            minutes: Int = 0,
+        ) {
+            syncDao.enqueue(
+                PendingSyncOpEntity(
+                    operationId = UUID.randomUUID().toString(),
+                    eventType = eventType,
+                    refId = refId,
+                    minutes = minutes,
+                    occurredAt = System.currentTimeMillis(),
+                ),
+            )
+            // Kick the drain now; WorkManager coalesces, so a burst of events
+            // results in one sync run rather than one per event.
+            WorkScheduler.enqueueSync(context)
+        }
     }
-}

@@ -29,10 +29,13 @@ import com.linguaai.app.ui.screens.learn.LessonDetailScreen
 import com.linguaai.app.ui.screens.onboarding.OnboardingScreen
 import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
 import com.linguaai.app.ui.screens.quiz.QuizScreen
-import com.linguaai.app.ui.screens.vocabulary.VocabularyScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import com.linguaai.app.ui.screens.splash.StartDestination
+import com.linguaai.app.ui.screens.vocabulary.VocabularyScreen
 import kotlin.reflect.KClass
+
+/** Short cross-fade between destinations; long enough to read as a transition. */
+private const val NAV_TRANSITION_MILLIS = 200
 
 /**
  * Single navigation host for the app. The bottom bar is shown only on
@@ -42,9 +45,10 @@ import kotlin.reflect.KClass
 fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val showBottomBar = topLevelDestinations.any { route ->
-        currentDestination?.hasRoute(route::class) == true
-    }
+    val showBottomBar =
+        topLevelDestinations.any { route ->
+            currentDestination?.hasRoute(route::class) == true
+        }
 
     Scaffold(
         bottomBar = {
@@ -60,156 +64,181 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
             navController = navController,
             startDestination = SplashRoute,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { fadeIn(animationSpec = tween(200)) },
-            exitTransition = { fadeOut(animationSpec = tween(200)) },
+            enterTransition = { fadeIn(animationSpec = tween(NAV_TRANSITION_MILLIS)) },
+            exitTransition = { fadeOut(animationSpec = tween(NAV_TRANSITION_MILLIS)) },
         ) {
-            composable<SplashRoute> {
-                SplashScreen(
-                    onLanding = { destination ->
-                        val target = when (destination) {
-                            StartDestination.LOGIN -> LoginRoute
-                            StartDestination.ONBOARDING -> OnboardingRoute
-                            StartDestination.HOME -> HomeRoute
-                        }
-                        navController.navigate(target) {
-                            popUpTo(SplashRoute) { inclusive = true }
-                        }
-                    },
-                )
-            }
-
-            composable<LoginRoute> {
-                LoginScreen(
-                    onNavigateToRegister = {
-                        navController.navigate(RegisterRoute) { launchSingleTop = true }
-                    },
-                    onAuthenticated = {
-                        navController.navigate(OnboardingRoute) {
-                            popUpTo(LoginRoute) { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable<RegisterRoute> {
-                RegisterScreen(
-                    onNavigateToLogin = {
-                        navController.navigate(LoginRoute) { launchSingleTop = true }
-                    },
-                    onRegistered = {
-                        navController.navigate(OnboardingRoute) {
-                            popUpTo(RegisterRoute) { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable<OnboardingRoute> {
-                OnboardingScreen(
-                    onCompleted = {
-                        navController.navigate(HomeRoute) {
-                            popUpTo(OnboardingRoute) { inclusive = true }
-                        }
-                    },
-                )
-            }
-
-            composable<HomeRoute> {
-                HomeScreen(
-                    onContinueLesson = { lessonId ->
-                        navController.navigate(LessonDetailRoute(lessonId))
-                    },
-                    onStartReview = {
-                        navController.navigate(FlashcardRoute)
-                    },
-                    onOpenAiTutor = {
-                        navController.navigate(AiTutorRoute) {
-                            popUpTo(HomeRoute) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                )
-            }
-            composable<LearnRoute> {
-                LearnScreen(
-                    onOpenLesson = { lessonId -> navController.navigate(LessonDetailRoute(lessonId)) },
-                    onOpenVocabulary = { navController.navigate(VocabularyRoute) },
-                    onOpenGrammar = { navController.navigate(GrammarRoute) },
-                    onOpenFlashcards = { navController.navigate(FlashcardRoute) },
-                    onStartQuiz = { quizId -> navController.navigate(QuizRoute(quizId)) },
-                )
-            }
-            composable<AiTutorRoute> {
-                com.linguaai.app.ui.screens.ai.AiHomeScreen(
-                    onOpenConversation = { conversationId, mode ->
-                        val routeMode = chatRouteMode(conversationId, mode)
-                        navController.navigate(AiChatRoute(conversationId = conversationId, mode = routeMode))
-                    },
-                )
-            }
-            composable<AiChatRoute> { entry ->
-                com.linguaai.app.ui.screens.ai.AiChatScreen(onBack = { navController.popBackStack() })
-            }
-            composable<ProgressRoute> {
-                com.linguaai.app.ui.screens.progress.ProgressScreen()
-            }
-            composable<ProfileRoute> {
-                com.linguaai.app.ui.screens.profile.ProfileScreen(
-                    onSignedOut = {
-                        // Clear the whole back stack: after sign-out the previous
-                        // user's screens must not be reachable with Back.
-                        navController.navigate(LoginRoute) {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
-
-            composable<LessonDetailRoute> { entry ->
-                LessonDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onAskAi = { lessonId ->
-                        navController.navigate(AiChatRoute(conversationId = lessonId, mode = "lesson-context"))
-                    },
-                )
-            }
-            composable<VocabularyRoute> {
-                VocabularyScreen(
-                    onOpenFlashcards = { navController.navigate(FlashcardRoute) },
-                )
-            }
-            composable<FlashcardRoute> {
-                FlashcardScreen(onBack = { navController.popBackStack() })
-            }
-            composable<GrammarRoute> {
-                GrammarScreen(
-                    onOpenGrammar = { grammarId -> navController.navigate(GrammarDetailRoute(grammarId)) },
-                )
-            }
-            composable<GrammarDetailRoute> { entry ->
-                GrammarDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onAskAi = { grammarId ->
-                        navController.navigate(AiChatRoute(conversationId = grammarId, mode = "grammar-explain"))
-                    },
-                )
-            }
-            composable<QuizRoute> { entry ->
-                QuizScreen(
-                    onBack = { navController.popBackStack() },
-                    onAskAiAboutMistakes = { quizId ->
-                        navController.navigate(AiChatRoute(conversationId = quizId, mode = "mistakes"))
-                    },
-                )
-            }
-            composable<QuizResultRoute> { entry ->
-                val route = entry.toRoute<QuizResultRoute>()
-                PlaceholderScreen(title = "Quiz result #${route.attemptId}")
-            }
-            // NOTE: AiChatRoute is registered once, above. A second registration
-            // used to sit here rendering a placeholder, and because the last
-            // registration wins it silently replaced the real chat screen.
+            entryGraph(navController)
+            dashboardGraph(navController)
+            aiGraph(navController)
+            catalogueGraph(navController)
         }
+    }
+}
+
+/**
+ * Sign-in path: splash decides where to land, and neither auth screen can be
+ * returned to once it has been passed.
+ */
+private fun NavGraphBuilder.entryGraph(navController: NavHostController) {
+    composable<SplashRoute> {
+        SplashScreen(
+            onLanding = { destination ->
+                val target =
+                    when (destination) {
+                        StartDestination.LOGIN -> LoginRoute
+                        StartDestination.ONBOARDING -> OnboardingRoute
+                        StartDestination.HOME -> HomeRoute
+                    }
+                navController.navigate(target) {
+                    popUpTo(SplashRoute) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable<LoginRoute> {
+        LoginScreen(
+            onNavigateToRegister = {
+                navController.navigate(RegisterRoute) { launchSingleTop = true }
+            },
+            onAuthenticated = {
+                navController.navigate(OnboardingRoute) {
+                    popUpTo(LoginRoute) { inclusive = true }
+                }
+            },
+        )
+    }
+    composable<RegisterRoute> {
+        RegisterScreen(
+            onNavigateToLogin = {
+                navController.navigate(LoginRoute) { launchSingleTop = true }
+            },
+            onRegistered = {
+                navController.navigate(OnboardingRoute) {
+                    popUpTo(RegisterRoute) { inclusive = true }
+                }
+            },
+        )
+    }
+    composable<OnboardingRoute> {
+        OnboardingScreen(
+            onCompleted = {
+                navController.navigate(HomeRoute) {
+                    popUpTo(OnboardingRoute) { inclusive = true }
+                }
+            },
+        )
+    }
+}
+
+/** The four tab destinations plus the dashboard they lead into. */
+private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
+    composable<HomeRoute> {
+        HomeScreen(
+            onContinueLesson = { lessonId ->
+                navController.navigate(LessonDetailRoute(lessonId))
+            },
+            onStartReview = {
+                navController.navigate(FlashcardRoute)
+            },
+            onOpenAiTutor = {
+                navController.navigate(AiTutorRoute) {
+                    popUpTo(HomeRoute) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+        )
+    }
+    composable<LearnRoute> {
+        LearnScreen(
+            onOpenLesson = { lessonId -> navController.navigate(LessonDetailRoute(lessonId)) },
+            onOpenVocabulary = { navController.navigate(VocabularyRoute) },
+            onOpenGrammar = { navController.navigate(GrammarRoute) },
+            onOpenFlashcards = { navController.navigate(FlashcardRoute) },
+            onStartQuiz = { quizId -> navController.navigate(QuizRoute(quizId)) },
+        )
+    }
+    composable<ProgressRoute> {
+        com.linguaai.app.ui.screens.progress
+            .ProgressScreen()
+    }
+    composable<ProfileRoute> {
+        com.linguaai.app.ui.screens.profile.ProfileScreen(
+            onSignedOut = {
+                // Clear the whole back stack: after sign-out the previous
+                // user's screens must not be reachable with Back.
+                navController.navigate(LoginRoute) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+}
+
+/**
+ * AI Tutor entry and the chat surface every specialized mode shares.
+ *
+ * `AiChatRoute` is registered exactly once. A second registration used to sit
+ * in the catalogue graph rendering a placeholder, and because the last
+ * registration wins it silently replaced the real chat screen.
+ */
+private fun NavGraphBuilder.aiGraph(navController: NavHostController) {
+    composable<AiTutorRoute> {
+        com.linguaai.app.ui.screens.ai.AiHomeScreen(
+            onOpenConversation = { conversationId, mode ->
+                val routeMode = chatRouteMode(conversationId, mode)
+                navController.navigate(AiChatRoute(conversationId = conversationId, mode = routeMode))
+            },
+        )
+    }
+    composable<AiChatRoute> { entry ->
+        com.linguaai.app.ui.screens.ai
+            .AiChatScreen(onBack = { navController.popBackStack() })
+    }
+}
+
+/** Lesson, vocabulary, flashcard, grammar and quiz destinations. */
+private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
+    composable<LessonDetailRoute> { entry ->
+        LessonDetailScreen(
+            onBack = { navController.popBackStack() },
+            onAskAi = { lessonId ->
+                navController.navigate(AiChatRoute(conversationId = lessonId, mode = "lesson-context"))
+            },
+        )
+    }
+    composable<VocabularyRoute> {
+        VocabularyScreen()
+    }
+    composable<FlashcardRoute> {
+        FlashcardScreen(onBack = { navController.popBackStack() })
+    }
+    composable<GrammarRoute> {
+        GrammarScreen(
+            onOpenGrammar = { grammarId -> navController.navigate(GrammarDetailRoute(grammarId)) },
+        )
+    }
+    composable<GrammarDetailRoute> { entry ->
+        GrammarDetailScreen(
+            onBack = { navController.popBackStack() },
+            onAskAi = { grammarId ->
+                navController.navigate(AiChatRoute(conversationId = grammarId, mode = "grammar-explain"))
+            },
+        )
+    }
+    composable<QuizRoute> { entry ->
+        QuizScreen(
+            onBack = { navController.popBackStack() },
+            onAskAiAboutMistakes = { quizId ->
+                navController.navigate(AiChatRoute(conversationId = quizId, mode = "mistakes"))
+            },
+        )
+    }
+    composable<QuizResultRoute> { entry ->
+        val route = entry.toRoute<QuizResultRoute>()
+        PlaceholderScreen(title = "Quiz result #${route.attemptId}")
     }
 }
 
@@ -227,11 +256,12 @@ private val SPECIALIZED_HISTORY_MODES = setOf("conversation-practice", "sentence
 
 /** Tab navigation preserves each tab's back stack state. */
 private fun NavHostController.navigateToTopLevel(routeClass: KClass<*>) {
-    val options = navOptions {
-        popUpTo(HomeRoute) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
-    }
+    val options =
+        navOptions {
+            popUpTo(HomeRoute) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
     when (routeClass) {
         HomeRoute::class -> navigate(HomeRoute, options)
         LearnRoute::class -> navigate(LearnRoute, options)

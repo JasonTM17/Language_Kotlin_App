@@ -106,4 +106,3 @@ data class ProgressCacheEntity(
         const val SINGLETON_ID = 1
     }
 }
-

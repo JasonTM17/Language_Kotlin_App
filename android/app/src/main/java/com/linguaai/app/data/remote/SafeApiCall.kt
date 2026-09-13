@@ -2,53 +2,106 @@ package com.linguaai.app.data.remote
 
 import com.linguaai.app.data.remote.dto.ApiErrorEnvelopeDto
 import com.linguaai.app.domain.model.AppError
+import com.linguaai.app.domain.model.AppResult
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import retrofit2.Response
+import timber.log.Timber
 import java.io.IOException
 
 /**
  * Wraps a Retrofit call into [AppResult], translating transport failures and
  * the server error envelope into domain errors. UI never sees raw exceptions.
  */
-suspend fun <T> safeApiCall(call: suspend () -> Response<T>): com.linguaai.app.domain.model.AppResult<T> =
+suspend fun <T> safeApiCall(call: suspend () -> Response<T>): AppResult<T> =
     try {
         val response = call()
         val body = response.body()
         if (response.isSuccessful && body != null) {
-            com.linguaai.app.domain.model.AppResult.Success(body)
+            AppResult.Success(body)
         } else if (response.isSuccessful) {
-            com.linguaai.app.domain.model.AppResult.Failure(AppError.Unknown)
+            AppResult.Failure(AppError.Unknown)
         } else {
-            com.linguaai.app.domain.model.AppResult.Failure(toAppError(response.code(), response.errorBody()?.string()))
+            AppResult.Failure(toAppError(response.code(), response.errorBody()?.string()))
         }
     } catch (e: HttpException) {
-        com.linguaai.app.domain.model.AppResult.Failure(toAppError(e.code(), null))
+        AppResult.Failure(toAppError(e.code(), null))
     } catch (e: IOException) {
-        com.linguaai.app.domain.model.AppResult.Failure(AppError.NetworkUnavailable)
+        // Losing connectivity is expected, not exceptional, so this is logged at
+        // debug level: the exception still reaches the log instead of being
+        // dropped, but a device that is simply offline does not flood it.
+        Timber.d(e, "Network call failed; reporting offline")
+        AppResult.Failure(AppError.NetworkUnavailable)
     } catch (e: Exception) {
-        com.linguaai.app.domain.model.AppResult.Failure(AppError.Unknown)
+        // Reaching here is unexpected. Logging the cause is the difference
+        // between an operator seeing "Unknown" and seeing what actually failed.
+        Timber.w(e, "Unhandled failure while calling the API")
+        AppResult.Failure(AppError.Unknown)
     }
+
+private const val CODE_INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
+private const val CODE_RATE_LIMITED = "RATE_LIMITED"
+private const val CODE_CONFLICT = "CONFLICT"
+private const val CODE_VALIDATION_ERROR = "VALIDATION_ERROR"
+
+private const val HTTP_BAD_REQUEST = 400
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_CONFLICT = 409
+private const val HTTP_UNPROCESSABLE_ENTITY = 422
+private const val HTTP_RATE_LIMITED = 429
+
+/** Every 5xx. `503` used to be listed here separately, which was dead code. */
+private val HTTP_SERVER_ERROR = 500..599
 
 private val envelopeJson = Json { ignoreUnknownKeys = true }
 
-fun toAppError(httpCode: Int, rawErrorBody: String?): AppError {
-    val serverCode = rawErrorBody?.let { body ->
-        runCatching { envelopeJson.decodeFromString<ApiErrorEnvelopeDto>(body).error.code }.getOrNull()
-    }
+/**
+ * Maps an HTTP status and the server's error envelope onto [AppError].
+ *
+ * The branch order *is* the precedence: the first branch whose server code or
+ * HTTP status matches wins. [matches] and [isValidation] keep the paired
+ * conditions out of the branch bodies so the mapping stays readable as a table.
+ */
+fun toAppError(
+    httpCode: Int,
+    rawErrorBody: String?,
+): AppError {
+    val serverCode = serverErrorCode(rawErrorBody)
     return when {
-        serverCode == "INVALID_CREDENTIALS" || httpCode == 401 -> AppError.Unauthorized
-        serverCode == "RATE_LIMITED" || httpCode == 429 -> AppError.RateLimited
-        serverCode == "CONFLICT" || httpCode == 409 -> AppError.Conflict
-        serverCode == "VALIDATION_ERROR" || httpCode == 400 || httpCode == 422 ->
-            AppError.Validation(reason = serverMessage(rawErrorBody))
-        httpCode == 403 -> AppError.Forbidden
-        httpCode == 404 -> AppError.NotFound
-        httpCode in 500..599 || httpCode == 503 -> AppError.ServerError
+        matches(serverCode, httpCode, CODE_INVALID_CREDENTIALS, HTTP_UNAUTHORIZED) -> AppError.Unauthorized
+        matches(serverCode, httpCode, CODE_RATE_LIMITED, HTTP_RATE_LIMITED) -> AppError.RateLimited
+        matches(serverCode, httpCode, CODE_CONFLICT, HTTP_CONFLICT) -> AppError.Conflict
+        isValidation(serverCode, httpCode) -> AppError.Validation(reason = serverMessage(rawErrorBody))
+        httpCode == HTTP_FORBIDDEN -> AppError.Forbidden
+        httpCode == HTTP_NOT_FOUND -> AppError.NotFound
+        httpCode in HTTP_SERVER_ERROR -> AppError.ServerError
         else -> AppError.Unknown
     }
 }
 
-private fun serverMessage(raw: String?): String? = raw?.let { body ->
-    runCatching { envelopeJson.decodeFromString<ApiErrorEnvelopeDto>(body).error.message }.getOrNull()
-}
+private fun matches(
+    serverCode: String?,
+    httpCode: Int,
+    code: String,
+    status: Int,
+): Boolean = serverCode == code || httpCode == status
+
+private fun isValidation(
+    serverCode: String?,
+    httpCode: Int,
+): Boolean =
+    serverCode == CODE_VALIDATION_ERROR ||
+        httpCode == HTTP_BAD_REQUEST ||
+        httpCode == HTTP_UNPROCESSABLE_ENTITY
+
+private fun serverErrorCode(raw: String?): String? =
+    raw?.let { body ->
+        runCatching { envelopeJson.decodeFromString<ApiErrorEnvelopeDto>(body).error.code }.getOrNull()
+    }
+
+private fun serverMessage(raw: String?): String? =
+    raw?.let { body ->
+        runCatching { envelopeJson.decodeFromString<ApiErrorEnvelopeDto>(body).error.message }.getOrNull()
+    }

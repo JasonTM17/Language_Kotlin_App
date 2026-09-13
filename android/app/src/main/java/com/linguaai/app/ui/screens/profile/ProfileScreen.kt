@@ -16,15 +16,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
@@ -90,161 +91,24 @@ private fun ProfileContent(
         return
     }
 
-    val profile = state.profile
-
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.md),
     ) {
         SectionHeader(title = "Profile", modifier = Modifier.padding(top = Spacing.md))
+        AccountCard(state.profile)
 
-        LinguaCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = profile?.user?.username?.take(1)?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-                Column(modifier = Modifier.padding(start = Spacing.md)) {
-                    Text(
-                        text = profile?.user?.username ?: "Learner",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = profile?.user?.email.orEmpty(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    val level = profile?.level
-                    if (level != null) {
-                        Text(
-                            text = "Level $level",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-
-        SectionHeader(title = "Daily goal", modifier = Modifier.padding(top = Spacing.lg))
-        LinguaCard {
-            Column(modifier = Modifier.padding(Spacing.md)) {
-                Text(
-                    text = "${state.dailyGoalMinutes} minutes a day",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                FlowRow(
-                    modifier = Modifier.padding(top = Spacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    DAILY_GOAL_OPTIONS.forEach { minutes ->
-                        FilterChip(
-                            selected = state.dailyGoalMinutes == minutes,
-                            onClick = { onDailyGoal(minutes) },
-                            label = { Text("$minutes") },
-                        )
-                    }
-                }
-            }
-        }
-
-        SectionHeader(title = "Appearance", modifier = Modifier.padding(top = Spacing.lg))
-        LinguaCard {
-            Column(modifier = Modifier.padding(Spacing.md)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.DarkMode,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(
-                        text = "Theme",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = Spacing.sm),
-                    )
-                }
-                FlowRow(
-                    modifier = Modifier.padding(top = Spacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    listOf(
-                        SettingsDataStore.THEME_SYSTEM to "System",
-                        SettingsDataStore.THEME_LIGHT to "Light",
-                        SettingsDataStore.THEME_DARK to "Dark",
-                    ).forEach { (mode, label) ->
-                        FilterChip(
-                            selected = state.themeMode == mode,
-                            onClick = { onThemeMode(mode) },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-            }
-        }
-
-        SectionHeader(title = "Reminders", modifier = Modifier.padding(top = Spacing.lg))
-        LinguaCard {
-            Column(modifier = Modifier.padding(Spacing.md)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Notifications,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(
-                        text = "Daily study reminder",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = Spacing.sm),
-                    )
-                    Switch(
-                        checked = state.notificationsEnabled,
-                        onCheckedChange = onNotifications,
-                    )
-                }
-
-                if (state.notificationsEnabled) {
-                    Text(
-                        text = "Remind me at " + "%02d:00".format(state.reminderHour),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Spacing.sm),
-                    )
-                    FlowRow(
-                        modifier = Modifier.padding(top = Spacing.sm),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    ) {
-                        REMINDER_HOURS.forEach { hour ->
-                            FilterChip(
-                                selected = state.reminderHour == hour,
-                                onClick = { onReminderHour(hour) },
-                                label = { Text("%02d:00".format(hour)) },
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        DailyGoalSection(state.dailyGoalMinutes, onDailyGoal)
+        AppearanceSection(state.themeMode, onThemeMode)
+        RemindersSection(
+            enabled = state.notificationsEnabled,
+            reminderHour = state.reminderHour,
+            onReminderHour = onReminderHour,
+            onNotifications = onNotifications,
+        )
 
         if (state.error != null) {
             Text(
@@ -264,5 +128,189 @@ private fun ProfileContent(
         )
 
         Spacer(modifier = Modifier.height(Spacing.xl))
+    }
+}
+
+/** Avatar, username, email and the learner's current level. */
+@Composable
+private fun AccountCard(profile: ProfileData?) {
+    LinguaCard {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text =
+                        profile
+                            ?.user
+                            ?.username
+                            ?.take(1)
+                            ?.uppercase() ?: "?",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Column(modifier = Modifier.padding(start = Spacing.md)) {
+                Text(
+                    text = profile?.user?.username ?: "Learner",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = profile?.user?.email.orEmpty(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val level = profile?.level
+                if (level != null) {
+                    Text(
+                        text = "Level $level",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Chooser for the minutes the learner commits to each day. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun DailyGoalSection(
+    dailyGoalMinutes: Int,
+    onDailyGoal: (Int) -> Unit,
+) {
+    SectionHeader(title = "Daily goal", modifier = Modifier.padding(top = Spacing.lg))
+    LinguaCard {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Text(
+                text = "$dailyGoalMinutes minutes a day",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            FlowRow(
+                modifier = Modifier.padding(top = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                DAILY_GOAL_OPTIONS.forEach { minutes ->
+                    FilterChip(
+                        selected = dailyGoalMinutes == minutes,
+                        onClick = { onDailyGoal(minutes) },
+                        label = { Text("$minutes") },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Light, dark or follow-the-system. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun AppearanceSection(
+    themeMode: String,
+    onThemeMode: (String) -> Unit,
+) {
+    SectionHeader(title = "Appearance", modifier = Modifier.padding(top = Spacing.lg))
+    LinguaCard {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.DarkMode,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = "Theme",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = Spacing.sm),
+                )
+            }
+            FlowRow(
+                modifier = Modifier.padding(top = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                listOf(
+                    SettingsDataStore.THEME_SYSTEM to "System",
+                    SettingsDataStore.THEME_LIGHT to "Light",
+                    SettingsDataStore.THEME_DARK to "Dark",
+                ).forEach { (mode, label) ->
+                    FilterChip(
+                        selected = themeMode == mode,
+                        onClick = { onThemeMode(mode) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The study reminder toggle, and the hour it fires at when it is on. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun RemindersSection(
+    enabled: Boolean,
+    reminderHour: Int,
+    onReminderHour: (Int) -> Unit,
+    onNotifications: (Boolean) -> Unit,
+) {
+    SectionHeader(title = "Reminders", modifier = Modifier.padding(top = Spacing.lg))
+    LinguaCard {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = "Daily study reminder",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(start = Spacing.sm),
+                )
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onNotifications,
+                )
+            }
+
+            if (enabled) {
+                Text(
+                    text = "Remind me at " + "%02d:00".format(reminderHour),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.sm),
+                )
+                FlowRow(
+                    modifier = Modifier.padding(top = Spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    REMINDER_HOURS.forEach { hour ->
+                        FilterChip(
+                            selected = reminderHour == hour,
+                            onClick = { onReminderHour(hour) },
+                            label = { Text("%02d:00".format(hour)) },
+                        )
+                    }
+                }
+            }
+        }
     }
 }

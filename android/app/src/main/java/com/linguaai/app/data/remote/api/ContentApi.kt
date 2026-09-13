@@ -16,7 +16,6 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ContentApi {
-
     @GET("languages")
     suspend fun languages(): Response<List<LanguageDto>>
 
@@ -28,7 +27,9 @@ interface ContentApi {
     ): Response<List<LessonSummaryDto>>
 
     @GET("lessons/{id}")
-    suspend fun lesson(@Path("id") id: Long): Response<LessonDto>
+    suspend fun lesson(
+        @Path("id") id: Long,
+    ): Response<LessonDto>
 
     @GET("vocabulary")
     suspend fun vocabulary(
@@ -45,10 +46,14 @@ interface ContentApi {
     ): Response<List<GrammarDto>>
 
     @GET("grammar/{id}")
-    suspend fun grammarById(@Path("id") id: Long): Response<GrammarDto>
+    suspend fun grammarById(
+        @Path("id") id: Long,
+    ): Response<GrammarDto>
 
     @GET("quizzes/{id}")
-    suspend fun quiz(@Path("id") id: Long): Response<QuizDto>
+    suspend fun quiz(
+        @Path("id") id: Long,
+    ): Response<QuizDto>
 
     @POST("quizzes/{id}/submit")
     suspend fun submitQuiz(

@@ -11,25 +11,32 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import java.util.concurrent.TimeUnit
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
+import javax.inject.Named
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    /**
+     * A short connect timeout fails a dead host fast; the read timeout is longer
+     * because an AI turn on the server can legitimately take a while.
+     */
+    private const val CONNECT_TIMEOUT_SECONDS = 15L
+    private const val READ_TIMEOUT_SECONDS = 30L
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = false
-        explicitNulls = false
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = false
+            explicitNulls = false
+        }
 
     /**
      * Exposes the single configured [Json] instance so non-network components
@@ -43,31 +50,39 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("logging")
-    fun loggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
-        // Body logging is disabled so tokens and credentials never reach logs.
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BASIC
-        } else {
-            HttpLoggingInterceptor.Level.NONE
+    fun loggingInterceptor(): HttpLoggingInterceptor =
+        HttpLoggingInterceptor().apply {
+            // Body logging is disabled so tokens and credentials never reach logs.
+            level =
+                if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BASIC
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
+            redactHeader("Authorization")
         }
-        redactHeader("Authorization")
-    }
 
     @Provides
     @Singleton
     @Named("bare")
-    fun bareOkHttpClient(@Named("logging") logging: HttpLoggingInterceptor): OkHttpClient =
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+    fun bareOkHttpClient(
+        @Named("logging") logging: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(logging)
             .build()
 
     @Provides
     @Singleton
     @Named("bareRetrofit")
-    fun bareRetrofit(@Named("bare") client: OkHttpClient): Retrofit =
-        Retrofit.Builder()
+    fun bareRetrofit(
+        @Named("bare") client: OkHttpClient,
+    ): Retrofit =
+        Retrofit
+            .Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
@@ -80,9 +95,10 @@ object NetworkModule {
         authInterceptor: AuthInterceptor,
         authenticator: TokenAuthenticator,
     ): OkHttpClient =
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+        OkHttpClient
+            .Builder()
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .authenticator(authenticator)
@@ -91,7 +107,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun retrofit(client: OkHttpClient): Retrofit =
-        Retrofit.Builder()
+        Retrofit
+            .Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
@@ -107,11 +124,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun aiApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.AiApi = retrofit.create(com.linguaai.app.data.remote.api.AiApi::class.java)
+    fun aiApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.AiApi =
+        retrofit.create(com.linguaai.app.data.remote.api.AiApi::class.java)
 
     @Provides
     @Singleton
-    fun progressApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.ProgressApi = retrofit.create(com.linguaai.app.data.remote.api.ProgressApi::class.java)
+    fun progressApi(retrofit: Retrofit): com.linguaai.app.data.remote.api.ProgressApi =
+        retrofit.create(com.linguaai.app.data.remote.api.ProgressApi::class.java)
 
     @Provides
     @Singleton

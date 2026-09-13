@@ -2,22 +2,29 @@ package com.linguaai.app.ui.screens.learn
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.LessonDto
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
-import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.ui.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+// Language and quiz identifiers from the seeded catalogue. Naming them keeps
+// `defaultQuizFor` readable and stops a bare literal drifting unnoticed.
+private const val JAPANESE_LANGUAGE_ID = 1L
+private const val ENGLISH_LANGUAGE_ID = 2L
+private const val JAPANESE_N5_VOCABULARY_QUIZ_ID = 1L
+private const val ENGLISH_A1_VOCABULARY_QUIZ_ID = 4L
+
+/** Credited when a lesson does not state its own duration. */
+private const val DEFAULT_LESSON_MINUTES = 5
 
 data class LearnUiState(
     val isLoading: Boolean = true,
@@ -30,67 +37,72 @@ data class LearnUiState(
 )
 
 @HiltViewModel
-class LearnViewModel @Inject constructor(
-    private val learningContentRepository: LearningContentRepository,
-    private val remoteAuthRepository: RemoteAuthRepository,
-    private val settingsDataStore: SettingsDataStore,
-) : ViewModel() {
+class LearnViewModel
+    @Inject
+    constructor(
+        private val learningContentRepository: LearningContentRepository,
+        private val remoteAuthRepository: RemoteAuthRepository,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(LearnUiState())
+        val uiState: StateFlow<LearnUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(LearnUiState())
-    val uiState: StateFlow<LearnUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val languageId = currentLanguageId()
-            launchLessons(languageId)
-        }
-    }
-
-    fun refresh() {
-        viewModelScope.launch { launchLessons(currentLanguageId()) }
-    }
-
-    fun selectLevel(level: String?) {
-        _uiState.update { it.copy(selectedLevel = level) }
-        viewModelScope.launch { launchLessons(currentLanguageId(), level) }
-    }
-
-    private suspend fun launchLessons(languageId: Long?, level: String? = _uiState.value.selectedLevel) {
-        _uiState.update { it.copy(isLoading = true, error = null, languageId = languageId) }
-        when (val refresh = learningContentRepository.refreshLessons(languageId, level)) {
-            is AppResult.Failure -> _uiState.update {
-                it.copy(
-                    isOffline = refresh.error == com.linguaai.app.domain.model.AppError.NetworkUnavailable,
-                    error = refresh.error.toUserMessage(),
-                )
-            }
-            else -> _uiState.update { it.copy(isOffline = false, error = null) }
-        }
-        learningContentRepository.observeLessons(languageId, level).collect { lessons ->
-            _uiState.update { state ->
-                state.copy(
-                    isLoading = false,
-                    lessons = lessons,
-                    firstQuizId = state.firstQuizId ?: defaultQuizFor(languageId),
-                )
+        init {
+            viewModelScope.launch {
+                val languageId = currentLanguageId()
+                launchLessons(languageId)
             }
         }
-    }
 
-    private fun defaultQuizFor(languageId: Long?): Long? = when (languageId) {
-        1L -> 1L // Japanese N5 Vocabulary Check
-        2L -> 4L // English A1 Vocabulary Check
-        else -> null
-    }
+        fun refresh() {
+            viewModelScope.launch { launchLessons(currentLanguageId()) }
+        }
 
-    private suspend fun currentLanguageId(): Long? {
-        val profile = remoteAuthRepository.fetchProfile()
-        return when (profile) {
-            is AppResult.Success -> profile.data.languageId
-            is AppResult.Failure -> null
+        fun selectLevel(level: String?) {
+            _uiState.update { it.copy(selectedLevel = level) }
+            viewModelScope.launch { launchLessons(currentLanguageId(), level) }
+        }
+
+        private suspend fun launchLessons(
+            languageId: Long?,
+            level: String? = _uiState.value.selectedLevel,
+        ) {
+            _uiState.update { it.copy(isLoading = true, error = null, languageId = languageId) }
+            when (val refresh = learningContentRepository.refreshLessons(languageId, level)) {
+                is AppResult.Failure ->
+                    _uiState.update {
+                        it.copy(
+                            isOffline = refresh.error == com.linguaai.app.domain.model.AppError.NetworkUnavailable,
+                            error = refresh.error.toUserMessage(),
+                        )
+                    }
+                else -> _uiState.update { it.copy(isOffline = false, error = null) }
+            }
+            learningContentRepository.observeLessons(languageId, level).collect { lessons ->
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        lessons = lessons,
+                        firstQuizId = state.firstQuizId ?: defaultQuizFor(languageId),
+                    )
+                }
+            }
+        }
+
+        private fun defaultQuizFor(languageId: Long?): Long? =
+            when (languageId) {
+                JAPANESE_LANGUAGE_ID -> JAPANESE_N5_VOCABULARY_QUIZ_ID
+                ENGLISH_LANGUAGE_ID -> ENGLISH_A1_VOCABULARY_QUIZ_ID
+                else -> null
+            }
+
+        private suspend fun currentLanguageId(): Long? {
+            val profile = remoteAuthRepository.fetchProfile()
+            return when (profile) {
+                is AppResult.Success -> profile.data.languageId
+                is AppResult.Failure -> null
+            }
         }
     }
-}
 
 data class LessonDetailUiState(
     val isLoading: Boolean = true,
@@ -100,47 +112,52 @@ data class LessonDetailUiState(
 )
 
 @HiltViewModel
-class LessonDetailViewModel @Inject constructor(
-    private val savedStateHandle: androidx.lifecycle.SavedStateHandle,
-    private val learningContentRepository: LearningContentRepository,
-    private val syncDao: com.linguaai.app.data.local.dao.SyncDao,
-) : ViewModel() {
+class LessonDetailViewModel
+    @Inject
+    constructor(
+        private val savedStateHandle: androidx.lifecycle.SavedStateHandle,
+        private val learningContentRepository: LearningContentRepository,
+        private val syncDao: com.linguaai.app.data.local.dao.SyncDao,
+    ) : ViewModel() {
+        private val lessonId: Long = checkNotNull(savedStateHandle["lessonId"])
 
-    private val lessonId: Long = checkNotNull(savedStateHandle["lessonId"])
+        private val _uiState = MutableStateFlow(LessonDetailUiState())
+        val uiState: StateFlow<LessonDetailUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(LessonDetailUiState())
-    val uiState: StateFlow<LessonDetailUiState> = _uiState.asStateFlow()
+        init {
+            load()
+        }
 
-    init {
-        load()
-    }
-
-    fun load() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = learningContentRepository.refreshLesson(lessonId)) {
-                is AppResult.Success -> _uiState.update { it.copy(isLoading = false, lesson = result.data) }
-                is AppResult.Failure -> _uiState.update {
-                    it.copy(isLoading = false, error = result.error.toUserMessage())
+        fun load() {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                when (val result = learningContentRepository.refreshLesson(lessonId)) {
+                    is AppResult.Success -> _uiState.update { it.copy(isLoading = false, lesson = result.data) }
+                    is AppResult.Failure ->
+                        _uiState.update {
+                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                        }
                 }
             }
         }
-    }
 
-    /** Records a meaningful learning event for streaks and progress sync. */
-    fun markCompleted() {
-        viewModelScope.launch {
-            val minutes = _uiState.value.lesson?.estimatedMinutes ?: 5
-            syncDao.enqueue(
-                com.linguaai.app.data.local.entity.PendingSyncOpEntity(
-                    operationId = java.util.UUID.randomUUID().toString(),
-                    eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.LESSON_COMPLETED,
-                    refId = lessonId,
-                    minutes = minutes,
-                    occurredAt = System.currentTimeMillis(),
-                ),
-            )
-            _uiState.update { it.copy(completed = true) }
+        /** Records a meaningful learning event for streaks and progress sync. */
+        fun markCompleted() {
+            viewModelScope.launch {
+                val minutes = _uiState.value.lesson?.estimatedMinutes ?: DEFAULT_LESSON_MINUTES
+                syncDao.enqueue(
+                    com.linguaai.app.data.local.entity.PendingSyncOpEntity(
+                        operationId =
+                            java.util.UUID
+                                .randomUUID()
+                                .toString(),
+                        eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.LESSON_COMPLETED,
+                        refId = lessonId,
+                        minutes = minutes,
+                        occurredAt = System.currentTimeMillis(),
+                    ),
+                )
+                _uiState.update { it.copy(completed = true) }
+            }
         }
     }
-}

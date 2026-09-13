@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
  * summary so the screen can render immediately and stay useful offline.
  */
 interface ProgressRepository {
-
     /** Last cached summary, or null when nothing has been fetched yet. */
     fun observeCached(): Flow<ProgressSummaryDto?>
 

@@ -39,10 +39,11 @@ fun RegisterScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
     ) {
         BrandHeader()
 
@@ -54,9 +55,10 @@ fun RegisterScreen(
             supportingText = { state.emailError?.let { Text(it) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.lg),
         )
 
         OutlinedTextField(
@@ -66,9 +68,10 @@ fun RegisterScreen(
             isError = state.usernameError != null,
             supportingText = { state.usernameError?.let { Text(it) } },
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.md),
         )
 
         OutlinedTextField(
@@ -83,9 +86,10 @@ fun RegisterScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.md),
         )
 
         state.formError?.let { message ->
@@ -107,9 +111,10 @@ fun RegisterScreen(
 
         TextButton(
             onClick = onNavigateToLogin,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.sm),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.sm),
         ) {
             Text("Already have an account? Log in")
         }

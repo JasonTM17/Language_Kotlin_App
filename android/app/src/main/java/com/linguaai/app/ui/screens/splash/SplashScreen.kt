@@ -21,6 +21,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
+/** Keeps the brand mark on screen long enough to register as intentional. */
+private const val SPLASH_DELAY_MILLIS = 600L
+
 /**
  * Brand splash that resolves where the app should land: an active session goes
  * Home (or Onboarding), otherwise the login entry point.
@@ -32,7 +35,7 @@ fun SplashScreen(
 ) {
     val startDestination by viewModel.startDestination.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { delay(600) }
+    LaunchedEffect(Unit) { delay(SPLASH_DELAY_MILLIS) }
     LaunchedEffect(startDestination) {
         startDestination?.let(onLanding)
     }

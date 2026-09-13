@@ -11,7 +11,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ContentModule {
-
     @Binds
     @Singleton
     abstract fun bindLearningContentRepository(impl: LearningContentRepositoryImpl): LearningContentRepository

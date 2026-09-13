@@ -15,8 +15,13 @@ interface LessonDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(lessons: List<LessonEntity>)
 
-    @Query("SELECT * FROM lessons WHERE (:languageId IS NULL OR languageId = :languageId) AND (:level IS NULL OR level = :level) ORDER BY id")
-    fun observeLessons(languageId: Long?, level: String?): Flow<List<LessonEntity>>
+    @Query(
+        "SELECT * FROM lessons WHERE (:languageId IS NULL OR languageId = :languageId) AND (:level IS NULL OR level = :level) ORDER BY id",
+    )
+    fun observeLessons(
+        languageId: Long?,
+        level: String?,
+    ): Flow<List<LessonEntity>>
 
     @Query("SELECT * FROM lessons WHERE id = :id")
     suspend fun findById(id: Long): LessonEntity?
@@ -43,13 +48,23 @@ interface VocabularyDao {
                   OR meaning LIKE '%' || :query || '%')
            ORDER BY id""",
     )
-    fun observeVocabulary(languageId: Long?, level: String?, category: String?, query: String?): Flow<List<VocabularyEntity>>
+    fun observeVocabulary(
+        languageId: Long?,
+        level: String?,
+        category: String?,
+        query: String?,
+    ): Flow<List<VocabularyEntity>>
 
     @Query("SELECT * FROM vocabulary WHERE id = :id")
     suspend fun findById(id: Long): VocabularyEntity?
 
-    @Query("SELECT * FROM vocabulary WHERE (nextReviewAt IS NULL OR nextReviewAt <= :now) AND (masteryLevel < 5) ORDER BY nextReviewAt IS NOT NULL, id LIMIT :limit")
-    suspend fun dueForReview(now: Long, limit: Int): List<VocabularyEntity>
+    @Query(
+        "SELECT * FROM vocabulary WHERE (nextReviewAt IS NULL OR nextReviewAt <= :now) AND (masteryLevel < 5) ORDER BY nextReviewAt IS NOT NULL, id LIMIT :limit",
+    )
+    suspend fun dueForReview(
+        now: Long,
+        limit: Int,
+    ): List<VocabularyEntity>
 
     @Query("SELECT COUNT(*) FROM vocabulary WHERE (nextReviewAt IS NULL OR nextReviewAt <= :now) AND masteryLevel < 5")
     suspend fun dueCount(now: Long): Int
@@ -58,7 +73,10 @@ interface VocabularyDao {
     suspend fun countForLanguage(languageId: Long): Int
 
     @Query("UPDATE vocabulary SET favorite = :favorite WHERE id = :id")
-    suspend fun setFavorite(id: Long, favorite: Boolean)
+    suspend fun setFavorite(
+        id: Long,
+        favorite: Boolean,
+    )
 }
 
 @Dao
@@ -66,8 +84,13 @@ interface GrammarDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<GrammarEntity>)
 
-    @Query("SELECT * FROM grammar_lessons WHERE (:languageId IS NULL OR languageId = :languageId) AND (:level IS NULL OR level = :level) ORDER BY id")
-    fun observeGrammar(languageId: Long?, level: String?): Flow<List<GrammarEntity>>
+    @Query(
+        "SELECT * FROM grammar_lessons WHERE (:languageId IS NULL OR languageId = :languageId) AND (:level IS NULL OR level = :level) ORDER BY id",
+    )
+    fun observeGrammar(
+        languageId: Long?,
+        level: String?,
+    ): Flow<List<GrammarEntity>>
 
     @Query("SELECT * FROM grammar_lessons WHERE id = :id")
     suspend fun findById(id: Long): GrammarEntity?

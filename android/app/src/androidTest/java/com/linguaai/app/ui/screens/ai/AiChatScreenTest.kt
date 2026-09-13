@@ -4,10 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,19 +46,21 @@ class AiChatScreenTest {
     @Test
     fun practiceChat_exposesScoreActionAndResult() {
         var scoreCount = 0
-        val state = AiChatUiState(
-            isLoading = false,
-            conversationId = 42L,
-            mode = "conversation-practice",
-            practiceScore = PracticeScoreDto(
-                score = 84,
-                grammarScore = 80,
-                vocabularyScore = 86,
-                naturalness = 85,
-                mistakes = listOf("Particle choice"),
-                recommendations = listOf("Practise counters"),
-            ),
-        )
+        val state =
+            AiChatUiState(
+                isLoading = false,
+                conversationId = 42L,
+                mode = "conversation-practice",
+                practiceScore =
+                    PracticeScoreDto(
+                        score = 84,
+                        grammarScore = 80,
+                        vocabularyScore = 86,
+                        naturalness = 85,
+                        mistakes = listOf("Particle choice"),
+                        recommendations = listOf("Practise counters"),
+                    ),
+            )
 
         composeRule.setContent {
             TestChatContent(state = state, onScorePractice = { scoreCount++ })
@@ -92,11 +94,12 @@ class AiChatScreenTest {
     fun offlineState_displaysCachedContentBanner() {
         composeRule.setContent {
             TestChatContent(
-                state = AiChatUiState(
-                    isLoading = false,
-                    isOffline = true,
-                    messages = listOf(ChatMessage("ASSISTANT", "Cached answer")),
-                ),
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        isOffline = true,
+                        messages = listOf(ChatMessage("ASSISTANT", "Cached answer")),
+                    ),
             )
         }
 
@@ -123,13 +126,15 @@ class AiChatScreenTest {
     fun duplicateMessages_renderWithoutDuplicateLazyKeys() {
         composeRule.setContent {
             TestChatContent(
-                state = AiChatUiState(
-                    isLoading = false,
-                    messages = listOf(
-                        ChatMessage("USER", "same reply"),
-                        ChatMessage("USER", "same reply"),
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        messages =
+                            listOf(
+                                ChatMessage("USER", "same reply"),
+                                ChatMessage("USER", "same reply"),
+                            ),
                     ),
-                ),
             )
         }
 

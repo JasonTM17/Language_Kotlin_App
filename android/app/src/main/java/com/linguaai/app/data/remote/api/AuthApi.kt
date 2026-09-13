@@ -15,22 +15,31 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 
 interface AuthApi {
-
     @POST("auth/register")
-    suspend fun register(@Body body: RegisterRequestDto): Response<AuthResponseDto>
+    suspend fun register(
+        @Body body: RegisterRequestDto,
+    ): Response<AuthResponseDto>
 
     @POST("auth/login")
-    suspend fun login(@Body body: LoginRequestDto): Response<AuthResponseDto>
+    suspend fun login(
+        @Body body: LoginRequestDto,
+    ): Response<AuthResponseDto>
 
     @POST("auth/refresh")
-    suspend fun refresh(@Body body: RefreshRequestDto): Response<RefreshResponseDto>
+    suspend fun refresh(
+        @Body body: RefreshRequestDto,
+    ): Response<RefreshResponseDto>
 
     @POST("auth/logout")
-    suspend fun logout(@Body body: LogoutRequestDto): Response<Map<String, Boolean>>
+    suspend fun logout(
+        @Body body: LogoutRequestDto,
+    ): Response<Map<String, Boolean>>
 
     @GET("profile")
     suspend fun profile(): Response<ProfileDto>
 
     @PUT("profile")
-    suspend fun updateProfile(@Body body: UpdateProfileRequestDto): Response<ProfileDto>
+    suspend fun updateProfile(
+        @Body body: UpdateProfileRequestDto,
+    ): Response<ProfileDto>
 }

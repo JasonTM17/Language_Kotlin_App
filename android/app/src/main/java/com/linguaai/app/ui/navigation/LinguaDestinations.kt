@@ -34,7 +34,9 @@ data object ProgressRoute
 data object ProfileRoute
 
 @Serializable
-data class LessonDetailRoute(val lessonId: Long)
+data class LessonDetailRoute(
+    val lessonId: Long,
+)
 
 @Serializable
 data object VocabularyRoute
@@ -46,16 +48,25 @@ data object FlashcardRoute
 data object GrammarRoute
 
 @Serializable
-data class GrammarDetailRoute(val grammarId: Long)
+data class GrammarDetailRoute(
+    val grammarId: Long,
+)
 
 @Serializable
-data class QuizRoute(val quizId: Long)
+data class QuizRoute(
+    val quizId: Long,
+)
 
 @Serializable
-data class QuizResultRoute(val attemptId: Long)
+data class QuizResultRoute(
+    val attemptId: Long,
+)
 
 @Serializable
-data class AiChatRoute(val conversationId: Long? = null, val mode: String = "general")
+data class AiChatRoute(
+    val conversationId: Long? = null,
+    val mode: String = "general",
+)
 
 /** Destinations that show the bottom navigation bar. */
 val topLevelDestinations = listOf(HomeRoute, LearnRoute, AiTutorRoute, ProgressRoute, ProfileRoute)

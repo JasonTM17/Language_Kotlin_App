@@ -23,16 +23,19 @@ import com.linguaai.app.ui.theme.Spacing
  * available from the local cache; AI features require connectivity.
  */
 @Composable
-fun OfflineBanner(visible: Boolean, modifier: Modifier = Modifier) {
+fun OfflineBanner(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+) {
     if (!visible) return
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
