@@ -18,8 +18,17 @@ import com.linguaai.server.routes.configureRouting
 import io.ktor.server.application.Application
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import kotlin.system.exitProcess
 
 fun main() {
+    // Fail fast rather than boot with a publicly known signing key. Docker
+    // Compose already enforces JWT_SECRET via ${JWT_SECRET:?}; this guard
+    // covers bare-jar and other deployment paths.
+    if (System.getenv("APP_ENV") == "production" && System.getenv("JWT_SECRET").isNullOrBlank()) {
+        System.err.println("Refusing to start: JWT_SECRET must be set when APP_ENV=production")
+        exitProcess(1)
+    }
+
     val config = AppConfig.fromEnv()
     embeddedServer(
         factory = Netty,

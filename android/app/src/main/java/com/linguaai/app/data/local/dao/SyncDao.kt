@@ -49,6 +49,18 @@ interface SyncDao {
     @Query("SELECT COUNT(*) FROM pending_sync_ops WHERE state != 'SYNCED'")
     suspend fun unsyncedCount(): Int
 
+    /**
+     * Crash recovery: a process death between marking an op SYNCING and the
+     * delivery outcome would strand it forever, because [pending] only selects
+     * PENDING. Re-delivery is a server-side no-op (idempotent operation id),
+     * so resetting stuck rows back to PENDING is always safe.
+     */
+    @Query("UPDATE pending_sync_ops SET state = :pending WHERE state = :syncing")
+    suspend fun recoverStuckSyncing(
+        pending: String = SyncOpState.STATE_PENDING,
+        syncing: String = SyncOpState.STATE_SYNCING,
+    )
+
     suspend fun pending(limit: Int = 50): List<PendingSyncOpEntity> = byState(SyncOpState.STATE_PENDING, limit)
 }
 

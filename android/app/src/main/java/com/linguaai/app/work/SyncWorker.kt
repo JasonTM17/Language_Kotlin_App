@@ -32,6 +32,9 @@ class SyncWorker
         private val progressRepository: ProgressRepository,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
+            // Recover ops stranded in SYNCING by a previous process death before
+            // selecting the batch; re-delivering them is a server-side no-op.
+            syncDao.recoverStuckSyncing()
             val batch = syncDao.pending(BATCH_SIZE)
             if (batch.isEmpty()) {
                 syncDao.deleteByState(SyncOpState.STATE_SYNCED)
