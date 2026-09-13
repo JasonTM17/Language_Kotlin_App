@@ -1,0 +1,98 @@
+# detekt configuration for the LinguaAI Android app.
+#
+# Built on detekt's defaults. Every deviation below states why it is here — a
+# config entry without a reason is how a lint gate quietly stops meaning
+# anything. The server build carries a parallel document at
+# server/config/detekt/detekt.yml; where both builds relax the same rule, the
+# reason is the same one.
+#
+# Nothing here is a call-site `@Suppress`. Every finding that was a real defect
+# was fixed in the code instead; this file only holds rules that do not fit a
+# Compose codebase, each with its justification.
+
+naming:
+  FunctionNaming:
+    # Every finding this rule raised was a @Composable. PascalCase is the
+    # Compose convention, not a mistake: a composable is named like the UI it
+    # emits so it reads as a component at the call site. detekt's camelCase
+    # default cannot tell the two apart unless it is told about the annotation.
+    ignoreAnnotated: ['Composable']
+
+  TopLevelPropertyNaming:
+    # As on the server: the codebase names constants such as THEME_SYSTEM and
+    # MAX_ATTEMPTS in SCREAMING_SNAKE case, which is correct for them. The
+    # default would force camelCase.
+    active: false
+
+complexity:
+  LongMethod:
+    # A @Composable describes a UI tree rather than a sequence of statements, so
+    # its length tracks how much UI it renders. detekt's default of 60 was tuned
+    # for imperative functions, and splitting a screen purely to satisfy a line
+    # count produces single-use fragments whose name is their only
+    # documentation. Raised rather than disabled, so a function that renders an
+    # entire screen is still flagged — and everything above 120 was split.
+    threshold: 120
+
+  LongParameterList:
+    # A Compose screen takes its state and its callbacks as parameters, by
+    # design, and the default threshold of 6 sits just below what a content
+    # composable normally needs. Raised rather than disabled, and set one above
+    # the widest signature in the codebase — the shared state scaffold, at 8 —
+    # so a nine-parameter composable is still a finding.
+    functionThreshold: 9
+
+  TooManyFunctions:
+    # As on the server: a repository or a DI module is a data-access surface,
+    # not a domain object, and legitimately exceeds the default 11. Raised
+    # rather than disabled, so a genuinely bloated class is still flagged.
+    thresholdInFiles: 25
+    thresholdInClasses: 25
+    thresholdInInterfaces: 25
+    thresholdInObjects: 25
+
+style:
+  MagicNumber:
+    # Extracting a named constant is the behaviour this rule exists to
+    # encourage. Flagging the declaration itself means the reward for doing the
+    # right thing is still a warning, so constants get left inline instead. The
+    # theme palette is the clearest case: every value in Color.kt is already a
+    # named `val`, and the rule was flagging the declaration, not a use.
+    ignorePropertyDeclaration: true
+    # Self-evident values where a name adds nothing: detekt's own defaults, plus
+    # a minute in seconds, a whole as a percentage, and the multiplier that
+    # turns a ratio into one.
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '60'
+      - '100'
+      - '1000'
+
+  MaxLineLength:
+    # Owned by ktlint, which can auto-fix it. detekt can only report it, so
+    # running both means one tool complains about a line the other just
+    # produced — churn with no benefit. Line length is still enforced, by the
+    # formatter.
+    active: false
+
+  ReturnCount:
+    # Guard clauses read better than nested conditionals, which is the style the
+    # auth use cases and the token authenticator use.
+    max: 6
+
+exceptions:
+  TooGenericExceptionCaught:
+    # Three sites, all deliberate: the Retrofit boundary in SafeApiCall, where
+    # any unexpected failure maps to one stable `AppError.Unknown`, and the two
+    # best-effort AI cache writes, where a failure to cache must not break the
+    # chat. Each of them logs the cause through Timber, so no diagnostic
+    # information is lost.
+    active: false
+
+# NOTE: SwallowedException stays active. It found two real defects in
+# SafeApiCall where the original exception was dropped, and those fixes are now
+# load-bearing for diagnosing failures. Do not disable it to make a count go
+# down.

@@ -37,6 +37,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # Static analysis is a blocking gate here, not a report. detekt and ktlint
+      # both fail the build on a finding, and neither has a suppressed baseline:
+      # every exception in android/config/detekt/detekt.yml carries a written
+      # reason. See docs/WORKFLOW.md.
+      - name: Static analysis
+        run: ./gradlew detekt ktlintCheck --no-daemon
+
       # JVM unit tests only. Instrumented tests need a device or emulator and are
       # deliberately not run here — see docs/TESTING.md.
       - name: Unit tests

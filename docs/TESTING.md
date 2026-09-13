@@ -12,6 +12,24 @@ The server suite runs against a real Ktor module with real Flyway migrations on
 H2 in MySQL mode, so it exercises routing, serialization, auth, persistence and
 migrations together. Each test gets an isolated in-memory database.
 
+## Static analysis
+
+| Gate | Command | Behaviour |
+| --- | --- | --- |
+| detekt | `./gradlew detekt` (in `server/` or `android/`) | Blocking, both builds |
+| ktlint | `./gradlew ktlintCheck` (in `server/` or `android/`) | Blocking, both builds |
+
+Both run as part of `check`, so `./gradlew build` fails on a finding, and both CI
+workflows run them as explicit steps. Neither has a suppressed baseline: every
+exception in `server/config/detekt/detekt.yml` and
+`android/config/detekt/detekt.yml` carries a written reason, and there is no
+call-site `@Suppress` in either build.
+
+`ktlintFormat` is the fix for a formatting finding. `MaxLineLength` is left to
+ktlint, which can auto-fix it, rather than to detekt, which can only report it —
+running both meant one tool complaining about a line the other had just
+produced.
+
 ## What is covered, and why those things
 
 ### Server

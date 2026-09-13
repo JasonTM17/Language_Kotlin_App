@@ -1,0 +1,18 @@
+# Editor configuration for the Android build.
+#
+# ktlint reads this file to resolve its code style, so this is where the one
+# naming exemption the Compose codebase needs is declared.
+#
+# Why it is needed: a @Composable is named in PascalCase, like the UI component
+# it emits, so it reads as a component at a call site — `HomeScreen()`, not
+# `homeScreen()`. That is the Compose convention, and the Compose compiler
+# treats it as one. Both ktlint's `function-naming` rule and detekt's
+# `FunctionNaming` rule flag it unless they are told about the annotation;
+# detekt is told in `config/detekt/detekt.yml`, ktlint here.
+#
+# Every other file in this build is held to ktlint's defaults. There is no
+# blanket disabling of the naming rule — only functions annotated @Composable
+# are exempt, and a non-composable function in PascalCase is still a finding.
+
+[*.{kt,kts}]
+ktlint_function_naming_ignore_when_annotated_with = Composable
