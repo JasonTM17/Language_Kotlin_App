@@ -53,3 +53,6 @@ node_modules/
 .video_agent/
 .workbuddy-ai/
 plans/
+
+# Python bytecode
+__pycache__/
