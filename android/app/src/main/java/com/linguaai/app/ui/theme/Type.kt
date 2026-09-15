@@ -7,29 +7,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Type scale built on the default platform font family so text stays crisp and
- * font-scaling friendly (accessibility). Swap in a custom font family here later
- * without touching any screen.
+ * Type scale uses a restrained serif display axis and the platform sans-serif
+ * for body copy. The platform fallback keeps Vietnamese and Japanese readable
+ * without shipping a large font payload in this visual pass.
  */
 val LinguaTypography =
     Typography(
         displaySmall =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold,
                 fontSize = 34.sp,
                 lineHeight = 40.sp,
             ),
         headlineMedium =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold,
                 fontSize = 26.sp,
                 lineHeight = 32.sp,
             ),
         headlineSmall =
             TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
@@ -74,8 +74,8 @@ val LinguaTypography =
             TextStyle(
                 fontFamily = FontFamily.Default,
                 fontWeight = FontWeight.Normal,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
             ),
         labelLarge =
             TextStyle(

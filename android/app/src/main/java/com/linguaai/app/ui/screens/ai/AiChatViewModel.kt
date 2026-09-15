@@ -8,6 +8,7 @@ import com.linguaai.app.data.local.entity.AiMessageCacheEntity
 import com.linguaai.app.data.remote.api.AiApi
 import com.linguaai.app.data.remote.dto.AiChatRequestDto
 import com.linguaai.app.data.remote.dto.AiChatResponseDto
+import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.CorrectRequestDto
 import com.linguaai.app.data.remote.dto.PracticeReplyRequestDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
@@ -31,6 +32,7 @@ data class ChatMessage(
     val role: String, // USER | ASSISTANT
     val content: String,
     val isPending: Boolean = false,
+    val sources: List<AiSourceDto> = emptyList(),
 )
 
 data class AiChatUiState(
@@ -107,7 +109,9 @@ class AiChatViewModel
                                 isSending = false,
                                 conversationId = conversationId,
                                 failedInput = null,
-                                messages = it.messages.dropLast(1) + ChatMessage("ASSISTANT", result.data.reply),
+                                messages =
+                                    it.messages.dropLast(1) +
+                                        ChatMessage("ASSISTANT", result.data.reply, sources = result.data.sources),
                             )
                         }
                         cacheExchange(conversationId, text, result.data.reply)

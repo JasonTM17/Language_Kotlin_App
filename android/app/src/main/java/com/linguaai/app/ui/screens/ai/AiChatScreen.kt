@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,17 +22,26 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -38,12 +51,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.ui.components.ErrorState
+import com.linguaai.app.ui.components.LinguaMark
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
@@ -53,6 +72,20 @@ import com.linguaai.app.ui.theme.Spacing
  * one whose placeholder depends on whether a scenario has been started.
  */
 private const val CONVERSATION_PRACTICE_MODE = "conversation-practice"
+
+/** Shown on an empty transcript so the tutor never starts from a dead screen. */
+private val SUGGESTED_PROMPTS =
+    listOf(
+        "Explain a grammar point from my lesson",
+        "Give me five practice questions",
+        "How do I order food politely?",
+        "Teach me three useful travel phrases",
+    )
+
+/** Sources display per assistant bubble; more than this hurts readability. */
+private const val MAX_VISIBLE_SOURCES = 4
+
+private const val SOURCE_TITLE_MAX_LENGTH = 32
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +146,12 @@ fun AiChatContent(
                 visible = state.isOffline,
                 modifier = Modifier.padding(horizontal = Spacing.md),
             )
-            ChatTranscript(state = state, listState = listState, onRetry = onRetry)
+            ChatTranscript(
+                state = state,
+                listState = listState,
+                onRetry = onRetry,
+                onUsePrompt = onInputChanged,
+            )
             if (state.mode == CONVERSATION_PRACTICE_MODE && state.conversationId != null) {
                 PracticeScoreAction(state = state, onScorePractice = onScorePractice)
             }
@@ -122,12 +160,13 @@ fun AiChatContent(
     }
 }
 
-/** The scrolling transcript, and the loading and error states it can be in. */
+/** The scrolling transcript, and the loading, empty and error states it can be in. */
 @Composable
 private fun ColumnScope.ChatTranscript(
     state: AiChatUiState,
     listState: LazyListState,
     onRetry: () -> Unit,
+    onUsePrompt: (String) -> Unit,
 ) {
     Box(
         modifier =
@@ -144,6 +183,7 @@ private fun ColumnScope.ChatTranscript(
                     retryModifier = Modifier.testTag("ai-chat-retry"),
                     onRetry = onRetry,
                 )
+            state.messages.isEmpty() -> EmptyTranscript(onUsePrompt = onUsePrompt)
             else ->
                 LazyColumn(
                     state = listState,
@@ -179,6 +219,42 @@ private fun ColumnScope.ChatTranscript(
     }
 }
 
+/** Brand lockup and starter prompts shown before the first exchange. */
+@Composable
+private fun EmptyTranscript(onUsePrompt: (String) -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = Spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+        LinguaMark(modifier = Modifier.size(64.dp))
+        Text(
+            text = "Your AI tutor",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = Spacing.md),
+        )
+        Text(
+            text = "Answers are grounded in your course corpus and cite where they come from.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top = Spacing.xs),
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        SUGGESTED_PROMPTS.forEach { prompt ->
+            SuggestionChip(
+                onClick = { onUsePrompt(prompt) },
+                label = { Text(prompt) },
+                modifier = Modifier.padding(vertical = Spacing.xs),
+            )
+        }
+        Spacer(modifier = Modifier.heightIn(min = Spacing.lg))
+    }
+}
+
 /** The role-play scoring action, shown only once a practice conversation exists. */
 @Composable
 private fun ColumnScope.PracticeScoreAction(
@@ -205,7 +281,7 @@ private fun ColumnScope.PracticeScoreAction(
     }
 }
 
-/** The input row: the text field and its send button. */
+/** The input row: the pill-shaped text field and its circular send action. */
 @Composable
 private fun ChatComposer(
     state: AiChatUiState,
@@ -224,29 +300,41 @@ private fun ChatComposer(
             onValueChange = onInputChanged,
             enabled = !state.isLoading && !state.isSending,
             placeholder = { Text(chatPlaceholder(state.mode, state.conversationId)) },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions =
+                KeyboardActions(
+                    onSend = {
+                        if (!state.isLoading && !state.isSending && state.input.isNotBlank()) {
+                            onSend()
+                        }
+                    },
+                ),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier =
                 Modifier
                     .weight(1f)
                     .testTag("ai-chat-input"),
             maxLines = 3,
         )
-        IconButton(
+        FilledIconButton(
             onClick = onSend,
             enabled = !state.isLoading && !state.isSending && state.input.isNotBlank(),
+            colors =
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             modifier =
                 Modifier
-                    .padding(start = Spacing.xs)
+                    .padding(start = Spacing.sm, bottom = Spacing.xs)
+                    .size(48.dp)
                     .testTag("ai-chat-send"),
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Send message",
-                tint =
-                    if (state.input.isNotBlank()) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
             )
         }
     }
@@ -254,26 +342,43 @@ private fun ChatComposer(
 
 @Composable
 private fun PracticeScoreCard(score: PracticeScoreDto) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.secondaryContainer)
-                .padding(Spacing.md)
-                .testTag("ai-practice-score-result"),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    Surface(
+        modifier = Modifier.fillMaxWidth().testTag("ai-practice-score-result"),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Text("Practice score: ${score.score}/100", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "Grammar ${score.grammarScore} · Vocabulary ${score.vocabularyScore} · Naturalness ${score.naturalness}",
-            style = MaterialTheme.typography.bodySmall,
-        )
-        if (score.mistakes.isNotEmpty() || score.recommendations.isNotEmpty()) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.xs))
+        Column(
+            modifier = Modifier.padding(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            Text(
+                "Practice score: ${score.score}/100",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                "Grammar ${score.grammarScore} · Vocabulary ${score.vocabularyScore} · Naturalness ${score.naturalness}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            if (score.mistakes.isNotEmpty() || score.recommendations.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.xs))
+            }
+            score.mistakes.forEach {
+                Text(
+                    "Needs work: $it",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            score.recommendations.forEach {
+                Text(
+                    "Next: $it",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
         }
-        score.mistakes.forEach { Text("Needs work: $it", style = MaterialTheme.typography.bodySmall) }
-        score.recommendations.forEach { Text("Next: $it", style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -298,6 +403,7 @@ private fun chatPlaceholder(
         else -> "Ask anything about your lesson…"
     }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MessageBubble(message: ChatMessage) {
     val isUser = message.role == "USER"
@@ -305,29 +411,95 @@ private fun MessageBubble(message: ChatMessage) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
+        val bubbleShape =
+            RoundedCornerShape(
+                topStart = 18.dp,
+                topEnd = 18.dp,
+                bottomStart = if (isUser) 18.dp else 4.dp,
+                bottomEnd = if (isUser) 4.dp else 18.dp,
+            )
         Box(
             modifier =
                 Modifier
-                    .widthIn(max = 300.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 16.dp,
-                            bottomStart = if (isUser) 16.dp else 4.dp,
-                            bottomEnd = if (isUser) 4.dp else 16.dp,
-                        ),
-                    ).background(
-                        if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    .widthIn(max = 320.dp)
+                    .shadow(elevation = 1.dp, shape = bubbleShape, clip = false)
+                    .clip(bubbleShape)
+                    .background(
+                        if (isUser) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
                     ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
-            if (message.isPending) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+            Column {
+                if (message.isPending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                }
+                if (!isUser && message.sources.isNotEmpty()) {
+                    SourceChips(message.sources)
+                }
             }
         }
     }
 }
+
+/** Retrieved course-corpus citations rendered under an assistant reply. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SourceChips(sources: List<AiSourceDto>) {
+    Text(
+        text = "Grounded in your course",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Spacing.xs),
+    )
+    FlowRow(
+        modifier = Modifier.padding(top = Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        sources.take(MAX_VISIBLE_SOURCES).forEach { source ->
+            SourceChip(source)
+        }
+    }
+}
+
+@Composable
+private fun SourceChip(source: AiSourceDto) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.small,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+        ) {
+            Icon(
+                imageVector = sourceIcon(source.sourceType),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = source.title.take(SOURCE_TITLE_MAX_LENGTH),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
+        }
+    }
+}
+
+private fun sourceIcon(sourceType: String): ImageVector =
+    when (sourceType) {
+        "GRAMMAR" -> Icons.Filled.School
+        "LESSON" -> Icons.Filled.Description
+        else -> Icons.AutoMirrored.Filled.MenuBook
+    }

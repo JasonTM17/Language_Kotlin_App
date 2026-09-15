@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+// Keep the emulator default stable, while allowing a local backend to use an
+// alternate host port when another project already owns 8080.
+val debugBaseUrl = providers.gradleProperty("linguaai.debugBaseUrl").orElse("http://10.0.2.2:8080/api/v1/")
+
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     // detekt 1.23.8 embeds a compiler that cannot target the JDK 24 running
     // Gradle. Analyse the bytecode level this app actually emits.
@@ -40,7 +44,7 @@ android {
     buildTypes {
         debug {
             // The Android emulator reaches the host machine via 10.0.2.2.
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"${debugBaseUrl.get()}\"")
         }
         release {
             isMinifyEnabled = true

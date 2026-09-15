@@ -1,6 +1,7 @@
 package com.linguaai.app.domain.repository
 
 import com.linguaai.app.data.remote.dto.ProgressSummaryDto
+import com.linguaai.app.data.remote.dto.VocabularyProgressSnapshotDto
 import com.linguaai.app.domain.model.AppResult
 import kotlinx.coroutines.flow.Flow
 
@@ -20,6 +21,9 @@ interface ProgressRepository {
      */
     suspend fun refresh(): AppResult<ProgressSummaryDto>
 
+    /** Pulls per-word state and hydrates only cached words without pending local writes. */
+    suspend fun syncVocabularyProgress(): AppResult<Unit>
+
     /**
      * Records a meaningful learning event. [operationId] must be stable across
      * retries so the server can deduplicate; a repeated call is a no-op
@@ -30,6 +34,7 @@ interface ProgressRepository {
         eventType: String,
         refId: Long? = null,
         minutes: Int = 0,
+        vocabularyProgress: VocabularyProgressSnapshotDto? = null,
     ): AppResult<Unit>
 
     /** Drops cached progress. Called on sign-out. */

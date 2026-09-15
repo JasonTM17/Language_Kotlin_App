@@ -2,16 +2,20 @@ package com.linguaai.app.ui.screens.learn
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.LessonDto
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
+import com.linguaai.app.ui.util.DEFAULT_LANGUAGE_LEVELS
 import com.linguaai.app.ui.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +33,7 @@ private const val DEFAULT_LESSON_MINUTES = 5
 data class LearnUiState(
     val isLoading: Boolean = true,
     val lessons: List<LessonSummaryDto> = emptyList(),
+    val availableLevels: List<String> = DEFAULT_LANGUAGE_LEVELS,
     val selectedLevel: String? = null,
     val isOffline: Boolean = false,
     val error: String? = null,
@@ -42,28 +47,44 @@ class LearnViewModel
     constructor(
         private val learningContentRepository: LearningContentRepository,
         private val remoteAuthRepository: RemoteAuthRepository,
+        private val settingsDataStore: SettingsDataStore,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(LearnUiState())
         val uiState: StateFlow<LearnUiState> = _uiState.asStateFlow()
+        private var lessonsJob: Job? = null
 
         init {
-            viewModelScope.launch {
-                val languageId = currentLanguageId()
-                launchLessons(languageId)
-            }
+            requestLessons(loadLevels = true)
         }
 
         fun refresh() {
-            viewModelScope.launch { launchLessons(currentLanguageId()) }
+            requestLessons()
         }
 
         fun selectLevel(level: String?) {
             _uiState.update { it.copy(selectedLevel = level) }
-            viewModelScope.launch { launchLessons(currentLanguageId(), level) }
+            requestLessons(level)
+        }
+
+        private fun requestLessons(
+            level: String? = _uiState.value.selectedLevel,
+            loadLevels: Boolean = false,
+        ) {
+            lessonsJob?.cancel()
+            lessonsJob =
+                viewModelScope.launch {
+                    val languageId = currentLanguageId()
+                    if (languageId == null) {
+                        showMissingLanguage()
+                        return@launch
+                    }
+                    if (loadLevels) loadAvailableLevels(languageId)
+                    launchLessons(languageId, level)
+                }
         }
 
         private suspend fun launchLessons(
-            languageId: Long?,
+            languageId: Long,
             level: String? = _uiState.value.selectedLevel,
         ) {
             _uiState.update { it.copy(isLoading = true, error = null, languageId = languageId) }
@@ -99,7 +120,30 @@ class LearnViewModel
             val profile = remoteAuthRepository.fetchProfile()
             return when (profile) {
                 is AppResult.Success -> profile.data.languageId
-                is AppResult.Failure -> null
+                is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
+            }
+        }
+
+        private fun showMissingLanguage() {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    lessons = emptyList(),
+                    languageId = null,
+                    error = "Choose a learning language before opening lessons.",
+                )
+            }
+        }
+
+        private suspend fun loadAvailableLevels(languageId: Long?) {
+            when (val result = learningContentRepository.languages()) {
+                is AppResult.Success ->
+                    result.data
+                        .firstOrNull { it.id == languageId }
+                        ?.levels
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let { levels -> _uiState.update { it.copy(availableLevels = levels) } }
+                is AppResult.Failure -> Unit
             }
         }
     }

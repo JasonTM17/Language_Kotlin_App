@@ -3,6 +3,7 @@ package com.linguaai.app.ui.screens.grammar
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.GrammarDto
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
@@ -13,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,6 +32,7 @@ class GrammarViewModel
     constructor(
         private val learningContentRepository: LearningContentRepository,
         private val remoteAuthRepository: RemoteAuthRepository,
+        private val settingsDataStore: SettingsDataStore,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(GrammarListUiState())
         val uiState: StateFlow<GrammarListUiState> = _uiState.asStateFlow()
@@ -39,8 +42,12 @@ class GrammarViewModel
                 val languageId =
                     when (val profile = remoteAuthRepository.fetchProfile()) {
                         is AppResult.Success -> profile.data.languageId
-                        is AppResult.Failure -> null
+                        is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
                     }
+                if (languageId == null) {
+                    showMissingLanguage()
+                    return@launch
+                }
                 refresh(languageId)
                 learningContentRepository.observeGrammar(languageId, null).collect { items ->
                     _uiState.update { it.copy(isLoading = false, items = items) }
@@ -53,13 +60,17 @@ class GrammarViewModel
                 val languageId =
                     when (val profile = remoteAuthRepository.fetchProfile()) {
                         is AppResult.Success -> profile.data.languageId
-                        is AppResult.Failure -> null
+                        is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
                     }
-                refresh(languageId)
+                if (languageId == null) {
+                    showMissingLanguage()
+                } else {
+                    refresh(languageId)
+                }
             }
         }
 
-        private suspend fun refresh(languageId: Long?) {
+        private suspend fun refresh(languageId: Long) {
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = learningContentRepository.refreshGrammar(languageId, null)) {
                 is AppResult.Failure ->
@@ -67,6 +78,16 @@ class GrammarViewModel
                         it.copy(isOffline = result.error == AppError.NetworkUnavailable, error = result.error.toUserMessage())
                     }
                 else -> _uiState.update { it.copy(isOffline = false, error = null) }
+            }
+        }
+
+        private fun showMissingLanguage() {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    items = emptyList(),
+                    error = "Choose a learning language before opening grammar.",
+                )
             }
         }
     }

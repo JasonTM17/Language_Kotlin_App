@@ -59,9 +59,10 @@ interface VocabularyDao {
     suspend fun findById(id: Long): VocabularyEntity?
 
     @Query(
-        "SELECT * FROM vocabulary WHERE (nextReviewAt IS NULL OR nextReviewAt <= :now) AND (masteryLevel < 5) ORDER BY nextReviewAt IS NOT NULL, id LIMIT :limit",
+        "SELECT * FROM vocabulary WHERE languageId = :languageId AND (nextReviewAt IS NULL OR nextReviewAt <= :now) AND (masteryLevel < 5) ORDER BY nextReviewAt IS NOT NULL, id LIMIT :limit",
     )
     suspend fun dueForReview(
+        languageId: Long,
         now: Long,
         limit: Int,
     ): List<VocabularyEntity>
@@ -77,6 +78,40 @@ interface VocabularyDao {
         id: Long,
         favorite: Boolean,
     )
+
+    /** Applies server state only when no local event for the word is awaiting delivery. */
+    @Suppress("LongParameterList")
+    @Query(
+        """UPDATE vocabulary SET
+           favorite = :favorite,
+           masteryLevel = :masteryLevel,
+           reviewCount = :reviewCount,
+           correctCount = :correctCount,
+           wrongCount = :wrongCount,
+           lastReviewedAt = :lastReviewedAt,
+           nextReviewAt = :nextReviewAt,
+           stateUpdatedAt = :stateUpdatedAt
+           WHERE id = :vocabularyId
+             AND NOT EXISTS (
+                 SELECT 1 FROM pending_sync_ops
+                 WHERE refId = :vocabularyId AND state != 'SYNCED'
+             )""",
+    )
+    suspend fun applyProgressIfNoPending(
+        vocabularyId: Long,
+        favorite: Boolean,
+        masteryLevel: Int,
+        reviewCount: Int,
+        correctCount: Int,
+        wrongCount: Int,
+        lastReviewedAt: Long?,
+        nextReviewAt: Long?,
+        stateUpdatedAt: Long?,
+    ): Int
+
+    /** Clears user-specific review state and content at an account boundary. */
+    @Query("DELETE FROM vocabulary")
+    suspend fun clearAll()
 }
 
 @Dao

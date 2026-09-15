@@ -1,6 +1,7 @@
 package com.linguaai.app.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,23 +15,30 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.ui.components.ErrorState
+import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
@@ -73,35 +81,36 @@ private fun HomeContent(
                 .padding(horizontal = Spacing.md),
     ) {
         OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(top = Spacing.sm))
-        HomeHeader(state.profile)
-
+        HomeHeader(state.profile, state.languageName)
         DailyGoalCard(state)
-
         ContinueLearningCard(state.continueLesson, onContinueLesson)
-
         ReviewCard(state.dueVocabularyCount, onStartReview)
-
         AiTutorCard(onOpenAiTutor)
 
-        Text(
-            text = state.error ?: "",
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = Spacing.sm),
-        )
+        state.error?.let { message ->
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = Spacing.sm),
+            )
+        }
         Box(modifier = Modifier.height(Spacing.lg))
     }
 }
 
 /** Avatar, greeting and the learner's language, shown at the top of the screen. */
 @Composable
-private fun HomeHeader(profile: ProfileData?) {
+private fun HomeHeader(
+    profile: ProfileData?,
+    languageName: String?,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = Spacing.md),
+                .padding(top = Spacing.lg),
     ) {
         Box(
             modifier =
@@ -122,24 +131,31 @@ private fun HomeHeader(profile: ProfileData?) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
-        Column(modifier = Modifier.padding(start = Spacing.md)) {
+        Column(
+            modifier = Modifier.weight(1f).padding(start = Spacing.md),
+        ) {
             Text(
-                text = greeting() + (profile?.user?.username?.let { ", $it" } ?: "") + " 👋",
-                style = MaterialTheme.typography.titleLarge,
+                text = greeting() + (profile?.user?.username?.let { ", $it" } ?: ""),
+                style = MaterialTheme.typography.headlineSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text =
-                    listOfNotNull(
-                        profile?.level?.let { level -> languageLabel(profile) + " $level" },
-                    ).joinToString("").ifEmpty { "Set your language in Profile" },
+                    when {
+                        profile?.level != null && languageName != null -> "$languageName · ${profile.level}"
+                        profile?.level != null -> "Level ${profile.level}"
+                        else -> "Choose a goal to get started"
+                    },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.xs),
             )
         }
     }
 }
 
-/** Today's minutes against the daily goal, with the streak beside it. */
+/** Today's minutes with a numeric progress ring and a quiet streak accent. */
 @Composable
 private fun DailyGoalCard(state: HomeUiState) {
     val fraction =
@@ -149,53 +165,82 @@ private fun DailyGoalCard(state: HomeUiState) {
             0f
         }
 
-    LinguaCard(modifier = Modifier.padding(top = Spacing.md)) {
-        Column(modifier = Modifier.padding(Spacing.md)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Daily goal",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = "${state.streakDays} day streak",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = Spacing.xs),
-                )
-            }
-            Text(
-                text = "${state.todayMinutes} / ${state.dailyGoalMinutes} minutes today",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = Spacing.xs),
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .padding(top = Spacing.sm)
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = Spacing.lg),
+        shape = MaterialTheme.shapes.large,
+        shadowElevation = 1.dp,
+    ) {
+        Box(
+            modifier =
+                Modifier.background(
+                    Brush.linearGradient(
+                        colors =
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                            ),
+                    ),
+                ),
+        ) {
+            Row(
+                modifier = Modifier.padding(Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(fraction)
-                            .height(8.dp)
-                            .background(MaterialTheme.colorScheme.primary),
-                )
+                    modifier = Modifier.size(76.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surface,
+                        strokeWidth = 8.dp,
+                    )
+                    Text(
+                        text = "${(fraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Daily goal",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "${state.streakDays} day streak",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(start = Spacing.xs),
+                        )
+                    }
+                    Text(
+                        text = "${state.todayMinutes} of ${state.dailyGoalMinutes} minutes",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(top = Spacing.xs),
+                    )
+                }
             }
         }
     }
 }
 
-/** The lesson the learner left off on, or a nudge to finish onboarding. */
+/** The lesson the learner left off on, or a calm preview of the catalogue ahead. */
 @Composable
 private fun ContinueLearningCard(
     lesson: LessonSummaryDto?,
@@ -204,46 +249,61 @@ private fun ContinueLearningCard(
     SectionHeader(title = "Continue learning", modifier = Modifier.padding(top = Spacing.lg))
     if (lesson != null) {
         LinguaCard(onClick = { onContinueLesson(lesson.id) }) {
-            Column(modifier = Modifier.padding(Spacing.md)) {
-                Text(lesson.title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text =
-                        "${lesson.type.lowercase().replaceFirstChar { it.uppercase() }} · " +
-                            "${lesson.estimatedMinutes} min",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(
+                modifier = Modifier.padding(Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                IconTile(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = Spacing.sm),
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(lesson.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
                     Text(
-                        text = "Open lesson",
+                        text =
+                            "${lesson.type.lowercase().replaceFirstChar { it.uppercase() }} · " +
+                                "${lesson.estimatedMinutes} min",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = Spacing.xs),
+                    )
+                    Text(
+                        text = "Continue lesson",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier =
-                            Modifier
-                                .padding(start = Spacing.xs)
-                                .size(16.dp),
+                        modifier = Modifier.padding(top = Spacing.sm),
                     )
                 }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     } else {
         LinguaCard {
-            Column(modifier = Modifier.padding(Spacing.md)) {
-                Text("No lessons available yet", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = "Complete onboarding to pick a language.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(
+                modifier = Modifier.padding(Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                IconTile(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Column {
+                    Text("No lessons available yet", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = "Your first lesson will appear here soon.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -255,28 +315,40 @@ private fun ReviewCard(
     dueVocabularyCount: Int,
     onStartReview: () -> Unit,
 ) {
-    SectionHeader(title = "Review", modifier = Modifier.padding(top = Spacing.md))
+    SectionHeader(title = "Review words", modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard(onClick = onStartReview) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
+            IconTile(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text =
                         if (dueVocabularyCount > 0) {
-                            "$dueVocabularyCount words due for review"
+                            "$dueVocabularyCount words ready"
                         } else {
                             "Nothing due right now"
                         },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = "Review flashcards to grow your streak.",
+                    text = "Review flashcards to keep your memory fresh.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -284,35 +356,39 @@ private fun ReviewCard(
 /** Shortcut into the AI tutor from the dashboard. */
 @Composable
 private fun AiTutorCard(onOpenAiTutor: () -> Unit) {
-    SectionHeader(title = "AI Tutor", modifier = Modifier.padding(top = Spacing.md))
-    LinguaCard(onClick = onOpenAiTutor) {
+    SectionHeader(title = "AI Tutor", modifier = Modifier.padding(top = Spacing.lg))
+    LinguaCard(onClick = onOpenAiTutor, containerColor = MaterialTheme.colorScheme.secondaryContainer) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            Icon(
-                imageVector = Icons.Filled.SmartToy,
+            IconTile(
+                imageVector = Icons.Filled.AutoAwesome,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
             )
-            Column(modifier = Modifier.padding(start = Spacing.md)) {
-                Text("Ask your AI tutor", style = MaterialTheme.typography.titleSmall)
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Grammar questions, corrections and practice.",
+                    "Ask your tutor",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Get a clear explanation or practice a sentence.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
         }
     }
 }
-
-private fun languageLabel(profile: ProfileData): String =
-    when (profile.languageId) {
-        1L -> "Japanese"
-        2L -> "English"
-        else -> "Language"
-    }
 
 /** Local-time bands the greeting is chosen from. */
 private val MORNING_HOURS = 5..11

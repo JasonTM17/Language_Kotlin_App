@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +15,7 @@ import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,14 +24,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.data.remote.dto.GeneratedQuizQuestionDto
 import com.linguaai.app.ui.components.EmptyState
+import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
-import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
 
@@ -40,89 +44,113 @@ fun AiHomeScreen(
     viewModel: AiHomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    AiHomeContent(
+        state = state,
+        onOpenConversation = onOpenConversation,
+        onGenerateQuiz = viewModel::generateQuiz,
+        onRetryConversations = viewModel::loadConversations,
+    )
+}
 
+@Composable
+private fun AiHomeContent(
+    state: AiHomeUiState,
+    onOpenConversation: (Long?, String) -> Unit,
+    onGenerateQuiz: () -> Unit,
+    onRetryConversations: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        item {
-            Text(
-                text = "AI Tutor",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = Spacing.xs),
-            )
-        }
+        item { TutorHeader() }
+        item { AskTutorCard { onOpenConversation(null, "general") } }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                ToolCard("Ask", Icons.Outlined.School, Modifier.weight(1f)) {
-                    onOpenConversation(null, "general")
-                }
-                ToolCard("Practice", Icons.Filled.TheaterComedy, Modifier.weight(1f)) {
-                    onOpenConversation(null, "conversation-practice")
-                }
+                ToolCard(
+                    label = "Practice",
+                    icon = Icons.Filled.TheaterComedy,
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    onClick = { onOpenConversation(null, "conversation-practice") },
+                )
+                ToolCard(
+                    label = "Correct",
+                    icon = Icons.Filled.Spellcheck,
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    onClick = { onOpenConversation(null, "sentence-correction") },
+                )
             }
         }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                ToolCard("Correct", Icons.Filled.Spellcheck, Modifier.weight(1f)) {
-                    onOpenConversation(null, "sentence-correction")
-                }
-                ToolCard("Quiz me", Icons.Filled.Quiz, Modifier.weight(1f)) {
-                    viewModel.generateQuiz()
-                }
-            }
-        }
-
-        if (state.isGenerating) {
-            item { LoadingIndicator(modifier = Modifier.padding(Spacing.md)) }
-        }
+        item { QuizGeneratorCard(onGenerateQuiz) }
+        if (state.isGenerating) item { QuizLoadingState() }
         state.quizError?.let { error ->
-            item {
-                Column(modifier = Modifier.testTag("ai-quiz-error")) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    TextButton(
-                        onClick = viewModel::generateQuiz,
-                        modifier = Modifier.testTag("ai-quiz-retry"),
-                    ) {
-                        Text("Retry quiz")
-                    }
-                }
-            }
+            item { QuizErrorCard(error, onGenerateQuiz) }
         }
         if (state.generatedQuiz.isNotEmpty()) {
-            item { SectionHeader("Generated quiz") }
-            items(state.generatedQuiz) { question ->
-                QuizPreviewCard(question)
-            }
+            item { SectionHeader("Generated quiz", modifier = Modifier.padding(top = Spacing.md)) }
+            items(state.generatedQuiz) { question -> QuizPreviewCard(question) }
         }
-
-        item { SectionHeader("Recent conversations") }
+        item { SectionHeader("Recent conversations", modifier = Modifier.padding(top = Spacing.md)) }
         if (!state.isLoading && state.conversations.isEmpty()) {
             item {
                 EmptyState(
                     title = "No conversations yet",
                     message = state.conversationError ?: "Start a chat and your history will appear here.",
                     actionLabel = if (state.conversationError == null) null else "Retry",
-                    onAction = if (state.conversationError == null) null else viewModel::loadConversations,
+                    onAction = if (state.conversationError == null) null else onRetryConversations,
                 )
             }
         } else {
             items(state.conversations, key = { it.id }) { conversation ->
-                LinguaCard(onClick = { onOpenConversation(conversation.id, conversation.mode) }) {
-                    Column(modifier = Modifier.padding(Spacing.md)) {
-                        Text(conversation.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                        Text(
-                            text = conversation.mode,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                ConversationCard(conversation.title, conversation.mode) {
+                    onOpenConversation(conversation.id, conversation.mode)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TutorHeader() {
+    Column(modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.sm)) {
+        Text(text = "AI Tutor", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = "A patient practice partner for the moments you get stuck.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Spacing.xs),
+        )
+    }
+}
+
+@Composable
+private fun AskTutorCard(onClick: () -> Unit) {
+    LinguaCard(onClick = onClick, containerColor = MaterialTheme.colorScheme.primaryContainer) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(Spacing.md),
+        ) {
+            IconTile(
+                imageVector = Icons.Outlined.School,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Ask your tutor",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = "Explain a grammar point, word or lesson.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
             }
         }
     }
@@ -133,15 +161,13 @@ private fun ToolCard(
     label: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    containerColor: Color,
     onClick: () -> Unit,
 ) {
-    ElevatedCard(onClick = onClick, modifier = modifier) {
+    LinguaCard(onClick = onClick, containerColor = containerColor, modifier = modifier) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.md),
+            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.md),
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(
@@ -149,6 +175,98 @@ private fun ToolCard(
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = Spacing.xs),
             )
+        }
+    }
+}
+
+@Composable
+private fun QuizGeneratorCard(onClick: () -> Unit) {
+    LinguaCard(onClick = onClick) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(Spacing.md),
+        ) {
+            IconTile(
+                imageVector = Icons.Filled.Quiz,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Quiz me", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = "Create five questions from your current level.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuizLoadingState() {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.padding(end = Spacing.sm))
+        Text("Preparing your quiz", style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun QuizErrorCard(
+    error: String,
+    onRetry: () -> Unit,
+) {
+    LinguaCard(containerColor = MaterialTheme.colorScheme.errorContainer) {
+        Column(modifier = Modifier.padding(Spacing.md).testTag("ai-quiz-error")) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            TextButton(onClick = onRetry, modifier = Modifier.testTag("ai-quiz-retry")) {
+                Text("Try again", color = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConversationCard(
+    title: String,
+    mode: String,
+    onClick: () -> Unit,
+) {
+    LinguaCard(onClick = onClick) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(Spacing.md),
+        ) {
+            IconTile(
+                imageVector = Icons.Outlined.School,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.primary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = mode.replace('-', ' ').replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

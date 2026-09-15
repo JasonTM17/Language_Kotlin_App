@@ -1,10 +1,13 @@
 package com.linguaai.app.data.repository
 
 import com.linguaai.app.data.local.dao.ProgressCacheDao
+import com.linguaai.app.data.local.dao.VocabularyDao
 import com.linguaai.app.data.local.entity.ProgressCacheEntity
 import com.linguaai.app.data.remote.api.ProgressApi
 import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.data.remote.dto.RecordProgressEventRequestDto
+import com.linguaai.app.data.remote.dto.VocabularyProgressItemDto
+import com.linguaai.app.data.remote.dto.VocabularyProgressSnapshotDto
 import com.linguaai.app.data.remote.safeApiCall
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.ProgressRepository
@@ -27,6 +30,7 @@ class ProgressRepositoryImpl
     constructor(
         private val progressApi: ProgressApi,
         private val progressCacheDao: ProgressCacheDao,
+        private val vocabularyDao: VocabularyDao,
         private val json: Json,
     ) : ProgressRepository {
         override fun observeCached(): Flow<ProgressSummaryDto?> =
@@ -43,11 +47,21 @@ class ProgressRepositoryImpl
                 is AppResult.Failure -> result
             }
 
+        override suspend fun syncVocabularyProgress(): AppResult<Unit> =
+            when (val result = safeApiCall { progressApi.vocabularyProgress() }) {
+                is AppResult.Success -> {
+                    result.data.forEach { item -> item.applyToCache() }
+                    AppResult.Success(Unit)
+                }
+                is AppResult.Failure -> result
+            }
+
         override suspend fun recordEvent(
             operationId: String,
             eventType: String,
             refId: Long?,
             minutes: Int,
+            vocabularyProgress: VocabularyProgressSnapshotDto?,
         ): AppResult<Unit> =
             when (
                 val result =
@@ -58,6 +72,7 @@ class ProgressRepositoryImpl
                                 eventType = eventType,
                                 refId = refId,
                                 minutes = minutes,
+                                vocabularyProgress = vocabularyProgress,
                             ),
                         )
                     }
@@ -78,4 +93,18 @@ class ProgressRepositoryImpl
 
         private fun decode(payload: String): ProgressSummaryDto? =
             runCatching { json.decodeFromString(ProgressSummaryDto.serializer(), payload) }.getOrNull()
+
+        private suspend fun VocabularyProgressItemDto.applyToCache() {
+            vocabularyDao.applyProgressIfNoPending(
+                vocabularyId = vocabularyId,
+                favorite = favorite,
+                masteryLevel = masteryLevel,
+                reviewCount = reviewCount,
+                correctCount = correctCount,
+                wrongCount = wrongCount,
+                lastReviewedAt = lastReviewedAtEpochMillis,
+                nextReviewAt = nextReviewAtEpochMillis,
+                stateUpdatedAt = stateUpdatedAtEpochMillis,
+            )
+        }
     }

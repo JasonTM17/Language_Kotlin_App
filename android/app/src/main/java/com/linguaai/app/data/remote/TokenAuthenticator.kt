@@ -4,10 +4,6 @@ import com.linguaai.app.data.remote.api.AuthApi
 import com.linguaai.app.data.remote.dto.RefreshRequestDto
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.SessionStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,7 +35,6 @@ class TokenAuthenticator
         @Named("bareRetrofit") private val bareRetrofit: Retrofit,
     ) : Authenticator {
         private val refreshMutex = Mutex()
-        private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         override fun authenticate(
             route: Route?,
@@ -70,8 +65,9 @@ class TokenAuthenticator
 
             val newToken = sessionManager.accessTokenSync()
             if (!refreshed || newToken == null) {
-                // Refresh failed: drop the session; the UI observes logout.
-                ioScope.launch { sessionManager.clear() }
+                // Refresh failed: clear synchronously before any offline
+                // content fallback can read the previous language scope.
+                runBlocking { sessionManager.clear() }
                 return null
             }
 

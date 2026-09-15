@@ -38,6 +38,7 @@ data class VocabularyEntity(
     val wrongCount: Int = 0,
     val lastReviewedAt: Long? = null,
     val nextReviewAt: Long? = null,
+    val stateUpdatedAt: Long? = null,
     val cachedAt: Long = System.currentTimeMillis(),
 )
 
@@ -70,6 +71,15 @@ data class PendingSyncOpEntity(
     // Room expects. Room compares column defaults, so an ALTER that adds
     // DEFAULT 0 without this annotation would fail migration validation.
     @ColumnInfo(defaultValue = "0") val attempts: Int = 0,
+    /** Optional SRS snapshot; populated only for flashcard review events. */
+    val vocabularyFavorite: Boolean? = null,
+    val vocabularyMasteryLevel: Int? = null,
+    val vocabularyReviewCount: Int? = null,
+    val vocabularyCorrectCount: Int? = null,
+    val vocabularyWrongCount: Int? = null,
+    val vocabularyLastReviewedAt: Long? = null,
+    val vocabularyNextReviewAt: Long? = null,
+    val vocabularyStateUpdatedAt: Long? = null,
 )
 
 object SyncOpState {

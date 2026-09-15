@@ -8,6 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.linguaai.app.data.local.dao.AiMessageCacheDao
+import com.linguaai.app.data.local.dao.ProgressCacheDao
+import com.linguaai.app.data.local.dao.SyncDao
+import com.linguaai.app.data.local.dao.VocabularyDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -28,6 +32,11 @@ class SessionManager
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val settingsDataStore: SettingsDataStore,
+        private val progressCacheDao: ProgressCacheDao,
+        private val aiMessageCacheDao: AiMessageCacheDao,
+        private val syncDao: SyncDao,
+        private val vocabularyDao: VocabularyDao,
     ) : com.linguaai.app.domain.repository.SessionStore {
         @Volatile
         private var cachedAccessToken: String? = null
@@ -68,6 +77,14 @@ class SessionManager
             cachedAccessToken = null
             cachedRefreshToken = null
             context.tokenDataStore.edit { it.clear() }
+            settingsDataStore.setLearningLanguageId(null)
+            // Session invalidation is also an account boundary. This path is
+            // used by token refresh failures, where the UI sign-out flow never
+            // gets a chance to run.
+            progressCacheDao.clear()
+            aiMessageCacheDao.clearAll()
+            syncDao.clearAll()
+            vocabularyDao.clearAll()
         }
 
         private fun ensureCache() {

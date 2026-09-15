@@ -4,6 +4,7 @@ import android.content.Context
 import com.linguaai.app.data.local.dao.AiMessageCacheDao
 import com.linguaai.app.data.local.dao.ProgressCacheDao
 import com.linguaai.app.data.local.dao.SyncDao
+import com.linguaai.app.data.local.dao.VocabularyDao
 import com.linguaai.app.domain.repository.AuthRepository
 import com.linguaai.app.work.WorkScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +34,7 @@ class SignOutCoordinator
         private val progressCacheDao: ProgressCacheDao,
         private val aiMessageCacheDao: AiMessageCacheDao,
         private val syncDao: SyncDao,
+        private val vocabularyDao: VocabularyDao,
     ) {
         suspend fun signOut() {
             runCatching { authRepository.logout() }
@@ -44,5 +46,6 @@ class SignOutCoordinator
             progressCacheDao.clear()
             aiMessageCacheDao.clearAll()
             syncDao.clearAll()
+            vocabularyDao.clearAll()
         }
     }

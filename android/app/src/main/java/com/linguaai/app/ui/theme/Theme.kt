@@ -31,6 +31,7 @@ private val LightColors =
         onError = OnErrorLight,
         errorContainer = ErrorContainerLight,
         onErrorContainer = OnErrorContainerLight,
+        surfaceTint = PrimaryLight,
     )
 
 private val DarkColors =
@@ -58,6 +59,7 @@ private val DarkColors =
         onError = OnErrorDark,
         errorContainer = ErrorContainerDark,
         onErrorContainer = OnErrorContainerDark,
+        surfaceTint = PrimaryDark,
     )
 
 /**

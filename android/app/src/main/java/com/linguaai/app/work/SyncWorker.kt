@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import com.linguaai.app.data.local.dao.SyncDao
 import com.linguaai.app.data.local.entity.PendingSyncOpEntity
 import com.linguaai.app.data.local.entity.SyncOpState
+import com.linguaai.app.data.remote.dto.VocabularyProgressSnapshotDto
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.ProgressRepository
 import dagger.assisted.Assisted
@@ -72,7 +73,24 @@ class SyncWorker
                 eventType = op.eventType,
                 refId = op.refId,
                 minutes = op.minutes,
+                vocabularyProgress = op.vocabularyProgressSnapshot(),
             )
+
+        private fun PendingSyncOpEntity.vocabularyProgressSnapshot(): VocabularyProgressSnapshotDto? {
+            val snapshotCounters =
+                listOf(vocabularyMasteryLevel, vocabularyReviewCount, vocabularyCorrectCount, vocabularyWrongCount)
+            if (snapshotCounters.any { it == null }) return null
+            return VocabularyProgressSnapshotDto(
+                favorite = vocabularyFavorite ?: false,
+                masteryLevel = vocabularyMasteryLevel ?: return null,
+                reviewCount = vocabularyReviewCount ?: return null,
+                correctCount = vocabularyCorrectCount ?: return null,
+                wrongCount = vocabularyWrongCount ?: return null,
+                lastReviewedAtEpochMillis = vocabularyLastReviewedAt,
+                nextReviewAtEpochMillis = vocabularyNextReviewAt,
+                stateUpdatedAtEpochMillis = vocabularyStateUpdatedAt,
+            )
+        }
 
         /**
          * Increments the attempt counter and parks the op. Once [MAX_ATTEMPTS] is

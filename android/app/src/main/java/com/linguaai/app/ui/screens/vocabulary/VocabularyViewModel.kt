@@ -2,11 +2,13 @@ package com.linguaai.app.ui.screens.vocabulary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.domain.repository.LearningContentRepository
+import com.linguaai.app.ui.util.DEFAULT_LANGUAGE_LEVELS
 import com.linguaai.app.ui.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +31,7 @@ private const val SEARCH_DEBOUNCE_MILLIS = 300L
 data class VocabularyUiState(
     val isLoading: Boolean = true,
     val vocabulary: List<VocabularyCard> = emptyList(),
+    val availableLevels: List<String> = DEFAULT_LANGUAGE_LEVELS,
     val query: String = "",
     val selectedLevel: String? = null,
     val isOffline: Boolean = false,
@@ -57,6 +61,7 @@ class VocabularyViewModel
     constructor(
         private val learningContentRepository: LearningContentRepository,
         private val remoteAuthRepository: RemoteAuthRepository,
+        private val settingsDataStore: SettingsDataStore,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(VocabularyUiState())
         val uiState: StateFlow<VocabularyUiState> = _uiState.asStateFlow()
@@ -68,7 +73,19 @@ class VocabularyViewModel
 
         init {
             viewModelScope.launch {
-                languageIdState.value = currentLanguageId()
+                val languageId = currentLanguageId()
+                if (languageId == null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            vocabulary = emptyList(),
+                            error = "Choose a learning language before exploring vocabulary.",
+                        )
+                    }
+                    return@launch
+                }
+                languageIdState.value = languageId
+                loadAvailableLevels(languageId)
                 refresh()
                 combine(queryState.debounce(SEARCH_DEBOUNCE_MILLIS).distinctUntilChanged(), levelState, refreshTick) { q, l, _ ->
                     Triple(q, l, languageIdState.value)
@@ -108,6 +125,16 @@ class VocabularyViewModel
 
         fun refresh() {
             viewModelScope.launch {
+                if (languageIdState.value == null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            vocabulary = emptyList(),
+                            error = "Choose a learning language before exploring vocabulary.",
+                        )
+                    }
+                    return@launch
+                }
                 _uiState.update { it.copy(isLoading = true, error = null) }
                 when (
                     val result =
@@ -132,6 +159,18 @@ class VocabularyViewModel
                 val profile = remoteAuthRepository.fetchProfile()
             ) {
                 is AppResult.Success -> profile.data.languageId
-                is AppResult.Failure -> null
+                is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
             }
+
+        private suspend fun loadAvailableLevels(languageId: Long?) {
+            when (val result = learningContentRepository.languages()) {
+                is AppResult.Success ->
+                    result.data
+                        .firstOrNull { it.id == languageId }
+                        ?.levels
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let { levels -> _uiState.update { it.copy(availableLevels = levels) } }
+                is AppResult.Failure -> Unit
+            }
+        }
     }

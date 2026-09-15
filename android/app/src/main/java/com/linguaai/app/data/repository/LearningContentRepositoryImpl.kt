@@ -3,17 +3,22 @@ package com.linguaai.app.data.repository
 import com.linguaai.app.data.local.dao.GrammarDao
 import com.linguaai.app.data.local.dao.LessonDao
 import com.linguaai.app.data.local.dao.VocabularyDao
+import com.linguaai.app.data.local.entity.VocabularyEntity
 import com.linguaai.app.data.remote.api.ContentApi
 import com.linguaai.app.data.remote.dto.GrammarDto
 import com.linguaai.app.data.remote.dto.LanguageDto
 import com.linguaai.app.data.remote.dto.LessonDto
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
+import com.linguaai.app.data.remote.dto.ProgressEventTypes
 import com.linguaai.app.data.remote.dto.QuizDto
 import com.linguaai.app.data.remote.dto.QuizResultDto
 import com.linguaai.app.data.remote.dto.QuizSubmissionDto
+import com.linguaai.app.data.remote.dto.VocabularyProgressSnapshotDto
 import com.linguaai.app.data.remote.safeApiCall
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
+import com.linguaai.app.domain.repository.ProgressRepository
+import com.linguaai.app.work.ProgressEventRecorder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -31,6 +36,8 @@ class LearningContentRepositoryImpl
         private val lessonDao: LessonDao,
         private val vocabularyDao: VocabularyDao,
         private val grammarDao: GrammarDao,
+        private val progressRepository: ProgressRepository,
+        private val progressEventRecorder: ProgressEventRecorder,
     ) : LearningContentRepository {
         override suspend fun languages(): AppResult<List<LanguageDto>> = safeApiCall { contentApi.languages() }
 
@@ -94,12 +101,17 @@ class LearningContentRepositoryImpl
                                     wrongCount = old.wrongCount,
                                     lastReviewedAt = old.lastReviewedAt,
                                     nextReviewAt = old.nextReviewAt,
+                                    stateUpdatedAt = old.stateUpdatedAt,
                                 )
                             } else {
                                 dto.toEntity()
                             }
                         }
                     vocabularyDao.upsertAll(entities)
+                    // Content rows must exist before server-owned per-word state
+                    // can hydrate them; pending local outbox rows stay protected
+                    // by VocabularyDao.applyProgressIfNoPending.
+                    progressRepository.syncVocabularyProgress()
                     AppResult.Success(Unit)
                 }
                 is AppResult.Failure -> result
@@ -134,7 +146,18 @@ class LearningContentRepositoryImpl
             }
 
         override suspend fun toggleFavorite(id: Long) {
-            vocabularyDao.findById(id)?.let { vocabularyDao.setFavorite(id, !it.favorite) }
+            val current = vocabularyDao.findById(id) ?: return
+            val updated =
+                current.copy(
+                    favorite = !current.favorite,
+                    stateUpdatedAt = nextStateVersion(current.stateUpdatedAt),
+                )
+            progressEventRecorder.record(
+                eventType = ProgressEventTypes.VOCABULARY_STATE_SYNC,
+                refId = id,
+                vocabularyProgress = updated.toProgressSnapshot(),
+                localUpdate = { vocabularyDao.upsert(updated) },
+            )
         }
 
         // ---- grammar ----
@@ -179,3 +202,17 @@ class LearningContentRepositoryImpl
             submission: QuizSubmissionDto,
         ): AppResult<QuizResultDto> = safeApiCall { contentApi.submitQuiz(id, submission) }
     }
+
+private fun VocabularyEntity.toProgressSnapshot(): VocabularyProgressSnapshotDto =
+    VocabularyProgressSnapshotDto(
+        favorite = favorite,
+        masteryLevel = masteryLevel,
+        reviewCount = reviewCount,
+        correctCount = correctCount,
+        wrongCount = wrongCount,
+        lastReviewedAtEpochMillis = lastReviewedAt,
+        nextReviewAtEpochMillis = nextReviewAt,
+        stateUpdatedAtEpochMillis = stateUpdatedAt,
+    )
+
+private fun nextStateVersion(current: Long?): Long = maxOf(current ?: 0L, System.currentTimeMillis()) + 1L

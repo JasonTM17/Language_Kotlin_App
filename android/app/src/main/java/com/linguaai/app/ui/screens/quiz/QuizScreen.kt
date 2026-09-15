@@ -1,17 +1,19 @@
 package com.linguaai.app.ui.screens.quiz
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -22,14 +24,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
 
@@ -64,7 +69,7 @@ fun QuizScreen(
                     onDone = onBack,
                     modifier = Modifier.padding(padding),
                 )
-            state.isLoading -> LoadingIndicator()
+            state.isLoading -> LoadingIndicator(modifier = Modifier.padding(padding))
             state.quiz == null ->
                 EmptyState(
                     title = "Quiz unavailable",
@@ -80,18 +85,30 @@ fun QuizScreen(
                             .fillMaxSize()
                             .padding(padding)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = Spacing.md),
+                            .padding(horizontal = Spacing.md, vertical = Spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
-                    state.quiz!!.questions.forEach { question ->
-                        LinguaCard(modifier = Modifier.padding(top = Spacing.md)) {
+                    Text(
+                        text = "Choose the best answer for each question.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    state.quiz!!.questions.forEachIndexed { index, question ->
+                        LinguaCard(modifier = Modifier.padding(top = Spacing.sm)) {
                             Column(modifier = Modifier.padding(Spacing.md)) {
-                                Text(question.prompt, style = MaterialTheme.typography.titleMedium)
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = Spacing.sm),
+                                Text(
+                                    text = "Question ${index + 1}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = question.prompt,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(top = Spacing.xs),
+                                )
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                                    modifier = Modifier.padding(top = Spacing.sm),
                                 ) {
                                     question.options.forEach { option ->
                                         FilterChip(
@@ -101,9 +118,11 @@ fun QuizScreen(
                                             },
                                             label = { Text(option, maxLines = 2) },
                                             modifier =
-                                                Modifier.semantics {
-                                                    contentDescription = "Option: $option"
-                                                },
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .semantics {
+                                                        contentDescription = "Option: $option"
+                                                    },
                                         )
                                     }
                                 }
@@ -115,7 +134,6 @@ fun QuizScreen(
                             text = it,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(top = Spacing.sm),
                         )
                     }
                     LinguaButton(
@@ -123,9 +141,9 @@ fun QuizScreen(
                         onClick = { viewModel.onEvent(QuizEvent.Submit) },
                         enabled = state.allAnswered,
                         isLoading = state.isSubmitting,
-                        modifier = Modifier.padding(top = Spacing.lg),
+                        modifier = Modifier.padding(top = Spacing.md),
                     )
-                    Spacer(modifier = Modifier.height(Spacing.xl))
+                    Spacer(modifier = Modifier.height(Spacing.lg))
                 }
         }
     }
@@ -140,39 +158,60 @@ private fun QuizResultContent(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val fraction = if (total == 0) 0f else (score.toFloat() / total).coerceIn(0f, 1f)
     Column(
         modifier =
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.md),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                .padding(horizontal = Spacing.md, vertical = Spacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Box(modifier = Modifier.size(128.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { fraction },
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primaryContainer,
+                strokeWidth = 10.dp,
+            )
+            Text(
+                text = "$score/$total",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         Text(
-            text = "Score: $score/$total",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(top = Spacing.xl),
+            text = if (fraction >= 0.8f) "Strong work" else "Keep practicing",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = Spacing.md),
+        )
+        Text(
+            text = "Your score is $score out of $total",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Spacing.xs),
         )
         if (weakTopics.isNotEmpty()) {
             LinguaCard(modifier = Modifier.padding(top = Spacing.lg)) {
                 Column(modifier = Modifier.padding(Spacing.md)) {
-                    Text("Weak topics", style = MaterialTheme.typography.titleSmall)
+                    Text("Worth revisiting", style = MaterialTheme.typography.titleSmall)
                     weakTopics.forEach { topic ->
                         Text(
-                            text = "• $topic",
+                            text = topic,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(top = Spacing.xs),
+                            modifier = Modifier.padding(top = Spacing.sm),
                         )
                     }
                 }
             }
         }
         LinguaButton(
-            text = "Ask AI to explain my mistakes",
+            text = "Ask your tutor about mistakes",
             onClick = onAskAi,
             modifier = Modifier.padding(top = Spacing.lg),
         )
-        LinguaButton(
+        LinguaOutlinedButton(
             text = "Done",
             onClick = onDone,
             modifier = Modifier.padding(top = Spacing.sm),

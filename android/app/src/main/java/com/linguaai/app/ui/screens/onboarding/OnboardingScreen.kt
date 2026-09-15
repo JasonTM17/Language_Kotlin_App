@@ -1,15 +1,20 @@
 package com.linguaai.app.ui.screens.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,16 +22,21 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
+import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+
+private const val DAILY_GOALS_PER_ROW = 3
 
 @Composable
 fun OnboardingScreen(
@@ -43,9 +53,55 @@ fun OnboardingScreen(
         }
     }
 
+    OnboardingContent(
+        state = state,
+        onAction = { action ->
+            when (action) {
+                OnboardingAction.Retry -> viewModel.loadLanguages()
+                is OnboardingAction.LanguageSelected -> viewModel.selectLanguage(action.id)
+                is OnboardingAction.LevelSelected -> viewModel.selectLevel(action.value)
+                is OnboardingAction.GoalSelected -> viewModel.selectGoal(action.value)
+                is OnboardingAction.DailyGoalSelected -> viewModel.selectDailyGoal(action.minutes)
+                OnboardingAction.Back -> viewModel.back()
+                OnboardingAction.Next -> viewModel.next()
+            }
+        },
+    )
+}
+
+internal sealed interface OnboardingAction {
+    data object Retry : OnboardingAction
+
+    data class LanguageSelected(
+        val id: Long,
+    ) : OnboardingAction
+
+    data class LevelSelected(
+        val value: String,
+    ) : OnboardingAction
+
+    data class GoalSelected(
+        val value: String,
+    ) : OnboardingAction
+
+    data class DailyGoalSelected(
+        val minutes: Int,
+    ) : OnboardingAction
+
+    data object Back : OnboardingAction
+
+    data object Next : OnboardingAction
+}
+
+@Composable
+internal fun OnboardingContent(
+    state: OnboardingUiState,
+    onAction: (OnboardingAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
     ) {
@@ -58,64 +114,79 @@ fun OnboardingScreen(
                     .fillMaxWidth()
                     .semantics { contentDescription = "Onboarding step ${stepIndex + 1} of $total" },
         )
-        Text(
-            text = "Step ${stepIndex + 1} of $total",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = Spacing.sm),
-        )
+        Row(
+            modifier = Modifier.padding(top = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Step ${stepIndex + 1} of $total",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "Set up your learning path",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
             text = state.step.title,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
         )
 
-        when {
-            state.isLoading -> LoadingIndicator()
-            state.error != null ->
-                ErrorState(
-                    message = state.error.orEmpty(),
-                    retryLabel = "Retry",
-                    onRetry = viewModel::loadLanguages,
-                )
-            else ->
-                when (state.step) {
-                    OnboardingStep.LANGUAGE -> LanguageStep(state, viewModel::selectLanguage)
-                    OnboardingStep.LEVEL ->
-                        ChoiceStep(
-                            options = state.currentLevels,
-                            selected = state.selectedLevel,
-                            onSelect = viewModel::selectLevel,
-                        )
-                    OnboardingStep.GOAL ->
-                        ChoiceStep(
-                            options = OnboardingCatalog.goals,
-                            selected = state.selectedGoal,
-                            onSelect = viewModel::selectGoal,
-                        )
-                    OnboardingStep.DAILY ->
-                        DailyGoalStep(
-                            selected = state.selectedDailyGoal,
-                            onSelect = viewModel::selectDailyGoal,
-                        )
-                }
+        Box(modifier = Modifier.weight(1f)) {
+            when {
+                state.isLoading -> LoadingIndicator()
+                state.error != null ->
+                    ErrorState(
+                        message = state.error.orEmpty(),
+                        retryLabel = "Retry",
+                        onRetry = { onAction(OnboardingAction.Retry) },
+                    )
+                else ->
+                    when (state.step) {
+                        OnboardingStep.LANGUAGE ->
+                            LanguageStep(state) { id ->
+                                onAction(OnboardingAction.LanguageSelected(id))
+                            }
+                        OnboardingStep.LEVEL ->
+                            ChoiceStep(
+                                options = state.currentLevels,
+                                selected = state.selectedLevel,
+                                onSelect = { value -> onAction(OnboardingAction.LevelSelected(value)) },
+                            )
+                        OnboardingStep.GOAL ->
+                            ChoiceStep(
+                                options = OnboardingCatalog.goals,
+                                selected = state.selectedGoal,
+                                onSelect = { value -> onAction(OnboardingAction.GoalSelected(value)) },
+                            )
+                        OnboardingStep.DAILY ->
+                            DailyGoalStep(
+                                selected = state.selectedDailyGoal,
+                                onSelect = { minutes -> onAction(OnboardingAction.DailyGoalSelected(minutes)) },
+                            )
+                    }
+            }
         }
 
-        Row(modifier = Modifier.padding(top = Spacing.md)) {
+        Row(
+            modifier = Modifier.padding(top = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (state.step != OnboardingStep.LANGUAGE) {
-                TextButton(onClick = viewModel::back) {
+                TextButton(onClick = { onAction(OnboardingAction.Back) }) {
                     Text("Back")
                 }
             }
             LinguaButton(
                 text = if (state.step == OnboardingStep.DAILY) "Start learning" else "Continue",
-                onClick = viewModel::next,
+                onClick = { onAction(OnboardingAction.Next) },
                 enabled = state.canContinue,
                 isLoading = state.isSubmitting,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .padding(start = Spacing.sm),
+                modifier = Modifier.weight(1f).padding(start = Spacing.sm),
             )
         }
     }
@@ -130,8 +201,8 @@ private fun LanguageStep(
         EmptyState(title = "No languages yet", message = "The server has no language catalogue.")
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        state.languages.forEach { language ->
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        items(state.languages, key = { it.id }) { language ->
             SelectableRow(
                 title = language.name,
                 subtitle = language.levels.joinToString(" · "),
@@ -168,19 +239,30 @@ private fun DailyGoalStep(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Text(
             text = "How many minutes per day do you want to study?",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            modifier = Modifier.padding(vertical = Spacing.sm),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            items(OnboardingCatalog.dailyGoals) { minutes ->
-                FilterChip(
-                    selected = selected == minutes,
-                    onClick = { onSelect(minutes) },
-                    label = { Text("$minutes min") },
-                )
+            OnboardingCatalog.dailyGoals.chunked(DAILY_GOALS_PER_ROW).forEach { rowGoals ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    rowGoals.forEach { minutes ->
+                        FilterChip(
+                            selected = selected == minutes,
+                            onClick = { onSelect(minutes) },
+                            label = { Text("$minutes min") },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(DAILY_GOALS_PER_ROW - rowGoals.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -197,25 +279,38 @@ private fun SelectableRow(
         if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            MaterialTheme.colorScheme.surface
         }
-    androidx.compose.material3.Card(
+    LinguaCard(
         onClick = onClick,
-        colors =
-            androidx.compose.material3.CardDefaults
-                .cardColors(containerColor = container),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = if (selected) "$title selected" else title },
+        containerColor = container,
+        modifier = Modifier.semantics { contentDescription = if (selected) "$title selected" else title },
     ) {
-        Column(modifier = Modifier.padding(Spacing.md)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            if (subtitle != null) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = Spacing.xs),
+                    )
+                }
+            }
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = "Selected",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }

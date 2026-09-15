@@ -2,17 +2,23 @@ package com.linguaai.app.ui.screens.flashcard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.linguaai.app.data.local.dao.SyncDao
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.local.dao.VocabularyDao
-import com.linguaai.app.data.local.entity.PendingSyncOpEntity
+import com.linguaai.app.data.local.entity.VocabularyEntity
+import com.linguaai.app.data.remote.dto.ProgressEventTypes
+import com.linguaai.app.data.remote.dto.VocabularyProgressSnapshotDto
+import com.linguaai.app.data.repository.RemoteAuthRepository
+import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.domain.srs.ReviewGrade
 import com.linguaai.app.domain.srs.ReviewScheduler
+import com.linguaai.app.work.ProgressEventRecorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,6 +32,7 @@ data class FlashcardUiState(
     val currentIndex: Int = 0,
     val isRevealed: Boolean = false,
     val reviewedCount: Int = 0,
+    val isSubmittingGrade: Boolean = false,
     val finished: Boolean = false,
     val error: String? = null,
 ) {
@@ -45,9 +52,11 @@ class FlashcardViewModel
     @Inject
     constructor(
         private val vocabularyDao: VocabularyDao,
-        private val syncDao: SyncDao,
         private val learningContentRepository: LearningContentRepository,
+        private val remoteAuthRepository: RemoteAuthRepository,
+        private val settingsDataStore: SettingsDataStore,
         private val reviewScheduler: ReviewScheduler,
+        private val progressEventRecorder: ProgressEventRecorder,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(FlashcardUiState())
         val uiState: StateFlow<FlashcardUiState> = _uiState.asStateFlow()
@@ -58,11 +67,30 @@ class FlashcardViewModel
 
         fun loadQueue() {
             viewModelScope.launch {
-                // Refresh cache first (network is optional); due words come from Room.
-                learningContentRepository.refreshVocabulary(null, null, null, null)
+                val languageId =
+                    when (val profile = remoteAuthRepository.fetchProfile()) {
+                        is AppResult.Success -> profile.data.languageId
+                        is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
+                    }
+                if (languageId == null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            queue = emptyList(),
+                            finished = true,
+                            error = "We need your learning language before review can start.",
+                        )
+                    }
+                    return@launch
+                }
+
+                // Refresh cache first (network is optional); due words stay scoped
+                // to the learner's language so an old Japanese cache can never
+                // leak into a Chinese, Korean or other multilingual session.
+                learningContentRepository.refreshVocabulary(languageId, null, null, null)
                 val due =
                     vocabularyDao
-                        .dueForReview(now = System.currentTimeMillis(), limit = 20)
+                        .dueForReview(languageId = languageId, now = System.currentTimeMillis(), limit = 20)
                         .map { entity ->
                             VocabularyCard(
                                 id = entity.id,
@@ -79,7 +107,14 @@ class FlashcardViewModel
                                 masteryLevel = entity.masteryLevel,
                             )
                         }
-                _uiState.update { it.copy(isLoading = false, queue = due, finished = due.isEmpty()) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        queue = due,
+                        finished = due.isEmpty(),
+                        error = null,
+                    )
+                }
             }
         }
 
@@ -92,44 +127,58 @@ class FlashcardViewModel
 
         private fun submitGrade(grade: ReviewGrade) {
             val card = _uiState.value.current ?: return
+            if (_uiState.value.isSubmittingGrade) return
+            _uiState.update { it.copy(isSubmittingGrade = true) }
             viewModelScope.launch {
-                val entity = vocabularyDao.findById(card.id) ?: return@launch
-                val now = System.currentTimeMillis()
-                val nextMastery = reviewScheduler.nextMastery(entity.masteryLevel, grade)
-                val nextReview = now + reviewScheduler.nextIntervalMinutes(entity.masteryLevel, grade) * MILLIS_PER_MINUTE
+                try {
+                    val entity = vocabularyDao.findById(card.id) ?: return@launch
+                    val now = System.currentTimeMillis()
+                    val nextMastery = reviewScheduler.nextMastery(entity.masteryLevel, grade)
+                    val nextReview = now + reviewScheduler.nextIntervalMinutes(entity.masteryLevel, grade) * MILLIS_PER_MINUTE
 
-                vocabularyDao.upsert(
-                    entity.copy(
-                        masteryLevel = nextMastery,
-                        reviewCount = entity.reviewCount + 1,
-                        correctCount = entity.correctCount + if (grade == ReviewGrade.AGAIN) 0 else 1,
-                        wrongCount = entity.wrongCount + if (grade == ReviewGrade.AGAIN) 1 else 0,
-                        lastReviewedAt = now,
-                        nextReviewAt = nextReview,
-                    ),
-                )
-                // Meaningful learning event -> outbox for idempotent background sync.
-                syncDao.enqueue(
-                    PendingSyncOpEntity(
-                        operationId =
-                            java.util.UUID
-                                .randomUUID()
-                                .toString(),
-                        eventType = com.linguaai.app.data.remote.dto.ProgressEventTypes.FLASHCARD_REVIEW,
+                    val updated =
+                        entity.copy(
+                            masteryLevel = nextMastery,
+                            reviewCount = entity.reviewCount + 1,
+                            correctCount = entity.correctCount + if (grade == ReviewGrade.AGAIN) 0 else 1,
+                            wrongCount = entity.wrongCount + if (grade == ReviewGrade.AGAIN) 1 else 0,
+                            lastReviewedAt = now,
+                            nextReviewAt = nextReview,
+                            stateUpdatedAt = maxOf(entity.stateUpdatedAt ?: 0L, now) + 1L,
+                        )
+                    progressEventRecorder.record(
+                        eventType = ProgressEventTypes.FLASHCARD_REVIEW,
                         refId = card.id,
                         minutes = 1,
-                        occurredAt = now,
-                    ),
-                )
-                _uiState.update { state ->
-                    val nextIndex = state.currentIndex + 1
-                    state.copy(
-                        isRevealed = false,
-                        currentIndex = nextIndex,
-                        reviewedCount = state.reviewedCount + 1,
-                        finished = nextIndex >= state.queue.size,
+                        vocabularyProgress = updated.toProgressSnapshot(),
+                        localUpdate = { vocabularyDao.upsert(updated) },
                     )
+                    _uiState.update { state ->
+                        val nextIndex = state.currentIndex + 1
+                        state.copy(
+                            isRevealed = false,
+                            currentIndex = nextIndex,
+                            reviewedCount = state.reviewedCount + 1,
+                            finished = nextIndex >= state.queue.size,
+                        )
+                    }
+                } finally {
+                    // A failed local write must not leave the review controls
+                    // permanently disabled for the rest of the session.
+                    _uiState.update { it.copy(isSubmittingGrade = false) }
                 }
             }
         }
     }
+
+private fun VocabularyEntity.toProgressSnapshot(): VocabularyProgressSnapshotDto =
+    VocabularyProgressSnapshotDto(
+        favorite = favorite,
+        masteryLevel = masteryLevel,
+        reviewCount = reviewCount,
+        correctCount = correctCount,
+        wrongCount = wrongCount,
+        lastReviewedAtEpochMillis = lastReviewedAt,
+        nextReviewAtEpochMillis = nextReviewAt,
+        stateUpdatedAtEpochMillis = stateUpdatedAt,
+    )

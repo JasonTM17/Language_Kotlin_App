@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
+import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
@@ -21,6 +22,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = true,
     val profile: ProfileData? = null,
+    val languageName: String? = null,
     val dailyGoalMinutes: Int = 20,
     val todayMinutes: Int = 0,
     val streakDays: Int = 0,
@@ -50,14 +52,18 @@ class HomeViewModel
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
+                var profileFromServer = false
                 when (val profileResult = remoteAuthRepository.fetchProfile()) {
-                    is AppResult.Success ->
+                    is AppResult.Success -> {
+                        profileFromServer = true
                         _uiState.update { state ->
                             state.copy(
                                 profile = profileResult.data,
                                 dailyGoalMinutes = profileResult.data.dailyGoalMinutes,
+                                isOffline = false,
                             )
                         }
+                    }
                     is AppResult.Failure ->
                         _uiState.update { state ->
                             state.copy(
@@ -67,24 +73,33 @@ class HomeViewModel
                         }
                 }
 
-                val goal = settingsDataStore.dailyGoalMinutes.first()
-                _uiState.update { it.copy(dailyGoalMinutes = goal) }
+                _uiState.value.profile?.languageId?.let { languageId ->
+                    when (val languages = learningContentRepository.languages()) {
+                        is AppResult.Success ->
+                            _uiState.update { state ->
+                                state.copy(
+                                    languageName = languages.data.firstOrNull { it.id == languageId }?.name,
+                                )
+                            }
+                        is AppResult.Failure -> Unit
+                    }
+                }
+
+                if (!profileFromServer) {
+                    val goal = settingsDataStore.dailyGoalMinutes.first()
+                    _uiState.update { it.copy(dailyGoalMinutes = goal) }
+                }
 
                 // Streak and today's minutes come from the progress endpoint, the same
                 // source the Progress screen renders, so the two views cannot disagree.
-                when (val progress = progressRepository.refresh()) {
-                    is AppResult.Success ->
-                        _uiState.update { state ->
-                            state.copy(
-                                streakDays = progress.data.streak.current,
-                                todayMinutes =
-                                    progress.data.recentActivity
-                                        .lastOrNull()
-                                        ?.minutes
-                                        ?: state.todayMinutes,
-                            )
-                        }
-                    is AppResult.Failure -> Unit
+                refreshProgress()?.let { progress ->
+                    _uiState.update { state ->
+                        state.copy(
+                            streakDays = progress.streak.current,
+                            dueVocabularyCount = progress.vocabulary.dueForReview,
+                            todayMinutes = progress.recentActivity.lastOrNull()?.minutes ?: state.todayMinutes,
+                        )
+                    }
                 }
 
                 // Continue learning: the first lesson for the learner's language.
@@ -104,4 +119,10 @@ class HomeViewModel
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
+
+        private suspend fun refreshProgress(): ProgressSummaryDto? =
+            when (val progress = progressRepository.refresh()) {
+                is AppResult.Success -> progress.data
+                is AppResult.Failure -> progressRepository.observeCached().first()
+            }
     }

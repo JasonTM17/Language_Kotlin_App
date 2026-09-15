@@ -31,15 +31,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.ui.components.ErrorState
-import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
@@ -98,7 +101,15 @@ private fun ProfileContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.md),
     ) {
-        SectionHeader(title = "Profile", modifier = Modifier.padding(top = Spacing.md))
+        Column(modifier = Modifier.padding(top = Spacing.lg)) {
+            Text("Profile", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Keep your goals and study rhythm close at hand.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
+        }
         AccountCard(state.profile)
 
         DailyGoalSection(state.dailyGoalMinutes, onDailyGoal)
@@ -121,7 +132,7 @@ private fun ProfileContent(
 
         Spacer(modifier = Modifier.height(Spacing.lg))
 
-        LinguaButton(
+        LinguaOutlinedButton(
             text = "Sign out",
             onClick = onSignOut,
             enabled = !state.isSaving,
@@ -134,7 +145,7 @@ private fun ProfileContent(
 /** Avatar, username, email and the learner's current level. */
 @Composable
 private fun AccountCard(profile: ProfileData?) {
-    LinguaCard {
+    LinguaCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
         Row(
             modifier =
                 Modifier
@@ -147,7 +158,7 @@ private fun AccountCard(profile: ProfileData?) {
                     Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -158,26 +169,33 @@ private fun AccountCard(profile: ProfileData?) {
                             ?.take(1)
                             ?.uppercase() ?: "?",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
-            Column(modifier = Modifier.padding(start = Spacing.md)) {
+            Column(
+                modifier = Modifier.weight(1f).padding(start = Spacing.md),
+            ) {
                 Text(
                     text = profile?.user?.username ?: "Learner",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = profile?.user?.email.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 val level = profile?.level
                 if (level != null) {
                     Text(
                         text = "Level $level",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
@@ -288,6 +306,7 @@ private fun RemindersSection(
                 Switch(
                     checked = enabled,
                     onCheckedChange = onNotifications,
+                    modifier = Modifier.semantics { contentDescription = "Daily study reminder" },
                 )
             }
 

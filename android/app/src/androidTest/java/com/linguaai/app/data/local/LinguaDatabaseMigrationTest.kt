@@ -95,17 +95,70 @@ class LinguaDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To4_runsTheWholeChain() {
+    fun migrate4To5_addsOptionalVocabularySnapshotColumns() {
+        helper.createDatabase(TEST_DB, 4).close()
+
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                5,
+                true,
+                LinguaDatabase.MIGRATION_4_5,
+            )
+
+        db.execSQL(
+            "INSERT INTO pending_sync_ops " +
+                "(operationId, eventType, refId, minutes, occurredAt, state, attempts) " +
+                "VALUES ('op-snapshot-test', 'FLASHCARD_REVIEW', 1, 1, 0, 'PENDING', 0)",
+        )
+        db.query("SELECT vocabularyMasteryLevel FROM pending_sync_ops").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
+        }
+        db.close()
+    }
+
+    @Test
+    fun migrate5To6_addsOptionalVocabularyStateVersion() {
+        helper.createDatabase(TEST_DB, 5).close()
+
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                6,
+                true,
+                LinguaDatabase.MIGRATION_5_6,
+            )
+
+        db.execSQL(
+            "INSERT INTO pending_sync_ops " +
+                "(operationId, eventType, refId, minutes, occurredAt, state, attempts) " +
+                "VALUES ('op-version-test', 'VOCABULARY_STATE_SYNC', 1, 0, 0, 'PENDING', 0)",
+        )
+        db.query("SELECT vocabularyStateUpdatedAt FROM pending_sync_ops").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
+        }
+        db.query("SELECT stateUpdatedAt FROM vocabulary").use { cursor ->
+            assertEquals(0, cursor.count)
+        }
+        db.close()
+    }
+
+    @Test
+    fun migrate1To6_runsTheWholeChain() {
         helper.createDatabase(TEST_DB, 1).close()
 
         val db =
             helper.runMigrationsAndValidate(
                 TEST_DB,
-                4,
+                6,
                 true,
                 LinguaDatabase.MIGRATION_1_2,
                 LinguaDatabase.MIGRATION_2_3,
                 LinguaDatabase.MIGRATION_3_4,
+                LinguaDatabase.MIGRATION_4_5,
+                LinguaDatabase.MIGRATION_5_6,
             )
 
         db.close()

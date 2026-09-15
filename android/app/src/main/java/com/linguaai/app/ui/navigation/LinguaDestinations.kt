@@ -58,11 +58,6 @@ data class QuizRoute(
 )
 
 @Serializable
-data class QuizResultRoute(
-    val attemptId: Long,
-)
-
-@Serializable
 data class AiChatRoute(
     val conversationId: Long? = null,
     val mode: String = "general",

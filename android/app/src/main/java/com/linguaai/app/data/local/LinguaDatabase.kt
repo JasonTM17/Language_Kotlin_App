@@ -26,7 +26,7 @@ import com.linguaai.app.data.local.entity.VocabularyEntity
         AiMessageCacheEntity::class,
         ProgressCacheEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = true,
 )
 abstract class LinguaDatabase : RoomDatabase() {
@@ -52,6 +52,8 @@ abstract class LinguaDatabase : RoomDatabase() {
         private const val SCHEMA_V2 = 2
         private const val SCHEMA_V3 = 3
         private const val SCHEMA_V4 = 4
+        private const val SCHEMA_V5 = 5
+        private const val SCHEMA_V6 = 6
 
         val MIGRATION_1_2 =
             object : Migration(SCHEMA_V1, SCHEMA_V2) {
@@ -95,6 +97,31 @@ abstract class LinguaDatabase : RoomDatabase() {
                     db.execSQL(
                         "ALTER TABLE `pending_sync_ops` ADD COLUMN `attempts` INTEGER NOT NULL DEFAULT 0",
                     )
+                }
+            }
+
+        val MIGRATION_4_5 =
+            object : Migration(SCHEMA_V4, SCHEMA_V5) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Nullable columns preserve pre-existing generic events while
+                    // allowing flashcard reviews to carry their SRS snapshot.
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyFavorite` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyMasteryLevel` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyReviewCount` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyCorrectCount` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyWrongCount` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyLastReviewedAt` INTEGER")
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyNextReviewAt` INTEGER")
+                }
+            }
+
+        val MIGRATION_5_6 =
+            object : Migration(SCHEMA_V5, SCHEMA_V6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Nullable keeps existing outbox events deliverable while
+                    // newer state-sync events gain a logical client version.
+                    db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyStateUpdatedAt` INTEGER")
+                    db.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `stateUpdatedAt` INTEGER")
                 }
             }
     }

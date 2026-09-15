@@ -13,7 +13,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Retrofit
@@ -125,10 +124,9 @@ class TokenAuthenticatorTest {
             assertEquals(401, response.code)
         }
 
-        assertTrue(
-            "session should be cleared after a failed refresh",
-            awaitCondition { sessionStore.accessTokenSync() == null },
-        )
+        // Clearing is synchronous: an offline content fallback cannot observe
+        // the stale session scope after authenticate() returns.
+        assertNull(sessionStore.accessTokenSync())
         assertNull(sessionStore.refreshTokenSync())
 
         // Exactly two requests: the original and one refresh attempt, no retry.
@@ -182,19 +180,6 @@ class TokenAuthenticatorTest {
         // Refreshing on a failing auth call would recurse; only one request goes out.
         assertEquals(1, server.requestCount)
         assertEquals("stale-access", sessionStore.accessTokenSync())
-    }
-
-    /** The authenticator clears the session on a background scope, so poll briefly. */
-    private fun awaitCondition(
-        timeoutMs: Long = 2_000,
-        condition: () -> Boolean,
-    ): Boolean {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (System.currentTimeMillis() < deadline) {
-            if (condition()) return true
-            Thread.sleep(10)
-        }
-        return condition()
     }
 
     /** In-memory [SessionStore]; the real one needs an Android Context. */

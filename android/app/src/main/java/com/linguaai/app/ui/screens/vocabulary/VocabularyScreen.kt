@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarOutline
@@ -28,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.ui.components.EmptyState
+import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
@@ -38,59 +40,62 @@ fun VocabularyScreen(viewModel: VocabularyViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "Vocabulary",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.md),
-        )
-        OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(horizontal = Spacing.md))
+        Column(modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.lg)) {
+            Text(text = "Vocabulary", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = "Keep useful words close and review them at the right time.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
+        }
+        OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.sm))
 
         OutlinedTextField(
             value = state.query,
             onValueChange = { viewModel.onEvent(VocabularyEvent.SearchChanged(it)) },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            placeholder = { Text("Search word, reading or meaning") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search vocabulary") },
+            label = { Text("Search vocabulary") },
+            placeholder = { Text("Word, reading or meaning") },
             singleLine = true,
+            shape = MaterialTheme.shapes.medium,
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                    .padding(horizontal = Spacing.md, vertical = Spacing.md),
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = Spacing.md),
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            contentPadding = PaddingValues(horizontal = Spacing.md),
         ) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                modifier = Modifier.weight(1f),
-            ) {
-                items(listOf("N5", "N4", "N3", "A1", "A2", "B1")) { level ->
-                    FilterChip(
-                        selected = state.selectedLevel == level,
-                        onClick = {
-                            viewModel.onEvent(
-                                VocabularyEvent.LevelSelected(if (state.selectedLevel == level) null else level),
-                            )
-                        },
-                        label = { Text(level) },
-                    )
-                }
+            items(state.availableLevels) { level ->
+                FilterChip(
+                    selected = state.selectedLevel == level,
+                    onClick = {
+                        viewModel.onEvent(
+                            VocabularyEvent.LevelSelected(if (state.selectedLevel == level) null else level),
+                        )
+                    },
+                    label = { Text(level) },
+                )
             }
         }
 
         when {
-            state.isLoading && state.vocabulary.isEmpty() -> LoadingIndicator()
+            state.isLoading && state.vocabulary.isEmpty() -> LoadingIndicator(modifier = Modifier.weight(1f))
             state.vocabulary.isEmpty() ->
                 EmptyState(
                     title = if (state.query.isBlank()) "No vocabulary yet" else "No matches",
                     message = state.error ?: "Try a different search or level filter.",
                     actionLabel = "Retry",
                     onAction = viewModel::refresh,
+                    modifier = Modifier.weight(1f),
                 )
             else ->
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.md),
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     items(state.vocabulary, key = { it.id }) { card ->
@@ -111,13 +116,21 @@ private fun VocabularyRow(
     LinguaCard {
         Row(
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier = Modifier.padding(Spacing.md),
         ) {
+            IconTile(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = null,
+                modifier = Modifier.padding(end = Spacing.xs),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.primary,
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = card.word, style = MaterialTheme.typography.titleMedium)
-                if (card.reading != null) {
+                card.reading?.let {
                     Text(
-                        text = card.reading,
+                        text = it,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

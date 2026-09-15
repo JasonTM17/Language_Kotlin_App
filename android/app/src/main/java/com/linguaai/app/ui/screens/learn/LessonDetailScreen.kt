@@ -1,9 +1,10 @@
 package com.linguaai.app.ui.screens.learn
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,11 +23,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
+import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
 
@@ -41,7 +43,7 @@ fun LessonDetailScreen(
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(state.completed) {
-        if (state.completed) snackbar.showSnackbar("Lesson completed — progress will sync.")
+        if (state.completed) snackbar.showSnackbar("Lesson completed. Progress will sync.")
     }
 
     Scaffold(
@@ -75,29 +77,33 @@ fun LessonDetailScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = Spacing.md),
                 ) {
-                    Text(
-                        text = state.lesson?.description.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = state.lesson?.content.orEmpty(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = Spacing.md),
-                    )
+                    LinguaCard(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
+                        Text(
+                            text = state.lesson?.description.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(Spacing.md),
+                        )
+                    }
+                    LinguaCard {
+                        Text(
+                            text = state.lesson?.content.orEmpty(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(Spacing.md),
+                        )
+                    }
                     LinguaButton(
                         text = if (state.completed) "Completed ✓" else "Mark as learned",
                         onClick = viewModel::markCompleted,
                         enabled = !state.completed,
                         modifier = Modifier.padding(top = Spacing.lg),
                     )
-                    LinguaButton(
+                    LinguaOutlinedButton(
                         text = "Ask AI about this lesson",
                         onClick = { onAskAi(state.lesson?.id ?: 0) },
                         modifier = Modifier.padding(top = Spacing.sm),
                     )
-                    androidx.compose.foundation.layout
-                        .Spacer(modifier = Modifier.size(32.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xl))
                 }
         }
     }

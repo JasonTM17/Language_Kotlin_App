@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,6 +28,7 @@ class SettingsDataStore
         val dailyGoalMinutes: Flow<Int> =
             context.settingsDataStore.data.map { it[DAILY_GOAL] ?: DEFAULT_DAILY_GOAL_MINUTES }
         val onboardingCompleted: Flow<Boolean> = context.settingsDataStore.data.map { it[ONBOARDING_DONE] ?: false }
+        val learningLanguageId: Flow<Long?> = context.settingsDataStore.data.map { it[LEARNING_LANGUAGE_ID] }
         val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[NOTIFICATIONS] ?: true }
         val reminderHour: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_HOUR] ?: DEFAULT_REMINDER_HOUR }
         val reminderMinute: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_MINUTE] ?: 0 }
@@ -41,6 +43,17 @@ class SettingsDataStore
 
         suspend fun setOnboardingCompleted() {
             context.settingsDataStore.edit { it[ONBOARDING_DONE] = true }
+        }
+
+        /** Keeps content screens scoped while the profile endpoint is offline. */
+        suspend fun setLearningLanguageId(languageId: Long?) {
+            context.settingsDataStore.edit { preferences ->
+                if (languageId == null) {
+                    preferences.remove(LEARNING_LANGUAGE_ID)
+                } else {
+                    preferences[LEARNING_LANGUAGE_ID] = languageId
+                }
+            }
         }
 
         suspend fun setNotificationsEnabled(enabled: Boolean) {
@@ -77,6 +90,7 @@ class SettingsDataStore
             private val THEME_MODE = stringPreferencesKey("theme_mode")
             private val DAILY_GOAL = intPreferencesKey("daily_goal_minutes")
             private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
+            private val LEARNING_LANGUAGE_ID = longPreferencesKey("learning_language_id")
             private val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
             private val REMINDER_HOUR = intPreferencesKey("reminder_hour")
             private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.Icon
@@ -34,7 +33,7 @@ fun OfflineBanner(
                 .fillMaxWidth()
                 .background(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                 ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -46,7 +45,7 @@ fun OfflineBanner(
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = "You're offline — showing cached content",
+            text = "You're offline. Showing cached content.",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onTertiaryContainer,
             modifier = Modifier.padding(start = Spacing.sm),

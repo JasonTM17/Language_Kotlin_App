@@ -1,13 +1,17 @@
 package com.linguaai.app.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,11 +22,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.linguaai.app.ui.theme.Spacing
 
@@ -40,8 +46,11 @@ fun LinguaButton(
         modifier =
             modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .semantics { contentDescription = text },
         enabled = enabled && !isLoading,
+        shape = MaterialTheme.shapes.medium,
+        contentPadding = ButtonDefaults.ContentPadding,
     ) {
         if (isLoading) {
             CircularProgressIndicator(
@@ -55,18 +64,102 @@ fun LinguaButton(
     }
 }
 
+/** Tonal secondary action used for supporting paths beside the main action. */
+@Composable
+fun LinguaTonalButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    androidx.compose.material3.FilledTonalButton(
+        onClick = onClick,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = text },
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Outlined secondary action with the same touch target as the primary CTA. */
+@Composable
+fun LinguaOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = text },
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
 /** Standard content card with unified elevation and full-width layout. */
 @Composable
 fun LinguaCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     content: @Composable () -> Unit,
 ) {
-    val colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    val colors = CardDefaults.cardColors(containerColor = containerColor)
+    val elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 3.dp)
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), colors = colors) { content() }
+        Card(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            colors = colors,
+            elevation = elevation,
+            shape = MaterialTheme.shapes.medium,
+        ) { content() }
     } else {
-        Card(modifier = modifier.fillMaxWidth(), colors = colors) { content() }
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            colors = colors,
+            elevation = elevation,
+            shape = MaterialTheme.shapes.medium,
+        ) { content() }
+    }
+}
+
+/** Small tonal icon tile used to make cards scannable without extra decoration. */
+@Composable
+fun IconTile(
+    imageVector: ImageVector,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    tileSize: Dp = 48.dp,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(tileSize)
+                .clip(RoundedCornerShape(Spacing.sm))
+                .background(containerColor),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
@@ -162,7 +255,10 @@ private fun StateScaffold(
         if (actionLabel != null && onAction != null) {
             OutlinedButton(
                 onClick = onAction,
-                modifier = actionModifier.padding(top = Spacing.md),
+                modifier =
+                    actionModifier
+                        .heightIn(min = 48.dp)
+                        .padding(top = Spacing.md),
             ) {
                 Text(actionLabel)
             }

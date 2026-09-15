@@ -42,6 +42,7 @@ import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.theme.StreakFlame
 
 /** The server reports quiz accuracy as a 0..1 ratio; the UI shows a percentage. */
 private const val PERCENT_SCALE = 100
@@ -149,7 +150,7 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
             value =
                 summary.totals.quizAverageScore
                     ?.let { "${(it * PERCENT_SCALE).toInt()}%" }
-                    ?: "—",
+                    ?: "Not yet",
             icon = Icons.Filled.School,
             modifier = Modifier.weight(1f),
         )
@@ -173,7 +174,7 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
 
 @Composable
 private fun StreakCard(summary: ProgressSummaryDto) {
-    LinguaCard {
+    LinguaCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
         Row(
             modifier =
                 Modifier
@@ -185,13 +186,13 @@ private fun StreakCard(summary: ProgressSummaryDto) {
                 Text(
                     text = "Current streak",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
                     text = if (summary.streak.current == 1) "1 day" else "${summary.streak.current} days",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
                     text =
@@ -200,7 +201,7 @@ private fun StreakCard(summary: ProgressSummaryDto) {
                             summary.streak.lastActiveDate?.let { append(" · last active $it") }
                         },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
             Box(
@@ -214,7 +215,7 @@ private fun StreakCard(summary: ProgressSummaryDto) {
                 Icon(
                     imageVector = Icons.Filled.LocalFireDepartment,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = StreakFlame,
                     modifier = Modifier.size(28.dp),
                 )
             }
@@ -229,12 +230,12 @@ private fun StatTile(
     icon: ImageVector,
     modifier: Modifier = Modifier,
 ) {
-    LinguaCard(modifier = modifier) {
+    LinguaCard(modifier = modifier, containerColor = MaterialTheme.colorScheme.surfaceVariant) {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp),
             )
             Text(
@@ -313,43 +314,48 @@ private fun MasteryRow(
 private fun ActivityCard(days: List<ActivityDayDto>) {
     val peak = days.maxOfOrNull { it.minutes }?.coerceAtLeast(1) ?: 1
     LinguaCard {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            days.forEach { day ->
-                val fraction = day.minutes.toFloat() / peak.toFloat()
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(CHART_MAX_BAR_HEIGHT_DP.dp),
-                        contentAlignment = Alignment.BottomCenter,
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                days.forEach { day ->
+                    val fraction = day.minutes.toFloat() / peak.toFloat()
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(
-                                        (CHART_MAX_BAR_HEIGHT_DP * fraction)
-                                            .coerceAtLeast(if (day.minutes > 0) CHART_MIN_BAR_HEIGHT_DP else 2f)
-                                            .dp,
-                                    ).clip(RoundedCornerShape(3.dp))
-                                    .background(
-                                        if (day.minutes > 0) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        },
-                                    ),
+                                    .height(CHART_MAX_BAR_HEIGHT_DP.dp),
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(
+                                            (CHART_MAX_BAR_HEIGHT_DP * fraction)
+                                                .coerceAtLeast(if (day.minutes > 0) CHART_MIN_BAR_HEIGHT_DP else 2f)
+                                                .dp,
+                                        ).clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (day.minutes > 0) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.surfaceVariant
+                                            },
+                                        ),
+                            )
+                        }
+                        Text(
+                            text = day.date.takeLast(2),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = Spacing.xs),
                         )
                     }
                 }

@@ -62,6 +62,34 @@ data class RecordProgressEventRequestDto(
     val eventType: String,
     val refId: Long? = null,
     val minutes: Int = 0,
+    val vocabularyProgress: VocabularyProgressSnapshotDto? = null,
+)
+
+/** Snapshot of the local SRS state attached to a flashcard review event. */
+@Serializable
+data class VocabularyProgressSnapshotDto(
+    val favorite: Boolean = false,
+    val masteryLevel: Int = 0,
+    val reviewCount: Int = 0,
+    val correctCount: Int = 0,
+    val wrongCount: Int = 0,
+    val lastReviewedAtEpochMillis: Long? = null,
+    val nextReviewAtEpochMillis: Long? = null,
+    val stateUpdatedAtEpochMillis: Long? = null,
+)
+
+/** Per-word state returned when a device hydrates its local vocabulary cache. */
+@Serializable
+data class VocabularyProgressItemDto(
+    val vocabularyId: Long,
+    val favorite: Boolean,
+    val masteryLevel: Int,
+    val reviewCount: Int,
+    val correctCount: Int,
+    val wrongCount: Int,
+    val lastReviewedAtEpochMillis: Long? = null,
+    val nextReviewAtEpochMillis: Long? = null,
+    val stateUpdatedAtEpochMillis: Long? = null,
 )
 
 @Serializable
@@ -73,6 +101,7 @@ data class RecordProgressEventResponseDto(
 /** Event types that count toward a streak. Keep in sync with the server. */
 object ProgressEventTypes {
     const val FLASHCARD_REVIEW = "FLASHCARD_REVIEW"
+    const val VOCABULARY_STATE_SYNC = "VOCABULARY_STATE_SYNC"
     const val QUIZ_ATTEMPT = "QUIZ_ATTEMPT"
     const val AI_CORRECTION = "AI_CORRECTION"
     const val LESSON_COMPLETED = "LESSON_COMPLETED"

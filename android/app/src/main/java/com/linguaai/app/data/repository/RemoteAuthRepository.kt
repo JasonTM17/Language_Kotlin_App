@@ -1,6 +1,7 @@
 package com.linguaai.app.data.repository
 
 import com.linguaai.app.data.datastore.SessionManager
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.api.AuthApi
 import com.linguaai.app.data.remote.dto.LoginRequestDto
 import com.linguaai.app.data.remote.dto.LogoutRequestDto
@@ -51,6 +52,7 @@ class RemoteAuthRepository
     constructor(
         private val authApi: AuthApi,
         private val sessionManager: SessionManager,
+        private val settingsDataStore: SettingsDataStore,
     ) : AuthRepository {
         private val currentUser = MutableStateFlow<User?>(null)
 
@@ -129,7 +131,11 @@ class RemoteAuthRepository
         private suspend fun mapProfile(call: suspend () -> retrofit2.Response<ProfileDto>): AppResult<ProfileData> {
             val result = safeApiCall(call)
             return when (result) {
-                is AppResult.Success -> AppResult.Success(ProfileData(result.data))
+                is AppResult.Success -> {
+                    val profile = ProfileData(result.data)
+                    settingsDataStore.setLearningLanguageId(profile.languageId)
+                    AppResult.Success(profile)
+                }
                 is AppResult.Failure -> result
             }
         }
@@ -140,6 +146,9 @@ class RemoteAuthRepository
             refreshToken: String,
         ) {
             currentUser.value = User(id = user.id, email = user.email, username = user.username, avatarUrl = user.avatarUrl)
+            // A successful login/register may belong to a different account;
+            // wait for its profile before reusing any offline language scope.
+            settingsDataStore.setLearningLanguageId(null)
             sessionManager.saveTokens(accessToken, refreshToken)
         }
     }

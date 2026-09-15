@@ -2,6 +2,7 @@ package com.linguaai.app.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.usecase.LoginUseCase
@@ -19,7 +20,9 @@ import javax.inject.Inject
 
 /** One-shot navigation signals raised by the auth screens. */
 sealed interface AuthEvent {
-    data object Authenticated : AuthEvent
+    data class Authenticated(
+        val onboarded: Boolean,
+    ) : AuthEvent
 }
 
 data class LoginUiState(
@@ -50,6 +53,7 @@ class LoginViewModel
     @Inject
     constructor(
         private val loginUseCase: LoginUseCase,
+        private val remoteAuthRepository: RemoteAuthRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(LoginUiState())
         val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -78,8 +82,18 @@ class LoginViewModel
                 _uiState.update { it.copy(isLoading = true, formError = null) }
                 when (val result = loginUseCase(current.email, current.password)) {
                     is AppResult.Success -> {
-                        _uiState.update { it.copy(isLoading = false) }
-                        events.send(AuthEvent.Authenticated)
+                        when (val profile = remoteAuthRepository.fetchProfile()) {
+                            is AppResult.Success -> {
+                                _uiState.update { it.copy(isLoading = false) }
+                                events.send(AuthEvent.Authenticated(profile.data.onboarded))
+                            }
+                            is AppResult.Failure -> {
+                                // Do not leave a half-resolved session behind. The
+                                // learner can retry once the profile endpoint is back.
+                                remoteAuthRepository.logout()
+                                _uiState.update { state -> state.copy(isLoading = false).applyError(profile.error) }
+                            }
+                        }
                     }
                     is AppResult.Failure ->
                         _uiState.update { state ->
@@ -168,7 +182,7 @@ class RegisterViewModel
                 when (val result = registerUseCase(current.email, current.username, current.password)) {
                     is AppResult.Success -> {
                         _uiState.update { it.copy(isLoading = false) }
-                        events.send(AuthEvent.Authenticated)
+                        events.send(AuthEvent.Authenticated(onboarded = false))
                     }
                     is AppResult.Failure ->
                         _uiState.update { state ->

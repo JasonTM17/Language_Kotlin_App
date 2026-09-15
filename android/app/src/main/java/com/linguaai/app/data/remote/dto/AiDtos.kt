@@ -16,6 +16,22 @@ data class AiChatResponseDto(
     val conversationId: Long,
     val reply: String,
     val mode: String,
+    /**
+     * Corpus chunks the tutor grounded this reply in. Defaulted so responses
+     * from servers without RAG (or cached payloads) keep decoding.
+     */
+    val sources: List<AiSourceDto> = emptyList(),
+)
+
+/** One retrieved course-corpus chunk cited by the tutor. */
+@Serializable
+data class AiSourceDto(
+    val title: String,
+    val sourceType: String,
+    val sourceId: Long,
+    val chunkIndex: Int,
+    val level: String? = null,
+    val score: Double,
 )
 
 @Serializable

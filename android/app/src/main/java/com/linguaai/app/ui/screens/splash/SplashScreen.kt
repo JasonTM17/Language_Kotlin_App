@@ -4,20 +4,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.ui.components.LinguaMarkTile
 import com.linguaai.app.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
@@ -35,9 +35,15 @@ fun SplashScreen(
 ) {
     val startDestination by viewModel.startDestination.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { delay(SPLASH_DELAY_MILLIS) }
-    LaunchedEffect(startDestination) {
-        startDestination?.let(onLanding)
+    var delayElapsed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(SPLASH_DELAY_MILLIS)
+        delayElapsed = true
+    }
+    LaunchedEffect(startDestination, delayElapsed) {
+        if (delayElapsed) {
+            startDestination?.let(onLanding)
+        }
     }
 
     Column(
@@ -45,11 +51,9 @@ fun SplashScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Filled.SmartToy,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(64.dp),
+        LinguaMarkTile(
+            contentDescription = "LinguaAI",
+            tileSize = 72.dp,
         )
         Text(
             text = "LinguaAI",
@@ -57,7 +61,7 @@ fun SplashScreen(
             modifier = Modifier.padding(top = Spacing.md),
         )
         Text(
-            text = "Learn smarter, every day",
+            text = "Small steps. Real progress.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.sm),

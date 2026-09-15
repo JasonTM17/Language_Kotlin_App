@@ -4,6 +4,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,7 +17,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
-import androidx.navigation.toRoute
 import com.linguaai.app.ui.components.LinguaBottomBar
 import com.linguaai.app.ui.screens.auth.LoginScreen
 import com.linguaai.app.ui.screens.auth.RegisterScreen
@@ -27,7 +27,6 @@ import com.linguaai.app.ui.screens.home.HomeScreen
 import com.linguaai.app.ui.screens.learn.LearnScreen
 import com.linguaai.app.ui.screens.learn.LessonDetailScreen
 import com.linguaai.app.ui.screens.onboarding.OnboardingScreen
-import com.linguaai.app.ui.screens.placeholders.PlaceholderScreen
 import com.linguaai.app.ui.screens.quiz.QuizScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import com.linguaai.app.ui.screens.splash.StartDestination
@@ -51,6 +50,7 @@ fun LinguaNavHost(navController: NavHostController = rememberNavController()) {
         }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
                 LinguaBottomBar(
@@ -101,8 +101,8 @@ private fun NavGraphBuilder.entryGraph(navController: NavHostController) {
             onNavigateToRegister = {
                 navController.navigate(RegisterRoute) { launchSingleTop = true }
             },
-            onAuthenticated = {
-                navController.navigate(OnboardingRoute) {
+            onAuthenticated = { onboarded ->
+                navController.navigate(if (onboarded) HomeRoute else OnboardingRoute) {
                     popUpTo(LoginRoute) { inclusive = true }
                 }
             },
@@ -235,10 +235,6 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
                 navController.navigate(AiChatRoute(conversationId = quizId, mode = "mistakes"))
             },
         )
-    }
-    composable<QuizResultRoute> { entry ->
-        val route = entry.toRoute<QuizResultRoute>()
-        PlaceholderScreen(title = "Quiz result #${route.attemptId}")
     }
 }
 
