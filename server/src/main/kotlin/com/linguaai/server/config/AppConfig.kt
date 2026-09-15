@@ -21,6 +21,15 @@ data class AppConfig(
     val aiTimeoutSeconds: Int,
     val aiRateLimitPerMinute: Int,
     val aiMockScenario: String?,
+    val aiEmbeddingModel: String,
+    val ragEnabled: Boolean,
+    val ragTopK: Int,
+    val ragMaxContextChars: Int,
+    val ragCandidateLimit: Int,
+    val ragAutoIndex: Boolean,
+    val qdrantUrl: String?,
+    val qdrantCollection: String,
+    val opsToken: String,
 ) {
     enum class AiProviderKind { MOCK, OPENAI_COMPATIBLE }
 
@@ -33,6 +42,17 @@ data class AppConfig(
         const val DEFAULT_ACCESS_TOKEN_TTL_MINUTES = 30L
         const val DEFAULT_REFRESH_TOKEN_TTL_DAYS = 14L
         const val DEFAULT_AI_RATE_LIMIT_PER_MINUTE = 20
+        const val DEFAULT_RAG_TOP_K = 4
+        const val DEFAULT_RAG_MAX_CONTEXT_CHARS = 2400
+        const val DEFAULT_RAG_CANDIDATE_LIMIT = 20_000
+
+        /**
+         * Development-only ops token. Production must override OPS_TOKEN with a
+         * real secret; Application.main refuses to boot a production deployment
+         * that would otherwise run with this publicly known value (same guard
+         * pattern as the JWT fail-fast).
+         */
+        const val DEV_OPS_TOKEN = "linguaai-dev-ops-token"
 
         fun fromEnv(env: (String) -> String? = System::getenv): AppConfig {
             fun str(
@@ -79,6 +99,15 @@ data class AppConfig(
                 aiRateLimitPerMinute =
                     int("AI_RATE_LIMIT_PER_MINUTE", DEFAULT_AI_RATE_LIMIT_PER_MINUTE),
                 aiMockScenario = env("AI_MOCK_SCENARIO")?.takeIf { it.isNotBlank() },
+                aiEmbeddingModel = str("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
+                ragEnabled = str("RAG_ENABLED", "true").toBoolean(),
+                ragTopK = int("RAG_TOP_K", DEFAULT_RAG_TOP_K),
+                ragMaxContextChars = int("RAG_MAX_CONTEXT_CHARS", DEFAULT_RAG_MAX_CONTEXT_CHARS),
+                ragCandidateLimit = int("RAG_SQL_CANDIDATE_LIMIT", DEFAULT_RAG_CANDIDATE_LIMIT),
+                ragAutoIndex = str("RAG_AUTO_INDEX", "true").toBoolean(),
+                qdrantUrl = env("QDRANT_URL")?.takeIf { it.isNotBlank() },
+                qdrantCollection = str("QDRANT_COLLECTION", "linguaai_knowledge"),
+                opsToken = str("OPS_TOKEN", DEV_OPS_TOKEN),
             )
         }
     }

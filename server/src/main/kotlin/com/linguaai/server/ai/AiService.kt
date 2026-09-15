@@ -1,5 +1,7 @@
 package com.linguaai.server.ai
 
+import com.linguaai.server.ai.rag.RagService
+import com.linguaai.server.ai.rag.RetrievedChunk
 import com.linguaai.server.api.ApiException
 import com.linguaai.server.api.ErrorCodes
 import com.linguaai.server.api.dto.ProfileDto
@@ -16,6 +18,7 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 
 // ---- request/response DTOs for the AI area ----
 
@@ -33,6 +36,28 @@ data class AiChatResponseDto(
     val conversationId: Long,
     val reply: String,
     val mode: String,
+    /**
+     * Corpus chunks grounded into this reply. Defaulted so older clients and
+     * stored responses that omit the field keep decoding (additive contract).
+     */
+    val sources: List<AiSourceDto> = emptyList(),
+)
+
+/** One retrieval hit cited in the tutor reply (deep-link ready). */
+@Serializable
+data class AiSourceDto(
+    val title: String,
+    val sourceType: String,
+    val sourceId: Long,
+    val chunkIndex: Int,
+    val level: String? = null,
+    val score: Double,
+)
+
+@Serializable
+data class KnowledgeSearchResponseDto(
+    val query: String,
+    val hits: List<AiSourceDto>,
 )
 
 @Serializable
@@ -114,9 +139,11 @@ class AiService(
     private val aiRepository: AiRepository,
     private val authRepository: AuthRepository,
     private val contentRepository: ContentRepository,
-    private val rateLimiter: AiRateLimiter,
+    private val ragService: RagService,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val log = LoggerFactory.getLogger(AiService::class.java)
+    private val rateLimiter = AiRateLimiter(config.aiRateLimitPerMinute)
 
     fun conversations(userId: Long): List<ConversationDto> =
         aiRepository.listConversations(userId).map {
@@ -275,8 +302,7 @@ class AiService(
             builder.systemPrompt(
                 "practice-score",
                 authRepository.findProfile(userId),
-                null,
-                null,
+                FocusContext(),
                 conversation.summary,
             )
         val messages =
@@ -296,7 +322,7 @@ class AiService(
         ensureRateLimit(userId)
         val profile = authRepository.findProfile(userId)
         val builder = promptBuilder(userId)
-        val system = builder.systemPrompt("general", profile, null, null, null)
+        val system = builder.systemPrompt("general", profile, FocusContext(), null)
         val count = request.count.coerceIn(MIN_QUIZ_QUESTIONS, MAX_QUIZ_QUESTIONS)
         val languageId =
             request.languageId ?: profile?.languageId
@@ -343,7 +369,82 @@ class AiService(
         return validateQuizPayload(response.content)
     }
 
+    /**
+     * Raw retrieval over the course corpus, for demos, the E2E harness and
+     * client-side "related course content" surfaces. Rate limited like chat
+     * because it triggers the same candidate load.
+     */
+    suspend fun searchKnowledge(
+        userId: Long,
+        query: String,
+        level: String? = null,
+        limit: Int = DEFAULT_SEARCH_LIMIT,
+    ): KnowledgeSearchResponseDto {
+        ensureRateLimit(userId)
+        val trimmed = requireText(query, "query")
+        val profile = authRepository.findProfile(userId)
+        val languageId =
+            profile?.languageId
+                ?: throw ApiException(
+                    HttpStatusCode.BadRequest,
+                    ErrorCodes.VALIDATION,
+                    "Set your learning language before searching the knowledge base",
+                )
+        val hits =
+            try {
+                ragService
+                    .retrieve(trimmed, languageId, level ?: profile.level)
+                    .take(limit.coerceIn(1, MAX_SEARCH_LIMIT))
+            } catch (failure: Exception) {
+                log.warn("Knowledge search failed; returning no hits", failure)
+                emptyList()
+            }
+        return KnowledgeSearchResponseDto(query = trimmed, hits = hits.map { it.toSourceDto() })
+    }
+
     // ---- internals ----
+
+    /**
+     * Retrieval grounding for one tutor turn: the fenced knowledge block for
+     * the system prompt plus the cited chunks for the response. Any retrieval
+     * failure degrades to an ungrounded turn — grounding must never turn a
+     * working tutor into a 500.
+     */
+    private suspend fun groundingFor(
+        mode: String,
+        profile: ProfileDto?,
+        query: String,
+    ): Grounding {
+        if (!config.ragEnabled) return Grounding.EMPTY
+        if (mode !in RAG_MODES) return Grounding.EMPTY
+        val languageId = profile?.languageId ?: return Grounding.EMPTY
+        return try {
+            val chunks = ragService.retrieve(query, languageId, profile.level)
+            Grounding(context = ragService.formatContext(chunks), chunks = chunks)
+        } catch (failure: Exception) {
+            log.warn("RAG retrieval failed; continuing without knowledge context", failure)
+            Grounding.EMPTY
+        }
+    }
+
+    private class Grounding(
+        val context: String?,
+        val chunks: List<RetrievedChunk>,
+    ) {
+        companion object {
+            val EMPTY = Grounding(context = null, chunks = emptyList())
+        }
+    }
+
+    private fun RetrievedChunk.toSourceDto(): AiSourceDto =
+        AiSourceDto(
+            title = ref.title,
+            sourceType = ref.sourceType,
+            sourceId = ref.sourceId,
+            chunkIndex = ref.chunkIndex,
+            level = ref.level,
+            score = score,
+        )
 
     private suspend fun exchange(
         userId: Long,
@@ -352,13 +453,14 @@ class AiService(
         turn: ExchangeTurn,
     ): AiChatResponseDto {
         val builder = promptBuilder(userId)
+        val grounding = groundingFor(conversation.mode, profile, turn.userText)
         val system =
             builder.systemPrompt(
                 mode = conversation.mode,
                 profile = profile,
-                contextLessonId = conversation.contextLessonId,
-                contextGrammarId = conversation.contextGrammarId,
+                focus = FocusContext(conversation.contextLessonId, conversation.contextGrammarId),
                 summary = conversation.summary,
+                knowledge = grounding.context,
             )
         val history = builder.buildMessages(system, conversation.id, conversation.summarizedUntil)
 
@@ -412,7 +514,12 @@ class AiService(
 
         aiRepository.addExchange(conversation.id, turn.userText, reply)
         summarizeIfNeeded(conversation)
-        return AiChatResponseDto(conversationId = conversation.id, reply = reply, mode = conversation.mode)
+        return AiChatResponseDto(
+            conversationId = conversation.id,
+            reply = reply,
+            mode = conversation.mode,
+            sources = grounding.chunks.map { it.toSourceDto() },
+        )
     }
 
     /**
@@ -549,6 +656,16 @@ class AiService(
 
     private companion object {
         const val SUMMARIZE_THRESHOLD = 20
+
+        /**
+         * Tutor modes that receive retrieved corpus context. Practice and
+         * scoring modes are deliberately excluded: role-play turns should not
+         * be seeded with reference excerpts.
+         */
+        val RAG_MODES = setOf("general", "grammar-explain")
+
+        const val DEFAULT_SEARCH_LIMIT = 5
+        const val MAX_SEARCH_LIMIT = 20
 
         /** How much of the learner's text becomes an auto-generated title. */
         const val TITLE_PREVIEW_LENGTH = 40

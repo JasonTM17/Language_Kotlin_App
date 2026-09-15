@@ -1,4 +1,4 @@
-# LinguaAI backend + MySQL.
+# LinguaAI backend + MySQL + Qdrant.
 #
 #   cp .env.example .env    # fill in JWT_SECRET at minimum
 #   docker-compose up --build
@@ -6,6 +6,10 @@
 # The backend waits for MySQL to report healthy rather than for the container to
 # merely exist: MySQL accepts a TCP connection well before it can serve queries,
 # and starting against it produces a confusing "connection refused" crash loop.
+#
+# Qdrant is the vector engine for RAG retrieval. Set QDRANT_URL=http://qdrant:6333
+# to route the knowledge index through it; leave it empty to keep the built-in
+# SQL store (see docs/architecture ADR-007 for the trade-off).
 
 services:
   mysql:
@@ -29,6 +33,15 @@ services:
       retries: 20
       start_period: 30s
 
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: linguaai-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
   backend:
     build:
       context: ./server
@@ -37,6 +50,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-linguaai}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: ${DB_USER:-linguaai}
@@ -48,8 +63,16 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
       AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-60}
       AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      RAG_ENABLED: ${RAG_ENABLED:-true}
+      RAG_AUTO_INDEX: ${RAG_AUTO_INDEX:-true}
+      RAG_TOP_K: ${RAG_TOP_K:-4}
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-linguaai_knowledge}
+      # Dev default only: APP_ENV=production refuses to boot without a real token.
+      OPS_TOKEN: ${OPS_TOKEN:-linguaai-dev-ops-token}
       RUN_MIGRATIONS: "true"
       SERVER_PORT: "8080"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -58,3 +81,4 @@ services:
 
 volumes:
   mysql-data:
+  qdrant-data:

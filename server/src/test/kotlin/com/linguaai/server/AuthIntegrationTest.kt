@@ -15,8 +15,10 @@ import io.ktor.server.testing.testApplication
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -208,10 +210,83 @@ class AuthIntegrationTest {
         }
 
     @Test
+    fun `all seeded quizzes expose valid option arrays`() =
+        withApp {
+            (1L..6L).forEach { quizId ->
+                val response = client.get("/api/v1/quizzes/$quizId")
+                assertEquals(HttpStatusCode.OK, response.status)
+                val questions = json.parseToJsonElement(response.bodyAsText()).jsonObject["questions"]!!.jsonArray
+                assertEquals(5, questions.size)
+                assertTrue(
+                    questions.all { question ->
+                        question.jsonObject["options"]!!.jsonArray.size == 4
+                    },
+                )
+            }
+        }
+
+    @Test
     fun `vocabulary search filters by query`() =
         withApp {
             val response = client.get("/api/v1/vocabulary?languageId=1&query=環境")
             assertEquals(HttpStatusCode.OK, response.status)
             assertTrue(response.bodyAsText().contains("Môi trường"))
+        }
+
+    @Test
+    fun `expanded multilingual catalog exposes every language and level`() =
+        withApp {
+            val languages = client.get("/api/v1/languages")
+            assertEquals(HttpStatusCode.OK, languages.status)
+            val languageCodes =
+                json
+                    .parseToJsonElement(languages.bodyAsText())
+                    .jsonArray
+                    .map { it.jsonObject["code"]!!.jsonPrimitive.content }
+                    .toSet()
+            assertEquals(
+                setOf("ja", "en", "ko", "es", "fr", "zh", "de", "it", "pt", "ru", "ar", "hi", "id", "th", "tr", "vi", "nl"),
+                languageCodes,
+            )
+
+            (1L..17L).forEach { languageId ->
+                val response = client.get("/api/v1/vocabulary?languageId=$languageId")
+                assertEquals(HttpStatusCode.OK, response.status)
+                val words = json.parseToJsonElement(response.bodyAsText()).jsonArray
+                assertTrue(words.size <= 100)
+                assertEquals(words.size, words.map { it.jsonObject["word"]!!.jsonPrimitive.content }.toSet().size)
+            }
+
+            val chineseSearch = client.get("/api/v1/vocabulary?languageId=6&query=天空")
+            assertEquals(HttpStatusCode.OK, chineseSearch.status)
+            assertTrue(chineseSearch.bodyAsText().contains("Bầu trời"))
+
+            val hskTwo = client.get("/api/v1/vocabulary?languageId=6&level=HSK2")
+            assertEquals(HttpStatusCode.OK, hskTwo.status)
+            val hskTwoWords = json.parseToJsonElement(hskTwo.bodyAsText()).jsonArray
+            assertEquals(30, hskTwoWords.size)
+            assertTrue(hskTwoWords.all { it.jsonObject["level"]!!.jsonPrimitive.content == "HSK2" })
+        }
+
+    @Test
+    fun `vocabulary endpoint keeps large catalog reads bounded`() =
+        withApp {
+            val firstPage = client.get("/api/v1/vocabulary?languageId=1&limit=2&offset=1")
+            assertEquals(HttpStatusCode.OK, firstPage.status)
+            val page = json.parseToJsonElement(firstPage.bodyAsText()).jsonArray
+            assertEquals(2, page.size)
+            assertEquals(2, page[0].jsonObject["id"]!!.jsonPrimitive.long)
+            assertEquals(3, page[1].jsonObject["id"]!!.jsonPrimitive.long)
+
+            val emptyPage = client.get("/api/v1/vocabulary?limit=0")
+            assertEquals(HttpStatusCode.OK, emptyPage.status)
+            assertEquals(0, json.parseToJsonElement(emptyPage.bodyAsText()).jsonArray.size)
+
+            assertEquals(HttpStatusCode.BadRequest, client.get("/api/v1/vocabulary?limit=201").status)
+            assertEquals(HttpStatusCode.BadRequest, client.get("/api/v1/vocabulary?offset=-1").status)
+
+            val categories = client.get("/api/v1/categories")
+            assertEquals(HttpStatusCode.OK, categories.status)
+            assertTrue(json.parseToJsonElement(categories.bodyAsText()).jsonArray.isNotEmpty())
         }
 }

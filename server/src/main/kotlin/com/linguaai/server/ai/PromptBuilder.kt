@@ -9,6 +9,12 @@ import com.linguaai.server.repository.MessageRow
 /** Characters kept per line when evicting messages into the rolling summary. */
 private const val SUMMARY_LINE_LENGTH = 120
 
+/** Lesson/grammar focus for one tutor turn; both nullable when unfocused. */
+data class FocusContext(
+    val lessonId: Long? = null,
+    val grammarId: Long? = null,
+)
+
 /**
  * Builds the system prompt from trusted server-side data only: learner profile,
  * the target language, lesson/grammar context, weak topics and the condensed
@@ -34,17 +40,18 @@ class PromptBuilder(
     fun systemPrompt(
         mode: String,
         profile: ProfileDto?,
-        contextLessonId: Long?,
-        contextGrammarId: Long?,
+        focus: FocusContext,
         summary: String?,
+        knowledge: String? = null,
     ): String =
         buildString {
             append(ROLE)
             appendLearner(profile)
             appendTeachingMethod()
             appendLevelGuidance(profile?.level)
-            appendGrammarContext(contextGrammarId)
-            appendLessonContext(contextLessonId)
+            appendGrammarContext(focus.grammarId)
+            appendLessonContext(focus.lessonId)
+            appendKnowledge(knowledge)
             appendWeakTopics()
             appendHistory(summary)
             append("\n## Mode: $mode\n${modeInstruction(mode)}\n")
@@ -110,6 +117,19 @@ class PromptBuilder(
         append("\n## Lesson in focus\n")
         append("- ${lesson.title} (${lesson.level}, ${lesson.type})\n")
         append("- Assume the learner has just studied this lesson; connect your examples to it.\n")
+    }
+
+    /**
+     * Retrieved corpus context, fenced as reference data. Retrieved text is
+     * attacker-controllable in principle (it is course content), so it never
+     * appears bare next to the instructions: the fence markers are part of the
+     * prompt's security contract, asserted by integration tests.
+     */
+    private fun StringBuilder.appendKnowledge(knowledge: String?) {
+        if (knowledge.isNullOrBlank()) return
+        append("\n## Knowledge base excerpts (course corpus)\n")
+        append(knowledge)
+        append('\n')
     }
 
     private fun StringBuilder.appendWeakTopics() {

@@ -35,6 +35,16 @@ import java.time.LocalDateTime
 /** Characters of a question prompt kept for list previews. */
 private const val PROMPT_PREVIEW_LENGTH = 80
 
+/** Stable, bounded read filters for the vocabulary catalogue. */
+data class VocabularyQuery(
+    val languageId: Long? = null,
+    val level: String? = null,
+    val category: String? = null,
+    val text: String? = null,
+    val limit: Int = 100,
+    val offset: Long = 0L,
+)
+
 /**
  * Read-side content store (languages, lessons, vocabulary, grammar, quizzes)
  * plus server-side quiz grading. Every function opens its own transaction.
@@ -100,18 +110,13 @@ class ContentRepository {
                 ?: throw ApiException(HttpStatusCode.NotFound, ErrorCodes.NOT_FOUND, "Lesson not found")
         }
 
-    fun findVocabulary(
-        languageId: Long?,
-        level: String?,
-        category: String?,
-        query: String?,
-    ): List<VocabularyDto> =
+    fun findVocabulary(filters: VocabularyQuery = VocabularyQuery()): List<VocabularyDto> =
         transaction {
             val stmt = Vocabularies.selectAll()
-            languageId?.let { stmt.andWhere { Vocabularies.languageId eq it } }
-            level?.let { stmt.andWhere { Vocabularies.level eq it } }
-            category?.let { stmt.andWhere { Vocabularies.category eq it } }
-            query?.takeIf { it.isNotBlank() }?.let { term ->
+            filters.languageId?.let { stmt.andWhere { Vocabularies.languageId eq it } }
+            filters.level?.let { stmt.andWhere { Vocabularies.level eq it } }
+            filters.category?.let { stmt.andWhere { Vocabularies.category eq it } }
+            filters.text?.takeIf { it.isNotBlank() }?.let { term ->
                 val pattern = "%${term.trim()}%"
                 stmt.andWhere {
                     (Vocabularies.word like pattern) or
@@ -119,7 +124,18 @@ class ContentRepository {
                         (Vocabularies.meaning like pattern)
                 }
             }
-            stmt.orderBy(Vocabularies.id).map(::toVocabulary)
+            stmt.orderBy(Vocabularies.id).limit(filters.limit, filters.offset).map(::toVocabulary)
+        }
+
+    /** Distinct categories without materializing the million-row catalogue. */
+    fun findVocabularyCategories(): List<String> =
+        transaction {
+            Vocabularies
+                .slice(Vocabularies.category)
+                .selectAll()
+                .withDistinct()
+                .orderBy(Vocabularies.category, SortOrder.ASC)
+                .mapNotNull { row -> row[Vocabularies.category] }
         }
 
     fun findVocabularyById(id: Long): VocabularyDto =

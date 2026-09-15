@@ -1,5 +1,7 @@
 package com.linguaai.server.repository
 
+import com.linguaai.server.api.ApiException
+import com.linguaai.server.api.ErrorCodes
 import com.linguaai.server.api.dto.ActivityDayDto
 import com.linguaai.server.api.dto.ProgressEventTypes
 import com.linguaai.server.api.dto.ProgressSummaryDto
@@ -8,6 +10,8 @@ import com.linguaai.server.api.dto.RecordProgressEventRequest
 import com.linguaai.server.api.dto.RecordProgressEventResponse
 import com.linguaai.server.api.dto.StreakDto
 import com.linguaai.server.api.dto.VocabularyProgressDto
+import com.linguaai.server.api.dto.VocabularyProgressItemDto
+import com.linguaai.server.api.dto.VocabularyProgressSnapshotDto
 import com.linguaai.server.api.dto.WeakTopicDto
 import com.linguaai.server.db.AiConversations
 import com.linguaai.server.db.LearningStreaks
@@ -15,14 +19,20 @@ import com.linguaai.server.db.QuizAttempts
 import com.linguaai.server.db.UserMistakes
 import com.linguaai.server.db.UserProgress
 import com.linguaai.server.db.UserVocabularyProgress
+import com.linguaai.server.db.Vocabularies
+import io.ktor.http.HttpStatusCode
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * Progress aggregation and event recording.
@@ -60,6 +70,13 @@ class ProgressRepository {
     // possible if the numbers are findable.
     private val masteryLearnedFloor = 4
     private val learningBand = 1..3
+
+    private data class VocabularyProgressTimes(
+        val lastReviewedAt: LocalDateTime?,
+        val nextReviewAt: LocalDateTime?,
+        val clientUpdatedAt: LocalDateTime?,
+        val now: LocalDateTime,
+    )
 
     /**
      * Records one learning event. Only [ProgressEventTypes.all] count toward a
@@ -102,7 +119,184 @@ class ProgressRepository {
                 creditActivityDay(userId, LocalDate.now(), minutes)
             }
 
+            request.vocabularyProgress?.let { snapshot ->
+                upsertVocabularyProgress(
+                    userId = userId,
+                    vocabularyId = requireVocabulary(request.refId),
+                    snapshot = snapshot,
+                    eventType = request.eventType,
+                    now = now,
+                )
+            }
+
             RecordProgressEventResponse(eventId = eventId, created = true)
+        }
+
+    /** Applies a flashcard snapshot only after the idempotent event row exists. */
+    private fun upsertVocabularyProgress(
+        userId: Long,
+        vocabularyId: Long,
+        snapshot: VocabularyProgressSnapshotDto,
+        eventType: String,
+        now: LocalDateTime,
+    ) {
+        val existing =
+            UserVocabularyProgress
+                .selectAll()
+                .andWhere { UserVocabularyProgress.userId eq userId }
+                .andWhere { UserVocabularyProgress.vocabularyId eq vocabularyId }
+                .forUpdate()
+                .firstOrNull()
+        val times =
+            VocabularyProgressTimes(
+                lastReviewedAt = toDatabaseTime(snapshot.lastReviewedAtEpochMillis),
+                nextReviewAt = toDatabaseTime(snapshot.nextReviewAtEpochMillis),
+                clientUpdatedAt = toDatabaseTime(snapshot.stateUpdatedAtEpochMillis),
+                now = now,
+            )
+
+        if (existing == null) {
+            if (insertVocabularyProgress(userId, vocabularyId, snapshot, times)) return
+            // Another transaction may have inserted the unique (user, word) row
+            // after the first select. Re-read it under a row lock and merge the
+            // concurrent snapshot instead of surfacing a duplicate-key failure.
+            val concurrent =
+                UserVocabularyProgress
+                    .selectAll()
+                    .andWhere { UserVocabularyProgress.userId eq userId }
+                    .andWhere { UserVocabularyProgress.vocabularyId eq vocabularyId }
+                    .forUpdate()
+                    .firstOrNull()
+            if (concurrent != null) {
+                updateVocabularyProgress(concurrent, snapshot, eventType, times)
+            }
+        } else {
+            updateVocabularyProgress(
+                existing = existing,
+                snapshot = snapshot,
+                eventType = eventType,
+                times = times,
+            )
+        }
+    }
+
+    private fun insertVocabularyProgress(
+        userId: Long,
+        vocabularyId: Long,
+        snapshot: VocabularyProgressSnapshotDto,
+        times: VocabularyProgressTimes,
+    ): Boolean {
+        val result =
+            UserVocabularyProgress.insertIgnore { row ->
+                row[UserVocabularyProgress.userId] = userId
+                row[UserVocabularyProgress.vocabularyId] = vocabularyId
+                row[UserVocabularyProgress.favorite] = snapshot.favorite
+                row[UserVocabularyProgress.masteryLevel] = snapshot.masteryLevel
+                row[UserVocabularyProgress.reviewCount] = snapshot.reviewCount
+                row[UserVocabularyProgress.correctCount] = snapshot.correctCount
+                row[UserVocabularyProgress.wrongCount] = snapshot.wrongCount
+                row[UserVocabularyProgress.lastReviewedAt] = times.lastReviewedAt
+                row[UserVocabularyProgress.nextReviewAt] = times.nextReviewAt
+                row[UserVocabularyProgress.clientUpdatedAt] = times.clientUpdatedAt
+                row[UserVocabularyProgress.updatedAt] = times.now
+            }
+        return result.insertedCount > 0
+    }
+
+    private fun updateVocabularyProgress(
+        existing: ResultRow,
+        snapshot: VocabularyProgressSnapshotDto,
+        eventType: String,
+        times: VocabularyProgressTimes,
+    ) {
+        val reviewIsOlder = isReviewSnapshotOlder(existing, snapshot, times.lastReviewedAt)
+        val existingClientUpdatedAt = existing[UserVocabularyProgress.clientUpdatedAt]
+        val favoriteIsOlder = isClientStateOlder(existingClientUpdatedAt, times.clientUpdatedAt)
+        if (shouldIgnoreSnapshot(eventType, reviewIsOlder, favoriteIsOlder)) return
+
+        val id = existing[UserVocabularyProgress.id]
+        UserVocabularyProgress.update({ UserVocabularyProgress.id eq id }) { row ->
+            if (!favoriteIsOlder) row[UserVocabularyProgress.favorite] = snapshot.favorite
+            if (!reviewIsOlder) {
+                row[UserVocabularyProgress.masteryLevel] = snapshot.masteryLevel
+                row[UserVocabularyProgress.reviewCount] = snapshot.reviewCount
+                row[UserVocabularyProgress.correctCount] = snapshot.correctCount
+                row[UserVocabularyProgress.wrongCount] = snapshot.wrongCount
+                row[UserVocabularyProgress.lastReviewedAt] = times.lastReviewedAt
+                row[UserVocabularyProgress.nextReviewAt] = times.nextReviewAt
+            }
+            if (isNewerClientState(existingClientUpdatedAt, times.clientUpdatedAt)) {
+                row[UserVocabularyProgress.clientUpdatedAt] = times.clientUpdatedAt
+            }
+            row[UserVocabularyProgress.updatedAt] = times.now
+        }
+    }
+
+    private fun isReviewSnapshotOlder(
+        existing: ResultRow,
+        snapshot: VocabularyProgressSnapshotDto,
+        lastReviewedAt: LocalDateTime?,
+    ): Boolean {
+        val existingLastReviewedAt = existing[UserVocabularyProgress.lastReviewedAt]
+        return snapshot.reviewCount < existing[UserVocabularyProgress.reviewCount] ||
+            (
+                snapshot.reviewCount == existing[UserVocabularyProgress.reviewCount] &&
+                    existingLastReviewedAt != null &&
+                    (lastReviewedAt == null || !lastReviewedAt.isAfter(existingLastReviewedAt))
+            )
+    }
+
+    private fun isClientStateOlder(
+        existing: LocalDateTime?,
+        incoming: LocalDateTime?,
+    ): Boolean = existing != null && (incoming == null || !incoming.isAfter(existing))
+
+    private fun isNewerClientState(
+        existing: LocalDateTime?,
+        incoming: LocalDateTime?,
+    ): Boolean = incoming != null && (existing == null || incoming.isAfter(existing))
+
+    private fun shouldIgnoreSnapshot(
+        eventType: String,
+        reviewIsOlder: Boolean,
+        favoriteIsOlder: Boolean,
+    ): Boolean =
+        (eventType == ProgressEventTypes.VOCABULARY_STATE_SYNC && favoriteIsOlder) ||
+            (eventType != ProgressEventTypes.VOCABULARY_STATE_SYNC && reviewIsOlder)
+
+    private fun requireVocabulary(vocabularyId: Long?): Long {
+        val id = vocabularyId ?: throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "refId is required")
+        val exists = Vocabularies.selectAll().andWhere { Vocabularies.id eq id }.any()
+        if (!exists) {
+            throw ApiException(HttpStatusCode.NotFound, ErrorCodes.NOT_FOUND, "Vocabulary not found")
+        }
+        return id
+    }
+
+    private fun toDatabaseTime(epochMillis: Long?): LocalDateTime? =
+        epochMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime() }
+
+    private fun toEpochMillis(value: LocalDateTime?): Long? = value?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+
+    fun vocabularyProgress(userId: Long): List<VocabularyProgressItemDto> =
+        transaction {
+            UserVocabularyProgress
+                .selectAll()
+                .andWhere { UserVocabularyProgress.userId eq userId }
+                .orderBy(UserVocabularyProgress.vocabularyId, SortOrder.ASC)
+                .map { row ->
+                    VocabularyProgressItemDto(
+                        vocabularyId = row[UserVocabularyProgress.vocabularyId],
+                        favorite = row[UserVocabularyProgress.favorite],
+                        masteryLevel = row[UserVocabularyProgress.masteryLevel],
+                        reviewCount = row[UserVocabularyProgress.reviewCount],
+                        correctCount = row[UserVocabularyProgress.correctCount],
+                        wrongCount = row[UserVocabularyProgress.wrongCount],
+                        lastReviewedAtEpochMillis = toEpochMillis(row[UserVocabularyProgress.lastReviewedAt]),
+                        nextReviewAtEpochMillis = toEpochMillis(row[UserVocabularyProgress.nextReviewAt]),
+                        stateUpdatedAtEpochMillis = toEpochMillis(row[UserVocabularyProgress.clientUpdatedAt]),
+                    )
+                }
         }
 
     /**

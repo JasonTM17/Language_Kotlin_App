@@ -3,6 +3,7 @@ package com.linguaai.server.routes
 import com.linguaai.server.api.ApiException
 import com.linguaai.server.api.ErrorCodes
 import com.linguaai.server.repository.ContentRepository
+import com.linguaai.server.repository.VocabularyQuery
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -39,10 +40,14 @@ fun Application.configureContentRoutes(repository: ContentRepository) {
             get("/vocabulary") {
                 call.respond(
                     repository.findVocabulary(
-                        languageId = call.queryLong("languageId"),
-                        level = call.request.queryParameters["level"],
-                        category = call.request.queryParameters["category"],
-                        query = call.request.queryParameters["query"],
+                        VocabularyQuery(
+                            languageId = call.queryLong("languageId"),
+                            level = call.request.queryParameters["level"],
+                            category = call.request.queryParameters["category"],
+                            text = call.request.queryParameters["query"],
+                            limit = call.queryInt("limit", default = 100, maximum = 200),
+                            offset = call.queryLong("offset") ?: 0L,
+                        ),
                     ),
                 )
             }
@@ -69,7 +74,7 @@ fun Application.configureContentRoutes(repository: ContentRepository) {
             }
 
             get("/categories") {
-                call.respond(repository.findVocabulary(null, null, null, null).mapNotNull { it.category }.distinct())
+                call.respond(repository.findVocabularyCategories())
             }
         }
     }
@@ -80,9 +85,28 @@ private fun ApplicationCall.pathLong(name: String): Long =
         ?: throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Invalid $name parameter")
 
 private fun ApplicationCall.queryLong(name: String): Long? =
-    request.queryParameters[name]?.toLongOrNull()
-        ?: if (request.queryParameters.contains(name)) {
+    request.queryParameters[name]?.toLongOrNull()?.also {
+        if (it < 0L) throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Invalid $name parameter")
+    } ?: if (request.queryParameters.contains(name)) {
+        throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Invalid $name parameter")
+    } else {
+        null
+    }
+
+private fun ApplicationCall.queryInt(
+    name: String,
+    default: Int,
+    maximum: Int,
+): Int {
+    val value = request.queryParameters[name]?.toIntOrNull()
+    if (value == null) {
+        if (request.queryParameters.contains(name)) {
             throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Invalid $name parameter")
-        } else {
-            null
         }
+        return default
+    }
+    if (value !in 0..maximum) {
+        throw ApiException(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "$name must be between 0 and $maximum")
+    }
+    return value
+}

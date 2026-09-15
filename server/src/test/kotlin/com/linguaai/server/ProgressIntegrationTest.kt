@@ -11,9 +11,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
@@ -66,13 +70,16 @@ class ProgressIntegrationTest {
             block()
         }
 
-    private suspend fun ApplicationTestBuilder.registerAndGetToken(): String {
+    private suspend fun ApplicationTestBuilder.registerAndGetToken(
+        email: String = fixtureEmail,
+        username: String = "Son",
+    ): String {
         val response =
             client.post("/api/v1/auth/register") {
                 setBody(
                     json.encodeToString(
                         RegistrationFixture.serializer(),
-                        RegistrationFixture(fixtureEmail, "Son", fixtureSecret),
+                        RegistrationFixture(email, username, fixtureSecret),
                     ),
                 )
                 header(HttpHeaders.ContentType, "application/json")
@@ -108,6 +115,15 @@ class ProgressIntegrationTest {
                     }.bodyAsText(),
             ).jsonObject
 
+    private suspend fun ApplicationTestBuilder.vocabularyProgress(token: String) =
+        json
+            .parseToJsonElement(
+                client
+                    .get("/api/v1/progress/vocabulary") {
+                        header(HttpHeaders.Authorization, "Bearer $token")
+                    }.bodyAsText(),
+            ).jsonArray
+
     @Test
     fun `progress starts empty for a new learner`() =
         withApp {
@@ -136,6 +152,189 @@ class ProgressIntegrationTest {
             assertEquals(1, summary["streak"]!!.jsonObject["current"]!!.jsonPrimitive.int)
             assertEquals(1, summary["totals"]!!.jsonObject["activeDays"]!!.jsonPrimitive.int)
             assertEquals(7, summary["totals"]!!.jsonObject["minutesStudied"]!!.jsonPrimitive.int)
+        }
+
+    @Test
+    fun `flashcard snapshot is persisted once and replay does not overwrite it`() =
+        withApp {
+            val token = registerAndGetToken()
+            val past = System.currentTimeMillis() - 60_000
+            val future = System.currentTimeMillis() + 86_400_000
+            val first =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-vocab","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":true,"masteryLevel":4,"reviewCount":1,"correctCount":1,"wrongCount":0,"lastReviewedAtEpochMillis":$past,"nextReviewAtEpochMillis":$past}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, first.status)
+
+            val firstSummary = progress(token)["vocabulary"]!!.jsonObject
+            assertEquals(1, firstSummary["tracked"]!!.jsonPrimitive.int)
+            assertEquals(1, firstSummary["mastered"]!!.jsonPrimitive.int)
+            assertEquals(1, firstSummary["dueForReview"]!!.jsonPrimitive.int)
+
+            val replay =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-vocab","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":false,"masteryLevel":5,"reviewCount":2,"correctCount":2,"wrongCount":0,"lastReviewedAtEpochMillis":$future,"nextReviewAtEpochMillis":$future}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, replay.status)
+            assertTrue(replay.bodyAsText().contains("\"created\":false"))
+
+            val afterReplay = progress(token)["vocabulary"]!!.jsonObject
+            assertEquals(1, afterReplay["tracked"]!!.jsonPrimitive.int)
+            assertEquals(1, afterReplay["mastered"]!!.jsonPrimitive.int)
+            assertEquals(1, afterReplay["dueForReview"]!!.jsonPrimitive.int)
+
+            val stale =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-vocab-stale","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":false,"masteryLevel":1,"reviewCount":1,"correctCount":1,"wrongCount":0,"lastReviewedAtEpochMillis":${past - 60_000},"nextReviewAtEpochMillis":${past - 60_000}}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, stale.status)
+            assertEquals(1, progress(token)["vocabulary"]!!.jsonObject["mastered"]!!.jsonPrimitive.int)
+            assertTrue(
+                vocabularyProgress(token)
+                    .first()
+                    .jsonObject["favorite"]!!
+                    .jsonPrimitive
+                    .boolean,
+            )
+        }
+
+    @Test
+    fun `vocabulary progress pull is account scoped`() =
+        withApp {
+            val token = registerAndGetToken()
+            val response =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-pull","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":true,"masteryLevel":2,"reviewCount":1,"correctCount":0,"wrongCount":1,"lastReviewedAtEpochMillis":${System.currentTimeMillis()},"nextReviewAtEpochMillis":null}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, response.status)
+
+            val otherToken = registerAndGetToken(email = "other-progress@example.com", username = "Other")
+            val own = vocabularyProgress(token)
+            assertEquals(1, own.size)
+            val item = own.first().jsonObject
+            assertEquals(1, item["vocabularyId"]!!.jsonPrimitive.int)
+            assertTrue(item["favorite"]!!.jsonPrimitive.boolean)
+            assertTrue(vocabularyProgress(otherToken).isEmpty())
+        }
+
+    @Test
+    fun `favorite state sync does not regress a newer review snapshot`() =
+        withApp {
+            val token = registerAndGetToken()
+            val reviewedAt = System.currentTimeMillis()
+            val review =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-review-before-favorite","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":false,"masteryLevel":4,"reviewCount":2,"correctCount":2,"wrongCount":0,"lastReviewedAtEpochMillis":$reviewedAt,"nextReviewAtEpochMillis":${reviewedAt + 86_400_000},"stateUpdatedAtEpochMillis":$reviewedAt}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, review.status)
+
+            val favorite =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-favorite-only","eventType":"VOCABULARY_STATE_SYNC","refId":1,"minutes":99,"vocabularyProgress":{"favorite":true,"masteryLevel":0,"reviewCount":0,"correctCount":0,"wrongCount":0,"stateUpdatedAtEpochMillis":${reviewedAt + 1000}}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, favorite.status)
+
+            val item = vocabularyProgress(token).first().jsonObject
+            assertTrue(item["favorite"]!!.jsonPrimitive.boolean)
+            assertEquals(4, item["masteryLevel"]!!.jsonPrimitive.int)
+            assertEquals(2, item["reviewCount"]!!.jsonPrimitive.int)
+            assertEquals(1, progress(token)["totals"]!!.jsonObject["minutesStudied"]!!.jsonPrimitive.int)
+
+            val lateFavorite =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-favorite-late","eventType":"VOCABULARY_STATE_SYNC","refId":1,"vocabularyProgress":{"favorite":false,"masteryLevel":0,"reviewCount":0,"correctCount":0,"wrongCount":0,"stateUpdatedAtEpochMillis":${reviewedAt + 500}}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, lateFavorite.status)
+            val lateFavoriteItem =
+                vocabularyProgress(token)
+                    .first()
+                    .jsonObject
+            assertTrue(
+                lateFavoriteItem["favorite"]!!.jsonPrimitive.boolean,
+            )
+
+            val legacyFavorite =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"op-favorite-legacy","eventType":"VOCABULARY_STATE_SYNC","refId":1,"vocabularyProgress":{"favorite":false,"masteryLevel":0,"reviewCount":0,"correctCount":0,"wrongCount":0}}""",
+                    )
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.OK, legacyFavorite.status)
+            val legacyFavoriteItem =
+                vocabularyProgress(token)
+                    .first()
+                    .jsonObject
+            assertTrue(legacyFavoriteItem["favorite"]!!.jsonPrimitive.boolean)
+        }
+
+    @Test
+    fun `concurrent first snapshots keep one row and the newest review`() =
+        withApp {
+            val token = registerAndGetToken()
+            val firstReview = System.currentTimeMillis()
+            val responseStatuses =
+                coroutineScope {
+                    listOf(
+                        async {
+                            val response =
+                                client.post("/api/v1/progress/events") {
+                                    setBody(
+                                        """{"clientOperationId":"op-concurrent-first","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":false,"masteryLevel":1,"reviewCount":1,"correctCount":1,"wrongCount":0,"lastReviewedAtEpochMillis":$firstReview,"nextReviewAtEpochMillis":${firstReview + 60_000}}}""",
+                                    )
+                                    header(HttpHeaders.ContentType, "application/json")
+                                    header(HttpHeaders.Authorization, "Bearer $token")
+                                }
+                            response.status
+                        },
+                        async {
+                            val response =
+                                client.post("/api/v1/progress/events") {
+                                    setBody(
+                                        """{"clientOperationId":"op-concurrent-newest","eventType":"FLASHCARD_REVIEW","refId":1,"minutes":1,"vocabularyProgress":{"favorite":true,"masteryLevel":2,"reviewCount":2,"correctCount":2,"wrongCount":0,"lastReviewedAtEpochMillis":${firstReview + 1_000},"nextReviewAtEpochMillis":${firstReview + 61_000}}}""",
+                                    )
+                                    header(HttpHeaders.ContentType, "application/json")
+                                    header(HttpHeaders.Authorization, "Bearer $token")
+                                }
+                            response.status
+                        },
+                    ).map { it.await() }
+                }
+
+            assertEquals(listOf(HttpStatusCode.OK, HttpStatusCode.OK), responseStatuses.sortedBy { it.value })
+            val items = vocabularyProgress(token)
+            assertEquals(1, items.size)
+            val newest = items.single().jsonObject
+            assertEquals(2, newest["reviewCount"]!!.jsonPrimitive.int)
         }
 
     @Test
@@ -186,6 +385,21 @@ class ProgressIntegrationTest {
             val response =
                 client.post("/api/v1/progress/events") {
                     setBody("""{"clientOperationId":"","eventType":"QUIZ_ATTEMPT","minutes":1}""")
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+        }
+
+    @Test
+    fun `operation id longer than the database column is rejected`() =
+        withApp {
+            val token = registerAndGetToken()
+            val response =
+                client.post("/api/v1/progress/events") {
+                    setBody(
+                        """{"clientOperationId":"${"x".repeat(65)}","eventType":"QUIZ_ATTEMPT","minutes":1}""",
+                    )
                     header(HttpHeaders.ContentType, "application/json")
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }

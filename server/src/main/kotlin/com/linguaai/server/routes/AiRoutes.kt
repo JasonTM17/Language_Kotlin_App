@@ -22,10 +22,12 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import kotlinx.serialization.json.Json
 
 /** Connect timeout for server-to-server calls, in milliseconds. */
 private const val CONNECT_TIMEOUT_MILLIS = 5_000L
+
+/** Default page size for raw knowledge-search hits. */
+private const val DEFAULT_KNOWLEDGE_SEARCH_LIMIT = 5
 
 /*
  * Authenticated AI endpoints. Every handler resolves the user principal; the
@@ -51,6 +53,7 @@ fun Application.configureAiRoutes(
     config: com.linguaai.server.config.AppConfig,
     authRepository: AuthRepository,
     contentRepository: ContentRepository,
+    ragService: com.linguaai.server.ai.rag.RagService,
 ) {
     val provider: com.linguaai.server.ai.AiProvider = buildProvider(config)
     val service =
@@ -60,15 +63,28 @@ fun Application.configureAiRoutes(
             aiRepository = AiRepository(),
             authRepository = authRepository,
             contentRepository = contentRepository,
-            rateLimiter =
-                com.linguaai.server.ai
-                    .AiRateLimiter(config.aiRateLimitPerMinute),
+            ragService = ragService,
         )
-    val json = Json { ignoreUnknownKeys = true }
+    aiRoutes(service)
+}
 
+private fun Application.aiRoutes(service: com.linguaai.server.ai.AiService) {
     routing {
         authenticate("auth-jwt") {
             route("/api/v1/ai") {
+                get("/knowledge/search") {
+                    val level = call.parameters["level"]?.takeIf { it.isNotBlank() }
+                    val limit = call.parameters["limit"]?.toIntOrNull() ?: DEFAULT_KNOWLEDGE_SEARCH_LIMIT
+                    call.respond(
+                        service.searchKnowledge(
+                            userId = call.userId(),
+                            query = call.parameters["q"].orEmpty(),
+                            level = level,
+                            limit = limit,
+                        ),
+                    )
+                }
+
                 get("/conversations") {
                     call.respond(service.conversations(call.userId()))
                 }

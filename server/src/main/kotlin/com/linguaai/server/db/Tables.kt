@@ -200,6 +200,7 @@ object UserVocabularyProgress : Table("user_vocabulary_progress") {
     val wrongCount = integer("wrong_count").default(0)
     val lastReviewedAt = datetime("last_reviewed_at").nullable()
     val nextReviewAt = datetime("next_review_at").nullable()
+    val clientUpdatedAt = datetime("client_updated_at").nullable()
     val updatedAt = datetime("updated_at")
     override val primaryKey = PrimaryKey(id)
 
@@ -231,5 +232,31 @@ object LearningStreaks : Table("learning_streaks") {
 
     init {
         uniqueIndex("uq_streak_user_date", userId, activityDate)
+    }
+}
+
+/**
+ * RAG corpus chunks (Flyway V5). `embedding` is little-endian float32, owned by
+ * db/rag VectorMath; `embeddingModel` names the space the vector lives in so
+ * vectors from different providers can never be compared.
+ */
+object KnowledgeChunks : Table("knowledge_chunks") {
+    val id = long("id").autoIncrement()
+    val languageId = long("language_id").references(Languages.id)
+    val level = varchar("level", 20).nullable()
+    val sourceType = varchar("source_type", 30)
+    val sourceId = long("source_id")
+    val chunkIndex = integer("chunk_index")
+    val title = varchar("title", 300)
+    val content = text("content")
+    val embeddingModel = varchar("embedding_model", 80)
+    val embedding = blob("embedding")
+    val contentHash = varchar("content_hash", 64)
+    val createdAt = datetime("created_at")
+    val updatedAt = datetime("updated_at")
+    override val primaryKey = PrimaryKey(id)
+
+    init {
+        uniqueIndex("uq_chunk", sourceType, sourceId, chunkIndex)
     }
 }
