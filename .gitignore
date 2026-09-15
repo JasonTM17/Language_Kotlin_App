@@ -33,6 +33,9 @@ Thumbs.db
 # Logs
 *.log
 
+# External multilingual dictionary cache (never commit raw source dumps)
+/.cache/
+
 # Node (tooling, if ever used locally)
 node_modules/
 
