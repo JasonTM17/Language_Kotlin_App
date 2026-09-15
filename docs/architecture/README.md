@@ -115,6 +115,21 @@ OpenAI-compatible endpoint — OpenAI, DeepSeek, Groq) and `MockAiProvider`
 suite never depends on a paid provider or the network. See
 [ADR-0005](adr/0005-ai-provider-abstraction.md).
 
+### Retrieval-grounded answers (RAG)
+
+Chat and grammar turns are grounded in the platform's own corpus. Course
+documents are chunked, embedded, and stored in `knowledge_chunks`; each tutor
+turn retrieves the top-k chunks scoped to the learner's language and level,
+injects them into the system prompt inside a fenced `---BEGIN/END KNOWLEDGE---`
+block (retrieved text is reference data, never instructions), and returns the
+cited chunks as `sources[]`. The vector engine is pluggable: **Qdrant** when
+`QDRANT_URL` is configured, otherwise brute-force cosine over the canonical SQL
+store. The offline default embedder is deterministic and lexical — exact-token
+matching without semantic generalization — and every chunk records its
+embedding model so spaces can never mix. Retrieval failures degrade to an
+ungrounded answer, never a 500. See
+[ADR-0007](adr/0007-retrieval-grounded-tutor.md).
+
 ### Rate limiting
 
 In-process, per user, `AI_RATE_LIMIT_PER_MINUTE` requests (default 20), returning
@@ -157,6 +172,15 @@ Two properties make this safe:
   parked, so one poison message cannot keep the queue retrying forever.
 
 See [ADR-0006](adr/0006-idempotent-progress-sync.md).
+
+### Scale validation
+
+The live stack (MySQL 8 + Qdrant + Ktor, single-node Docker Compose) has been
+exercised at 100k+ corpus rows and 100k+ embedded chunks: deterministic
+seeding through the ops endpoint, a full reindex, retrieval relevance and
+latency percentiles after the seed, and teardown. The harness is
+`scripts/e2e-bigdata.sh`; this validates pipeline load on one node — it is not
+a distributed-systems claim.
 
 ## Token refresh
 

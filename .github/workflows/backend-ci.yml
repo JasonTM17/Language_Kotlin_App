@@ -35,6 +35,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Keep the backend's static-analysis gate explicit and fail-fast. The
+      # build below also includes check, so a lint regression cannot be hidden
+      # behind a passing test-only step.
+      - name: Static analysis
+        run: ./gradlew detekt ktlintCheck --no-daemon
+
       - name: Build and test
         run: ./gradlew build --no-daemon
 

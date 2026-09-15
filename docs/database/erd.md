@@ -2,7 +2,9 @@
 
 MySQL 8 in production and Docker; H2 in MySQL compatibility mode for integration
 tests. Schema is owned by Flyway — `V1__init.sql` creates 17 tables, `V2__seed.sql`
-loads the demo catalogue. Never edit an applied migration; add a new one.
+loads the first catalogue and `V3__expand_multilingual_vocabulary.sql` expands
+the supported language vocabulary. Never edit an applied migration; add a new
+one.
 
 ## ER diagram
 
@@ -132,6 +134,7 @@ erDiagram
         bigint vocabulary_id FK
         int mastery_level
         int review_count
+        datetime client_updated_at
         datetime next_review_at
     }
     user_mistakes {
@@ -189,6 +192,7 @@ conversation grows — see
 | --- | --- |
 | `V1__init.sql` | All 17 tables, indexes and constraints |
 | `V2__seed.sql` | Demo catalogue: languages, lessons, vocabulary, grammar, quizzes |
+| `V3__expand_multilingual_vocabulary.sql` | Korean, Spanish, French, Chinese and German plus 840 indexed vocabulary records |
 
 ## Conventions
 

@@ -49,7 +49,7 @@ machine's LAN address instead.
 ## Tests
 
 ```bash
-cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test   # 35 tests, no network needed
+cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test   # 81 tests, no network needed
 cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest
 ```
 

@@ -112,6 +112,11 @@ Public content endpoints (authentication not required).
 | `GET` | `/api/v1/grammar/{id}` | Grammar detail |
 | `GET` | `/api/v1/quizzes/{id}` | Quiz with its questions |
 
+The current Flyway catalogue exposes Japanese, English, Korean, Spanish, French,
+Chinese and German. It contains 900 vocabulary records in total; each language
+advertises its own level set through `/languages`, and vocabulary accepts the
+same level through the `level` query parameter.
+
 ### `POST /api/v1/quizzes/{id}/submit`
 
 Authenticated.
@@ -142,6 +147,28 @@ what it receives.
 }
 ```
 
+### `GET /api/v1/progress/vocabulary`
+
+Returns the authenticated learner's per-word state so a fresh device can
+hydrate its local vocabulary cache. The response is account-scoped and sorted
+by `vocabularyId`:
+
+```json
+[
+  {
+    "vocabularyId": 42,
+    "favorite": true,
+    "masteryLevel": 3,
+    "reviewCount": 4,
+    "correctCount": 3,
+    "wrongCount": 1,
+    "lastReviewedAtEpochMillis": 1780000000000,
+    "nextReviewAtEpochMillis": 1780003600000,
+    "stateUpdatedAtEpochMillis": 1780000000000
+  }
+]
+```
+
 ### `POST /api/v1/progress/events`
 
 Records a learning event. **Idempotent per `clientOperationId`** — this is what
@@ -150,6 +177,36 @@ makes offline retry safe.
 ```json
 { "clientOperationId": "5f3c…", "eventType": "QUIZ_ATTEMPT", "refId": 12, "minutes": 5 }
 ```
+
+Flashcard reviews may include the local SRS snapshot. The snapshot is applied
+in the same idempotent transaction as the event, so a retried operation cannot
+overwrite a previously accepted state. Favorite changes use the same shape
+with `VOCABULARY_STATE_SYNC`; that event never adds streak minutes and applies
+the favorite while preserving a newer review snapshot:
+
+```json
+{
+  "clientOperationId": "5f3c…",
+  "eventType": "FLASHCARD_REVIEW",
+  "refId": 42,
+  "minutes": 1,
+  "vocabularyProgress": {
+    "favorite": false,
+    "masteryLevel": 3,
+    "reviewCount": 4,
+    "correctCount": 3,
+    "wrongCount": 1,
+    "lastReviewedAtEpochMillis": 1780000000000,
+    "nextReviewAtEpochMillis": 1780003600000,
+    "stateUpdatedAtEpochMillis": 1780000000000
+  }
+}
+```
+
+`masteryLevel` is bounded to `0..5`, counters must be non-negative, and the
+snapshot is accepted for `FLASHCARD_REVIEW` or `VOCABULARY_STATE_SYNC`. The
+time fields are epoch milliseconds so Android and the server do not depend on a
+shared timezone.
 
 `200` with `{ eventId, created }`. `created` is `false` when the operation had
 already been recorded, in which case nothing is counted twice.
@@ -172,8 +229,9 @@ never leaves the server.
 | --- | --- | --- |
 | `GET` | `/api/v1/ai/conversations` | List conversations |
 | `GET` | `/api/v1/ai/conversations/{id}/messages` | Message history |
-| `POST` | `/api/v1/ai/chat` | General tutoring turn |
-| `POST` | `/api/v1/ai/explain` | Grammar explanation |
+| `POST` | `/api/v1/ai/chat` | General tutoring turn (RAG-grounded) |
+| `GET` | `/api/v1/ai/knowledge/search` | Raw retrieval over the course corpus |
+| `POST` | `/api/v1/ai/explain` | Grammar explanation (RAG-grounded) |
 | `POST` | `/api/v1/ai/correct` | Sentence correction |
 | `POST` | `/api/v1/ai/generate-quiz` | Generate a quiz |
 | `POST` | `/api/v1/ai/conversation-practice` | Start a role-play |
@@ -189,10 +247,24 @@ never leaves the server.
 
 `conversationId` may be omitted to start a new conversation.
 
-`200` with `{ conversationId, reply, mode }`.
+`200` with `{ conversationId, reply, mode, sources[] }`. `sources` lists the
+course-corpus chunks the answer was grounded in — `title`, `sourceType`
+(`VOCABULARY` / `GRAMMAR` / `LESSON`), `sourceId`, `chunkIndex`, `level` and
+similarity `score`. The field is defaulted: responses from deployments with
+`RAG_ENABLED=false`, or replies whose retrieval found nothing relevant,
+carry an empty array. Grounding applies to `general` and `grammar-explain`
+modes only; see [ADR-0007](../architecture/adr/0007-retrieval-grounded-tutor.md).
 
 Modes: `general`, `grammar-explain`, `sentence-correction`,
 `conversation-practice`, `practice-score`, `mistakes-review`.
+
+### `GET /api/v1/ai/knowledge/search`
+
+Raw retrieval over the course corpus — the same engine the tutor uses, exposed
+for demos, related-content surfaces and the E2E harness. Query params: `q`
+(required), `level` (defaults to the learner profile level), `limit` (default
+5, max 20). Shares the chat rate limiter. Responds with
+`{ query, hits: sources[] }` in the same shape as chat `sources`.
 
 ### Specialized tutor requests
 
@@ -228,6 +300,30 @@ to a shared store is documented in the
 | Provider returned nothing | `502` |
 | Provider returned unparseable structured output | `502` |
 | Provider returned a practice score outside 0–100 | `502` |
+| Retrieval or indexing failure during a tutor turn | Grounded context is dropped, the turn succeeds without it |
+
+Retrieval failures degrade to ungrounded answers on purpose: grounding must
+never turn a working tutor into a 500.
+
+## Operations — `/api/v1/ops`
+
+Machine-facing endpoints. Every request must carry `X-Ops-Token` matching the
+server's `OPS_TOKEN`; production refuses to boot without a real token.
+Mismatch returns `401 UNAUTHORIZED`; a second concurrent reindex or seed
+returns `409 CONFLICT`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/ops/rag/reindex` | Re-embed the corpus (`?force=true` rewrites everything — the repair path for a lost or swapped vector engine) |
+| `POST` | `/api/v1/ops/seed/scale` | Generate deterministic synthetic corpus (`wordsPerLanguage`, `grammarPerLanguage`, `lessonsPerLanguage`; caps 50k/10k/5k per language) |
+| `DELETE` | `/api/v1/ops/seed` | Purge every synthetic row and its vectors |
+| `GET` | `/api/v1/ops/stats` | Corpus counts, indexed chunk count, active vector engine and embedding model |
+
+`POST /rag/reindex` responds with
+`{ documentsScanned, chunksWritten, documentsUnchanged, durationMs }`.
+`GET /stats` responds with
+`{ vocabularies, grammarLessons, lessons, knowledgeChunks, engine, embeddingModel }`
+where `engine` is `qdrant` or `sql`.
 
 See [ADR-0005](../architecture/adr/0005-ai-provider-abstraction.md) for why the
 provider sits behind an interface.
