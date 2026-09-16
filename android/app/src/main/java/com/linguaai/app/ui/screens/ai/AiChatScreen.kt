@@ -183,7 +183,9 @@ private fun ColumnScope.ChatTranscript(
                     retryModifier = Modifier.testTag("ai-chat-retry"),
                     onRetry = onRetry,
                 )
-            state.messages.isEmpty() -> EmptyTranscript(onUsePrompt = onUsePrompt)
+            // A scored role-play must stay visible even with an empty
+            // transcript: the score card lives in the list below.
+            state.messages.isEmpty() && state.practiceScore == null -> EmptyTranscript(onUsePrompt = onUsePrompt)
             else ->
                 LazyColumn(
                     state = listState,
