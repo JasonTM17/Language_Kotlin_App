@@ -35,6 +35,7 @@ import com.linguaai.app.data.remote.dto.GeneratedQuizQuestionDto
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
 
@@ -94,7 +95,9 @@ private fun AiHomeContent(
             items(state.generatedQuiz) { question -> QuizPreviewCard(question) }
         }
         item { SectionHeader("Recent conversations", modifier = Modifier.padding(top = Spacing.md)) }
-        if (!state.isLoading && state.conversations.isEmpty()) {
+        if (state.isLoading && state.conversations.isEmpty()) {
+            item { LoadingIndicator(modifier = Modifier.padding(top = Spacing.md)) }
+        } else if (state.conversations.isEmpty()) {
             item {
                 EmptyState(
                     title = "No conversations yet",

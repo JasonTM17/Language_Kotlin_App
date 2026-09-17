@@ -23,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,6 +69,7 @@ fun ProfileScreen(
         onThemeMode = viewModel::setThemeMode,
         onReminderHour = { hour -> viewModel.setReminderTime(hour, state.reminderMinute) },
         onNotifications = viewModel::setNotificationsEnabled,
+        onRetry = viewModel::load,
         onSignOut = viewModel::signOut,
         modifier = modifier,
     )
@@ -81,6 +83,7 @@ private fun ProfileContent(
     onThemeMode: (String) -> Unit,
     onReminderHour: (Int) -> Unit,
     onNotifications: (Boolean) -> Unit,
+    onRetry: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -90,7 +93,26 @@ private fun ProfileContent(
     }
 
     if (state.profile == null && state.error != null) {
-        ErrorState(message = state.error, modifier = modifier)
+        // A failed profile fetch must not trap the user: retry is offered and
+        // sign-out stays one tap away below the error.
+        Column(modifier = modifier.fillMaxSize()) {
+            ErrorState(
+                message = state.error,
+                modifier = Modifier.fillMaxWidth(),
+                retryLabel = "Retry",
+                onRetry = onRetry,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            OutlinedButton(
+                onClick = onSignOut,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md, vertical = Spacing.lg),
+            ) {
+                Text("Sign out")
+            }
+        }
         return
     }
 

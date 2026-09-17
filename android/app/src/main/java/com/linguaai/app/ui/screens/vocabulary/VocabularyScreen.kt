@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Search
@@ -36,18 +37,29 @@ import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
 
 @Composable
-fun VocabularyScreen(viewModel: VocabularyViewModel = hiltViewModel()) {
+fun VocabularyScreen(
+    onBack: () -> Unit = {},
+    viewModel: VocabularyViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.lg)) {
-            Text(text = "Vocabulary", style = MaterialTheme.typography.headlineSmall)
-            Text(
-                text = "Keep useful words close and review them at the right time.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Spacing.xs),
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = Spacing.sm, end = Spacing.md, top = Spacing.md),
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Column(modifier = Modifier.padding(start = Spacing.xs)) {
+                Text(text = "Vocabulary", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = "Keep useful words close and review them at the right time.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
         }
         OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.sm))
 

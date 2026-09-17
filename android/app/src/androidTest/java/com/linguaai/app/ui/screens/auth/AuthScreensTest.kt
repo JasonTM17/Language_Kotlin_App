@@ -19,7 +19,8 @@ class AuthScreensTest {
     // the state shape. It lives in a test resource, not in code, and is not a
     // credential.
     private val fixturePassword: String =
-        javaClass.getResource("/auth-fixture-password.txt")!!
+        javaClass
+            .getResource("/auth-fixture-password.txt")!!
             .readText()
             .trim()
 

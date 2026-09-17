@@ -50,7 +50,8 @@ class ProfileViewModel
             load()
         }
 
-        private fun load() {
+        /** Public so a failed load is recoverable from the error screen. */
+        fun load() {
             viewModelScope.launch {
                 val theme = settingsDataStore.themeMode.first()
                 val goal = settingsDataStore.dailyGoalMinutes.first()

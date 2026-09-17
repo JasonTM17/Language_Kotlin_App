@@ -40,6 +40,22 @@ takes minutes, and seeds 100k+ rows. Its evidence lives in the plan ledger under
 `plans/260914-2010-rag-uiux-bigdata/reports/`; a manual-equivalent Windows-Docker
 run is acceptable when Bash cannot access the local Docker engine.
 
+### Catalogue import verification
+
+The dictionary importer has a dependency-free self-test and a network-free
+manifest/dry-run path:
+
+```bash
+python scripts/import-multilingual-vocabulary.py --self-test
+python scripts/import-multilingual-vocabulary.py --dry-run
+```
+
+The live import is resumable and idempotent; it verifies every source SHA-256
+before streaming rows into MySQL. Run it with
+`python scripts/import-multilingual-vocabulary.py --import`, then use the
+[catalogue data guide](data/multilingual-vocabulary.md) for the per-language
+count audit and explicit RAG reindex checkpoint.
+
 ## What is covered, and why those things
 
 ### Server

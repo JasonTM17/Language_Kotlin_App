@@ -18,13 +18,15 @@ import androidx.compose.ui.unit.dp
 import com.linguaai.app.ui.theme.Spacing
 
 /**
- * Sticky banner shown when the device is offline. Learning data stays
- * available from the local cache; AI features require connectivity.
+ * Sticky banner shown when the device is offline or serving stale data.
+ * Learning data stays available from the local cache; AI features require
+ * connectivity.
  */
 @Composable
 fun OfflineBanner(
     visible: Boolean,
     modifier: Modifier = Modifier,
+    message: String = "You're offline. Showing cached content.",
 ) {
     if (!visible) return
     Row(
@@ -45,7 +47,7 @@ fun OfflineBanner(
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = "You're offline. Showing cached content.",
+            text = message,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onTertiaryContainer,
             modifier = Modifier.padding(start = Spacing.sm),

@@ -210,7 +210,7 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
         )
     }
     composable<VocabularyRoute> {
-        VocabularyScreen()
+        VocabularyScreen(onBack = { navController.popBackStack() })
     }
     composable<FlashcardRoute> {
         FlashcardScreen(onBack = { navController.popBackStack() })

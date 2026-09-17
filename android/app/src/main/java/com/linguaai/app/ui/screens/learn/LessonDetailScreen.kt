@@ -77,20 +77,24 @@ fun LessonDetailScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = Spacing.md),
                 ) {
-                    LinguaCard(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
-                        Text(
-                            text = state.lesson?.description.orEmpty(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(Spacing.md),
-                        )
+                    state.lesson?.description?.takeIf { it.isNotBlank() }?.let { description ->
+                        LinguaCard(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
+                            Text(
+                                text = description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(Spacing.md),
+                            )
+                        }
                     }
-                    LinguaCard {
-                        Text(
-                            text = state.lesson?.content.orEmpty(),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(Spacing.md),
-                        )
+                    state.lesson?.content?.takeIf { it.isNotBlank() }?.let { content ->
+                        LinguaCard {
+                            Text(
+                                text = content,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(Spacing.md),
+                            )
+                        }
                     }
                     LinguaButton(
                         text = if (state.completed) "Completed ✓" else "Mark as learned",

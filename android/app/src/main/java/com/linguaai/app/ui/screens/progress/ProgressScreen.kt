@@ -42,7 +42,6 @@ import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
-import com.linguaai.app.ui.theme.StreakFlame
 
 /** The server reports quiz accuracy as a 0..1 ratio; the UI shows a percentage. */
 private const val PERCENT_SCALE = 100
@@ -86,7 +85,16 @@ private fun ProgressContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.md),
     ) {
-        OfflineBanner(visible = !isOnline || state.isStale, modifier = Modifier.padding(top = Spacing.sm))
+        OfflineBanner(
+            visible = !isOnline || state.isStale,
+            message =
+                if (isOnline) {
+                    "Connection issue — showing the last synced data."
+                } else {
+                    "You're offline. Showing cached content."
+                },
+            modifier = Modifier.padding(top = Spacing.sm),
+        )
 
         SectionHeader(title = "Your progress", modifier = Modifier.padding(top = Spacing.md))
 
@@ -215,7 +223,7 @@ private fun StreakCard(summary: ProgressSummaryDto) {
                 Icon(
                     imageVector = Icons.Filled.LocalFireDepartment,
                     contentDescription = null,
-                    tint = StreakFlame,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(28.dp),
                 )
             }
