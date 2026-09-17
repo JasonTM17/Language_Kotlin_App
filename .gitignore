@@ -56,3 +56,6 @@ plans/
 
 # Python bytecode
 __pycache__/
+
+# Local H2 file backend (no-Docker demo run)
+server/data/
