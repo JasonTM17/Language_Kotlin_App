@@ -79,6 +79,10 @@ dependencies {
     // Logging
     implementation(libs.logback.classic)
 
+    // Ships the H2 driver in the installDist output so the documented
+    // no-Docker demo backend (jdbc:h2:file) runs without test dependencies.
+    runtimeOnly(libs.h2)
+
     // Tests
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit.jupiter)

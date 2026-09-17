@@ -98,11 +98,25 @@ real prompt was wrong.
 
 ## Device execution evidence
 
-The latest observed device run on 2026-09-14 ran on the boot-complete
+The latest observed device run on 2026-09-17 re-ran on the boot-complete
 `linguaai-api35` emulator and passed **22/22** with
-`connectedDebugAndroidTest`. It includes the Room migration chain through
-version 6, chatbot/auth/onboarding Compose cases, language/account isolation,
-and vocabulary progress/outbox regressions.
+`connectedDebugAndroidTest`. That run caught one real regression the new
+empty-transcript state introduced (a scored role-play with no messages hid
+the practice-score card) — fixed in `a1232c6` and covered by the re-run.
+The Room migration chain through version 6, chatbot/auth/onboarding Compose
+cases, language/account isolation and vocabulary progress/outbox
+regressions are all covered.
+
+A manual UI walk on the same emulator then drove the app against a live
+backend (no-Docker H2 file backend with the SQL vector store): login via
+the app's own form, onboarding (Japanese · N3), Home, AI chat — typing
+`kankyou` returned a tutor reply with the **"Grounded in your course"**
+citation chip `環境 (かんきょう) — Môi trường`, closing the loop from device
+input through server-side RAG retrieval back to the UI. Screenshots are
+recorded with the plan artefacts.
+
+An earlier device run on 2026-09-14 (same emulator) also passed **22/22**
+and is the basis of the original evidence below.
 
 The 22-test run covered:
 
