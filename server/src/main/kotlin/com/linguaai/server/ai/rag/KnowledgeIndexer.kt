@@ -7,7 +7,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicBoolean
 
 class IndexReport(
     val documentsScanned: Long,
@@ -39,15 +38,15 @@ class KnowledgeIndexer(
     private val canonicalStore: VectorStore,
     private val searchEngine: VectorStore,
     private val chunker: Chunker,
-    private val workers: Int = DEFAULT_WORKERS,
+    private val singleFlight: com.linguaai.server.ops.OpsSingleFlight,
 ) {
-    private val running = AtomicBoolean(false)
+    private val workers = DEFAULT_WORKERS
 
-    /** Single-flight guard: a second concurrent reindex is rejected, not queued. */
-    fun tryBegin(): Boolean = running.compareAndSet(false, true)
+    /** Single-flight guard: shared with seed/purge so they can never overlap. */
+    fun tryBegin(): Boolean = singleFlight.tryBegin()
 
     fun end() {
-        running.set(false)
+        singleFlight.end()
     }
 
     suspend fun indexCorpus(force: Boolean = false): IndexReport =

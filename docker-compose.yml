@@ -41,6 +41,12 @@ services:
       - "${QDRANT_PORT:-6333}:6333"
     volumes:
       - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
   backend:
     build:
@@ -51,7 +57,7 @@ services:
       mysql:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-linguaai}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: ${DB_USER:-linguaai}
@@ -64,15 +70,22 @@ services:
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
       AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
+      AI_MOCK_SCENARIO: ${AI_MOCK_SCENARIO:-}
       AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-60}
       AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
       RAG_ENABLED: ${RAG_ENABLED:-true}
       RAG_AUTO_INDEX: ${RAG_AUTO_INDEX:-true}
       RAG_TOP_K: ${RAG_TOP_K:-4}
-      QDRANT_URL: ${QDRANT_URL:-}
+      RAG_MAX_CONTEXT_CHARS: ${RAG_MAX_CONTEXT_CHARS:-2400}
+      RAG_SQL_CANDIDATE_LIMIT: ${RAG_SQL_CANDIDATE_LIMIT:-20000}
+      # Qdrant ships in this compose file and is wired by default; set
+      # QDRANT_URL= (empty) to fall back to the built-in SQL vector store.
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       QDRANT_COLLECTION: ${QDRANT_COLLECTION:-linguaai_knowledge}
-      # Dev default only: APP_ENV=production refuses to boot without a real token.
-      OPS_TOKEN: ${OPS_TOKEN:-linguaai-dev-ops-token}
+      # Ops endpoints (reindex/seed/stats) authenticate with this token.
+      # APP_ENV=production additionally refuses to boot without it.
+      APP_ENV: ${APP_ENV:-}
+      OPS_TOKEN: ${OPS_TOKEN:?OPS_TOKEN must be set in .env}
       RUN_MIGRATIONS: "true"
       SERVER_PORT: "8080"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

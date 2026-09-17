@@ -6,7 +6,6 @@ import com.linguaai.server.api.ApiException
 import com.linguaai.server.api.ErrorCodes
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Serializable
 data class SeedReportDto(
@@ -40,16 +39,15 @@ class OpsService(
     private val seedRepository: SeedRepository,
     private val canonicalStore: VectorStore,
     private val searchEngine: VectorStore,
+    private val guard: OpsSingleFlight,
 ) {
-    private val running = AtomicBoolean(false)
-
     fun seedScale(
         wordsPerLanguage: Int,
         grammarPerLanguage: Int,
         lessonsPerLanguage: Int,
     ): SeedReportDto {
         validateRequest(wordsPerLanguage, grammarPerLanguage, lessonsPerLanguage)
-        if (!running.compareAndSet(false, true)) throw SeedInProgressException()
+        if (!guard.tryBegin()) throw SeedInProgressException()
         try {
             val languages = ragRepository.languages()
             var vocabInserted = 0L
@@ -78,26 +76,33 @@ class OpsService(
                 lessonsInserted = lessonsInserted,
             )
         } finally {
-            running.set(false)
+            guard.end()
         }
     }
 
     suspend fun purge(): PurgeReportDto {
-        val report = seedRepository.purgeSynthetic()
-        // The canonical store cleaned its own rows inside purgeSynthetic; the
-        // derived engine must be cleaned by identity too, or purged content
-        // stays retrievable from vectors alone.
-        if (searchEngine !== canonicalStore) {
-            searchEngine.deleteSources(RagSourceTypes.VOCABULARY, report.ids.vocabularyIds)
-            searchEngine.deleteSources(RagSourceTypes.GRAMMAR, report.ids.grammarIds)
-            searchEngine.deleteSources(RagSourceTypes.LESSON, report.ids.lessonIds)
+        // Purge mutates the corpus and the derived engine, so it belongs under
+        // the same exclusion gate as seed and reindex.
+        if (!guard.tryBegin()) throw SeedInProgressException()
+        try {
+            val report = seedRepository.purgeSynthetic()
+            // The canonical store cleaned its own rows inside purgeSynthetic;
+            // the derived engine must be cleaned by identity too, or purged
+            // content stays retrievable from vectors alone.
+            if (searchEngine !== canonicalStore) {
+                searchEngine.deleteSources(RagSourceTypes.VOCABULARY, report.ids.vocabularyIds)
+                searchEngine.deleteSources(RagSourceTypes.GRAMMAR, report.ids.grammarIds)
+                searchEngine.deleteSources(RagSourceTypes.LESSON, report.ids.lessonIds)
+            }
+            return PurgeReportDto(
+                vocabulariesDeleted = report.vocabulariesDeleted,
+                grammarDeleted = report.grammarDeleted,
+                lessonsDeleted = report.lessonsDeleted,
+                chunksDeleted = report.chunksDeleted,
+            )
+        } finally {
+            guard.end()
         }
-        return PurgeReportDto(
-            vocabulariesDeleted = report.vocabulariesDeleted,
-            grammarDeleted = report.grammarDeleted,
-            lessonsDeleted = report.lessonsDeleted,
-            chunksDeleted = report.chunksDeleted,
-        )
     }
 
     private fun validateRequest(

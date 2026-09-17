@@ -3,6 +3,7 @@ package com.linguaai.server.ai.rag
 import com.linguaai.server.db.KnowledgeChunks
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
@@ -65,21 +66,19 @@ class SqlVectorStore(
         }
     }
 
-    override suspend fun search(
-        query: FloatArray,
-        embeddingModel: String,
-        languageId: Long,
-        level: String?,
-        topK: Int,
-    ): List<RetrievedChunk> {
+    override suspend fun search(query: SearchQuery): List<RetrievedChunk> {
         val rows =
             transaction {
                 val select =
                     KnowledgeChunks
                         .selectAll()
-                        .andWhere { KnowledgeChunks.languageId eq languageId }
-                        .andWhere { KnowledgeChunks.embeddingModel eq embeddingModel }
-                level?.let { select.andWhere { KnowledgeChunks.level eq it } }
+                        // Deterministic candidate window: without an ordering,
+                        // LIMIT returns an engine-dependent row subset, which
+                        // quietly degrades retrieval between runs.
+                        .orderBy(KnowledgeChunks.id, SortOrder.ASC)
+                        .andWhere { KnowledgeChunks.languageId eq query.languageId }
+                        .andWhere { KnowledgeChunks.embeddingModel eq query.embeddingModel }
+                query.level?.let { select.andWhere { KnowledgeChunks.level eq it } }
                 select.limit(candidateLimit).map { it }
             }
         val scored = ArrayList<Pair<RetrievedChunk, Double>>(rows.size)
@@ -88,7 +87,7 @@ class SqlVectorStore(
                 runCatching {
                     VectorMath.fromBytes(row[KnowledgeChunks.embedding].bytes)
                 }.getOrNull() ?: continue
-            val score = VectorMath.cosine(query, embedding)
+            val score = VectorMath.cosine(query.vector, embedding)
             scored +=
                 RetrievedChunk(
                     ref =
@@ -105,7 +104,7 @@ class SqlVectorStore(
         }
         return scored
             .sortedByDescending { it.second }
-            .take(topK)
+            .take(query.topK)
             .filter { it.second > MIN_SCORE }
             .map { it.first }
     }

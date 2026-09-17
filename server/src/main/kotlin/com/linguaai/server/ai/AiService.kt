@@ -364,6 +364,10 @@ class AiService(
                     messages = listOf(AiMessage("system", system), AiMessage("user", prompt)),
                     temperature = 0.6,
                     jsonMode = true,
+                    // The mock provider keys on this hint to produce a quiz
+                    // about the requested language instead of its built-in
+                    // Japanese fixture.
+                    scenarioHint = "quiz:$languageName",
                 ),
             )
         return validateQuizPayload(response.content)

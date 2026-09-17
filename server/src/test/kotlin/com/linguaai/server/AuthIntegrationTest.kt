@@ -155,6 +155,12 @@ class AuthIntegrationTest {
                     json.encodeToString(RefreshFixture.serializer(), RefreshFixture(refreshToken)),
                 )
             assertEquals(HttpStatusCode.OK, firstRefresh.status)
+            val successor =
+                json
+                    .parseToJsonElement(firstRefresh.bodyAsText())
+                    .jsonObject["tokens"]!!
+                    .jsonObject["refreshToken"]!!
+                    .jsonPrimitive.content
 
             val reuse =
                 postJson(
@@ -162,6 +168,15 @@ class AuthIntegrationTest {
                     json.encodeToString(RefreshFixture.serializer(), RefreshFixture(refreshToken)),
                 )
             assertEquals(HttpStatusCode.Unauthorized, reuse.status)
+
+            // The replay must kill the whole family: the successor token that a
+            // legitimate client holds is revoked too, not just the replayed one.
+            val successorRefresh =
+                postJson(
+                    "/api/v1/auth/refresh",
+                    json.encodeToString(RefreshFixture.serializer(), RefreshFixture(successor)),
+                )
+            assertEquals(HttpStatusCode.Unauthorized, successorRefresh.status)
         }
 
     @Test

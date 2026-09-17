@@ -111,6 +111,9 @@ if curl -sf "$BASE_URL/api/v1/health" >/dev/null 2>&1; then
 else
     (cd "$ROOT/server" && ./gradlew -q installDist >/dev/null 2>&1) \
         || { echo "FATAL: installDist failed"; exit 2; }
+    # cd into the dist dir: a Windows JVM rejects an absolute MSYS-style
+    # classpath glob, while a relative one resolves fine.
+    cd "$SERVER_DIST" || { echo "FATAL: dist dir missing"; exit 2; }
     DB_URL="jdbc:mysql://localhost:${HOST_MYSQL_PORT}/${E2E_DB}?connectionTimeZone=UTC&useSSL=false&allowPublicKeyRetrieval=true" \
     DB_HOST="localhost" \
     DB_PORT="$HOST_MYSQL_PORT" \
@@ -120,7 +123,7 @@ else
     OPS_TOKEN="$OPS_TOKEN" \
     AI_PROVIDER="${AI_PROVIDER:-mock}" \
     RAG_AUTO_INDEX="false" \
-    java -cp "$SERVER_DIST/lib/*" com.linguaai.server.ApplicationKt \
+    java -cp "lib/*" com.linguaai.server.ApplicationKt \
         > "$ROOT/plans/260914-2010-rag-uiux-bigdata/reports/e2e-backend.log" 2>&1 &
     APP_PID=$!
     healthy="no"

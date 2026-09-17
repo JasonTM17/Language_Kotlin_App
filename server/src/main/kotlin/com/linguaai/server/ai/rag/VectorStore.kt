@@ -45,6 +45,17 @@ class SourceWrite(
     val entries: List<ChunkEntry>,
 )
 
+/** Search input bundled to keep engine signatures narrow. */
+class SearchQuery(
+    val vector: FloatArray,
+    val embeddingModel: String,
+    val languageId: Long,
+    val level: String?,
+    val topK: Int,
+    /** Exact query tokens for engines that support in-store token recall. */
+    val verifierTokens: List<String> = emptyList(),
+)
+
 /**
  * The seam between the RAG pipeline and a vector engine.
  *
@@ -69,13 +80,7 @@ interface VectorStore {
      * Cosine search restricted to one language and one embedding model —
      * vectors from different models are different spaces and must never mix.
      */
-    suspend fun search(
-        query: FloatArray,
-        embeddingModel: String,
-        languageId: Long,
-        level: String?,
-        topK: Int,
-    ): List<RetrievedChunk>
+    suspend fun search(query: SearchQuery): List<RetrievedChunk>
 
     /**
      * Removes every chunk of the given sources from THIS store. Derived

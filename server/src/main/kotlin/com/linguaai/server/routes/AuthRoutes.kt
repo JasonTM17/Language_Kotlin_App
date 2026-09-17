@@ -40,15 +40,18 @@ fun Application.configureAuthRoutes(
 ) {
     val tokenService = JwtTokenService(config)
 
-    fun issueTokens(userId: Long): TokenPairDto {
+    fun issueTokens(
+        userId: Long,
+        familyId: String =
+            java.util.UUID
+                .randomUUID()
+                .toString(),
+    ): TokenPairDto {
         val refreshToken = tokenService.generateRefreshToken()
         authRepository.saveRefreshToken(
             userId = userId,
             tokenHash = tokenService.hashToken(refreshToken),
-            familyId =
-                java.util.UUID
-                    .randomUUID()
-                    .toString(),
+            familyId = familyId,
             expiresAt = LocalDateTime.ofInstant(tokenService.refreshExpiryInstant(), ZoneOffset.UTC),
         )
         return TokenPairDto(
@@ -106,7 +109,19 @@ fun Application.configureAuthRoutes(
                         "Refresh token reuse detected; please log in again",
                     )
                 }
-                if (stored.expiresAt.isBefore(java.time.LocalDateTime.now())) {
+                if (stored.revoked) {
+                    // Token replay: someone reused a rotated token -> kill the family.
+                    authRepository.revokeFamily(stored.familyId)
+                    throw ApiException(
+                        HttpStatusCode.Unauthorized,
+                        ErrorCodes.UNAUTHORIZED,
+                        "Refresh token reuse detected; please log in again",
+                    )
+                }
+                // stored.expiresAt is written in UTC; comparing it against a
+                // server-local now() expired tokens offset-hours early on any
+                // non-UTC host.
+                if (stored.expiresAt.isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
                     throw ApiException(
                         HttpStatusCode.Unauthorized,
                         ErrorCodes.UNAUTHORIZED,
@@ -114,7 +129,9 @@ fun Application.configureAuthRoutes(
                     )
                 }
                 authRepository.revokeRefreshToken(stored.id)
-                call.respond(RefreshResponseDto(tokens = issueTokens(stored.userId)))
+                // Rotation stays inside the token family so a replay of ANY
+                // rotated token revokes the live successor too.
+                call.respond(RefreshResponseDto(tokens = issueTokens(stored.userId, stored.familyId)))
             }
 
             post("/logout") {

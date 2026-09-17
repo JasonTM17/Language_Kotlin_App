@@ -26,15 +26,19 @@ class RagService(
         if (query.isBlank()) return emptyList()
         val vector = embedder.embed(listOf(query)).first()
         if (VectorMath.isZero(vector)) return emptyList()
+        val tokens = LexicalTokenizer.verifierTokens(query)
         val candidates =
             searchEngine.search(
-                query = vector,
-                embeddingModel = embedder.model,
-                languageId = languageId,
-                level = level,
-                topK = topK * OVERFETCH_FACTOR,
+                SearchQuery(
+                    vector = vector,
+                    embeddingModel = embedder.model,
+                    languageId = languageId,
+                    level = level,
+                    topK = topK * OVERFETCH_FACTOR,
+                    verifierTokens = tokens,
+                ),
             )
-        val verified = verifyLexically(query, candidates)
+        val verified = verifyLexically(tokens, candidates)
         return verified.take(topK)
     }
 
@@ -46,10 +50,9 @@ class RagService(
      * with the corpus and returns nothing, deterministically.
      */
     private fun verifyLexically(
-        query: String,
+        tokens: List<String>,
         candidates: List<RetrievedChunk>,
     ): List<RetrievedChunk> {
-        val tokens = LexicalTokenizer.verifierTokens(query)
         if (tokens.isEmpty()) return candidates
         return candidates.filter { chunk ->
             val content = chunk.content.lowercase()

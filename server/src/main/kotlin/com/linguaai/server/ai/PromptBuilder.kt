@@ -294,6 +294,22 @@ class PromptBuilder(
                     "Focus on register, idiom and nuance rather than basic accuracy.",
                 "C2" to "Near-native. Reply at full natural speed. " +
                     "Discuss style and connotation, not correctness.",
+                // Proficiency-band levels used by the Korean and Chinese
+                // catalogues (V3); without these the tutor falls back to a
+                // generic guidance paragraph for exactly those learners.
+                "TOPIK1" to "Beginner Korean (TOPIK I, levels 1-2). " +
+                    "Everyday phrases, present and polite past tense. " +
+                    "Reply in 1-2 short sentences with romanisation.",
+                "TOPIK2" to "Lower intermediate Korean (TOPIK I level 2 / II level 3). " +
+                    "Connectives, formal and casual register. Reply in 2-3 sentences.",
+                "TOPIK3" to "Upper intermediate Korean (TOPIK II level 4). " +
+                    "Complex sentences, pidak formal writing style. Reply in 3-4 sentences.",
+                "HSK1" to "Absolute beginner Chinese (HSK 1). ~150 words, basic word order. " +
+                    "Reply in 1-2 short sentences and always include pinyin.",
+                "HSK2" to "Elementary Chinese (HSK 2). ~300 words, simple compounding. " +
+                    "Reply in 2-3 short sentences with pinyin for new words.",
+                "HSK3" to "Lower intermediate Chinese (HSK 3). ~600 words, complements and resultatives. " +
+                    "Reply in 3-4 sentences; use characters with pinyin for new vocabulary.",
             )
 
         /** Extractive rolling summary of the messages being evicted. */

@@ -13,6 +13,7 @@ import com.linguaai.server.ai.rag.VectorStore
 import com.linguaai.server.config.AppConfig
 import com.linguaai.server.db.DatabaseFactory
 import com.linguaai.server.ops.OpsService
+import com.linguaai.server.ops.OpsSingleFlight
 import com.linguaai.server.ops.SeedRepository
 import com.linguaai.server.plugins.configureAuthentication
 import com.linguaai.server.plugins.configureMonitoring
@@ -107,7 +108,8 @@ fun Application.module(
                 client = aiHttpClient(config),
             )
         } ?: sqlStore
-    val indexer = KnowledgeIndexer(ragRepository, embedder, sqlStore, searchEngine, Chunker())
+    val opsGuard = OpsSingleFlight()
+    val indexer = KnowledgeIndexer(ragRepository, embedder, sqlStore, searchEngine, Chunker(), opsGuard)
     val ragService =
         RagService(
             repository = ragRepository,
@@ -117,7 +119,7 @@ fun Application.module(
             topK = config.ragTopK,
             maxContextChars = config.ragMaxContextChars,
         )
-    val opsService = OpsService(ragRepository, SeedRepository(), sqlStore, searchEngine)
+    val opsService = OpsService(ragRepository, SeedRepository(), sqlStore, searchEngine, opsGuard)
 
     configureSerialization()
     configureMonitoring()

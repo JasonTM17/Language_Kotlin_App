@@ -74,17 +74,12 @@ class QdrantVectorStore(
                         level = entry.payload.level,
                         languageId = write.languageId,
                         embeddingModel = entry.embeddingModel,
+                        tokens = LexicalTokenizer.verifierTokens(entry.payload.title + " " + entry.payload.content),
                     ),
             )
         }
 
-    override suspend fun search(
-        query: FloatArray,
-        embeddingModel: String,
-        languageId: Long,
-        level: String?,
-        topK: Int,
-    ): List<RetrievedChunk> {
+    override suspend fun search(query: SearchQuery): List<RetrievedChunk> {
         ensureCollection()
         val response =
             client
@@ -92,9 +87,16 @@ class QdrantVectorStore(
                     contentType(ContentType.Application.Json)
                     setBody(
                         SearchRequest(
-                            vector = query.toList(),
-                            limit = topK,
-                            filter = FilterRequest(must = mustFilters(embeddingModel, languageId, level)),
+                            vector = query.vector.toList(),
+                            limit = query.topK,
+                            filter =
+                                FilterRequest(
+                                    must = mustFilters(query.embeddingModel, query.languageId, query.level),
+                                    should =
+                                        query.verifierTokens.map { token ->
+                                            matchFilter("tokens", token)
+                                        },
+                                ),
                             withPayload = true,
                         ),
                     )
@@ -257,6 +259,13 @@ class QdrantVectorStore(
         @SerialName("level") val level: String?,
         @SerialName("language_id") val languageId: Long,
         @SerialName("embedding_model") val embeddingModel: String,
+        /**
+         * Exact verifier tokens of this chunk. Recall filters on them so a
+         * 1M-point collection cannot bury the true match under hash-bin
+         * collisions — keyword match is exact, cosine ranking then orders
+         * only the token-sharing survivors.
+         */
+        @SerialName("tokens") val tokens: List<String> = emptyList(),
     )
 
     @Serializable
@@ -332,6 +341,10 @@ class QdrantVectorStore(
                 "language_id" to "integer",
                 "embedding_model" to "keyword",
                 "level" to "keyword",
+                // Exact-token recall: keyword index over the chunk's verifier
+                // tokens so filtered search cannot be buried in hash-bin
+                // collisions on million-point collections.
+                "tokens" to "keyword",
             )
 
         /** Stable across runs: re-upsert overwrites instead of duplicating. */

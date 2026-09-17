@@ -17,19 +17,33 @@ class MockAiProvider(
         if (scenarioResponse != null) return scenarioResponse
 
         if (request.jsonMode) {
-            val quizJson =
-                """
-                {"questions":[
-                  {"prompt":"風邪を（　）ように気をつけて。","options":["ひか","ひかない","ひいた","ひこう"],"correctAnswer":"ひかない","explanation":"ように with a negative verb expresses avoiding an outcome."},
-                  {"prompt":"買えないわけではない means what?","options":["Cannot buy","Not that I cannot buy it","Will definitely buy","Refuse to buy"],"correctAnswer":"Not that I cannot buy it","explanation":"わけではない is a partial negation."},
-                  {"prompt":"Company-decided outcomes use which pattern?","options":["ことにする","ことになる","ようにする","ことにしている"],"correctAnswer":"ことになる","explanation":"ことになる marks decisions made by circumstances."}
-                ]}
-                """.trimIndent()
-            return AiChatResponse(content = quizJson)
+            return AiChatResponse(content = quizJson(quizLanguage(request.scenarioHint)))
         }
 
         return AiChatResponse(content = tutorReply(request))
     }
+
+    /**
+     * Quiz fixtures were Japanese-only while the catalogue now serves 17
+     * languages. `generateQuiz` passes "quiz:<language>" so the deterministic
+     * demo quiz is phrased about the learner's language; the JSON shape is
+     * identical for every language so structured-output tests are unaffected.
+     */
+    private fun quizLanguage(scenarioHint: String?): String =
+        scenarioHint
+            ?.takeIf { it.startsWith("quiz:") }
+            ?.removePrefix("quiz:")
+            ?.takeIf { it.isNotBlank() }
+            ?: "Japanese"
+
+    private fun quizJson(language: String): String =
+        """
+        {"questions":[
+          {"prompt":"Which article correctly completes the sentence in $language?","options":["the correct particle","a random verb","an unrelated noun","a greeting"],"correctAnswer":"the correct particle","explanation":"Deterministic demo quiz: the option matching the tested pattern is correct."},
+          {"prompt":"Which sentence is grammatical in $language?","options":["The pattern-conforming sentence","A sentence missing its verb","A sentence with doubled subjects","A sentence with mismatched politeness"],"correctAnswer":"The pattern-conforming sentence","explanation":"Demo quiz: only the pattern-conforming option is grammatical."},
+          {"prompt":"What does the level-appropriate greeting mean in $language?","options":["A polite greeting","A farewell","A number","A colour"],"correctAnswer":"A polite greeting","explanation":"Demo quiz: the greeting option is the correct meaning."}
+        ]}
+        """.trimIndent()
 
     private fun resolveScenario(
         request: AiChatRequest,

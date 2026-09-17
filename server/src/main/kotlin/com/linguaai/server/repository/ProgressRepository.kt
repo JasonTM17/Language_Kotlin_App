@@ -21,8 +21,11 @@ import com.linguaai.server.db.UserProgress
 import com.linguaai.server.db.UserVocabularyProgress
 import com.linguaai.server.db.Vocabularies
 import io.ktor.http.HttpStatusCode
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
@@ -65,6 +68,28 @@ class ProgressRepository {
     private val maxOperationIdLength = 64
     private val maxEventTypeLength = 30
 
+    /** A single event cannot credibly claim more than a full day of study. */
+    private val maxEventMinutes = 1440
+    private val maxIntAsLong = Int.MAX_VALUE.toLong()
+
+    /** MySQL's error code for a duplicate-key insert. */
+    private val mysqlDuplicateKeyError = 1062
+
+    /**
+     * Duplicate-key detection for the idempotency races (two devices replaying
+     * one operation, or two events opening the same streak day). MySQL raises
+     * 1062 inside a SQLIntegrityConstraintViolationException.
+     */
+    private fun Throwable.isDuplicateKey(): Boolean {
+        var cause: Throwable? = this
+        while (cause != null) {
+            if (cause is java.sql.SQLIntegrityConstraintViolationException) return true
+            if (cause is java.sql.SQLException && cause.errorCode == mysqlDuplicateKeyError) return true
+            cause = cause.cause
+        }
+        return false
+    }
+
     // Mastery bands on the shared 0..5 scale. The Android SRS scheduler uses the
     // same scale, so a change here has to be mirrored there — which is only
     // possible if the numbers are findable.
@@ -102,18 +127,40 @@ class ProgressRepository {
 
             val now = LocalDateTime.now()
             val isMeaningful = request.eventType in ProgressEventTypes.all
-            val minutes = if (isMeaningful) request.minutes.coerceAtLeast(0) else 0
+            // A single event claiming more than a full day of minutes is a
+            // client bug; capping keeps totals inside Int range even when the
+            // daily strip sums many events.
+            val minutes = if (isMeaningful) request.minutes.coerceIn(0, maxEventMinutes) else 0
 
             val eventId =
-                UserProgress.insert { row ->
-                    row[UserProgress.userId] = userId
-                    row[UserProgress.clientOperationId] = request.clientOperationId.take(maxOperationIdLength)
-                    row[UserProgress.eventType] = request.eventType.take(maxEventTypeLength)
-                    row[UserProgress.refId] = request.refId
-                    row[UserProgress.minutes] = minutes
-                    row[UserProgress.occurredAt] = now
-                    row[UserProgress.createdAt] = now
-                } get UserProgress.id
+                try {
+                    UserProgress.insert { row ->
+                        row[UserProgress.userId] = userId
+                        row[UserProgress.clientOperationId] = request.clientOperationId.take(maxOperationIdLength)
+                        row[UserProgress.eventType] = request.eventType.take(maxEventTypeLength)
+                        row[UserProgress.refId] = request.refId
+                        row[UserProgress.minutes] = minutes
+                        row[UserProgress.occurredAt] = now
+                        row[UserProgress.createdAt] = now
+                    } get UserProgress.id
+                } catch (duplicate: ExposedSQLException) {
+                    // Two devices retrying the same operation race the
+                    // select-then-insert. A unique-index violation IS the
+                    // replay signal: answer with the stored event instead of
+                    // a 500.
+                    if (!duplicate.isDuplicateKey()) throw duplicate
+                    val replayed =
+                        UserProgress
+                            .selectAll()
+                            .andWhere { UserProgress.userId eq userId }
+                            .andWhere { UserProgress.clientOperationId eq request.clientOperationId }
+                            .firstOrNull()
+                            ?: throw duplicate
+                    return@transaction RecordProgressEventResponse(
+                        eventId = replayed[UserProgress.id],
+                        created = false,
+                    )
+                }
 
             if (isMeaningful) {
                 creditActivityDay(userId, LocalDate.now(), minutes)
@@ -318,10 +365,23 @@ class ProgressRepository {
                 .firstOrNull()
 
         if (row == null) {
-            LearningStreaks.insert { insert ->
-                insert[LearningStreaks.userId] = userId
-                insert[LearningStreaks.activityDate] = day
-                insert[LearningStreaks.minutes] = minutes
+            try {
+                LearningStreaks.insert { insert ->
+                    insert[LearningStreaks.userId] = userId
+                    insert[LearningStreaks.activityDate] = day
+                    insert[LearningStreaks.minutes] = minutes
+                }
+            } catch (duplicate: ExposedSQLException) {
+                // A concurrent event created today's row first: fall through
+                // to the update branch instead of failing the event.
+                if (!duplicate.isDuplicateKey()) throw duplicate
+                LearningStreaks.update(
+                    { (LearningStreaks.userId eq userId) and (LearningStreaks.activityDate eq day) },
+                ) {
+                    with(SqlExpressionBuilder) {
+                        it[LearningStreaks.minutes] = LearningStreaks.minutes + minutes
+                    }
+                }
             }
         } else if (minutes > 0) {
             val id = row[LearningStreaks.id]
@@ -393,7 +453,8 @@ class ProgressRepository {
                 streak = computeStreak(activityDays),
                 totals =
                     ProgressTotalsDto(
-                        minutesStudied = activityRows.sumOf { it.second },
+                        // Int-typed DTO: clamp the Long sum before narrowing.
+                        minutesStudied = activityRows.sumOf { it.second.toLong() }.coerceAtMost(maxIntAsLong).toInt(),
                         activeDays = activityDays.size,
                         quizAttempts = quizAttempts.size,
                         quizAverageScore =
