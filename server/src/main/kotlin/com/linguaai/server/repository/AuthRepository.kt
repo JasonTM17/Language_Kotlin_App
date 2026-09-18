@@ -10,6 +10,7 @@ import com.linguaai.server.db.RefreshTokens
 import com.linguaai.server.db.UserProfiles
 import com.linguaai.server.db.Users
 import io.ktor.http.HttpStatusCode
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
@@ -55,13 +56,20 @@ class AuthRepository {
             }
             val now = LocalDateTime.now()
             val id =
-                Users.insert { row ->
-                    row[Users.email] = normalized
-                    row[Users.username] = username.trim()
-                    row[Users.passwordHash] = passwordHash
-                    row[Users.createdAt] = now
-                    row[Users.updatedAt] = now
-                } get Users.id
+                try {
+                    Users.insert { row ->
+                        row[Users.email] = normalized
+                        row[Users.username] = username.trim()
+                        row[Users.passwordHash] = passwordHash
+                        row[Users.createdAt] = now
+                        row[Users.updatedAt] = now
+                    } get Users.id
+                } catch (duplicate: ExposedSQLException) {
+                    // Two concurrent signups with the same email race the
+                    // select-then-insert; the unique index is the arbiter.
+                    if (!duplicate.isDuplicateKey()) throw duplicate
+                    throw ApiException(HttpStatusCode.Conflict, ErrorCodes.CONFLICT, "Email already registered")
+                }
             UserDto(id = id, email = normalized, username = username.trim())
         }
 
@@ -145,6 +153,20 @@ class AuthRepository {
         transaction {
             RefreshTokens.update({ RefreshTokens.familyId eq familyId }) { row -> row[revoked] = true }
         }
+
+    /** MySQL's error code for a duplicate-key insert (unique email race). */
+    /** MySQL's error code for a duplicate-key insert (unique email race). */
+    private val mysqlDuplicateKeyError = 1062
+
+    private fun Throwable.isDuplicateKey(): Boolean {
+        var cause: Throwable? = this
+        while (cause != null) {
+            if (cause is java.sql.SQLIntegrityConstraintViolationException) return true
+            if (cause is java.sql.SQLException && cause.errorCode == mysqlDuplicateKeyError) return true
+            cause = cause.cause
+        }
+        return false
+    }
 
     // ---- profile ----
 
