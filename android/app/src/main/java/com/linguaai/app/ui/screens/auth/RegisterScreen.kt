@@ -27,12 +27,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.theme.Spacing
 
@@ -87,7 +89,7 @@ internal fun RegisterContent(
             OutlinedTextField(
                 value = state.email,
                 onValueChange = { onEvent(RegisterEvent.EmailChanged(it)) },
-                label = { Text("Email") },
+                label = { Text(stringResource(R.string.common_email)) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 isError = state.emailError != null,
                 supportingText = { state.emailError?.let { Text(it) } },
@@ -100,7 +102,7 @@ internal fun RegisterContent(
             OutlinedTextField(
                 value = state.username,
                 onValueChange = { onEvent(RegisterEvent.UsernameChanged(it)) },
-                label = { Text("Username") },
+                label = { Text(stringResource(R.string.common_username)) },
                 leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                 isError = state.usernameError != null,
                 supportingText = { state.usernameError?.let { Text(it) } },
@@ -112,10 +114,10 @@ internal fun RegisterContent(
             OutlinedTextField(
                 value = state.password,
                 onValueChange = { onEvent(RegisterEvent.PasswordChanged(it)) },
-                label = { Text("Password") },
+                label = { Text(stringResource(R.string.common_password)) },
                 isError = state.passwordError != null,
                 supportingText = {
-                    state.passwordError?.let { Text(it) } ?: Text("At least 8 characters")
+                    state.passwordError?.let { Text(it) } ?: Text(stringResource(R.string.register_password_hint))
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -149,7 +151,7 @@ internal fun RegisterContent(
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg),
         ) {
             LinguaButton(
-                text = "Create account",
+                text = stringResource(R.string.register_title),
                 onClick = { onEvent(RegisterEvent.Submit) },
                 enabled = state.isSubmitEnabled,
                 isLoading = state.isLoading,
@@ -159,7 +161,7 @@ internal fun RegisterContent(
                 onClick = onNavigateToLogin,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(top = Spacing.sm),
             ) {
-                Text("Already have an account? Log in")
+                Text(stringResource(R.string.register_have_account))
             }
         }
     }

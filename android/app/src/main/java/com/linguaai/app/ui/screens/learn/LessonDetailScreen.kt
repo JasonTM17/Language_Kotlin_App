@@ -23,8 +23,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
@@ -52,7 +54,10 @@ fun LessonDetailScreen(
                 title = { Text(state.lesson?.title ?: "Lesson") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -97,13 +102,18 @@ fun LessonDetailScreen(
                         }
                     }
                     LinguaButton(
-                        text = if (state.completed) "Completed ✓" else "Mark as learned",
+                        text =
+                            if (state.completed) {
+                                stringResource(R.string.lesson_completed)
+                            } else {
+                                stringResource(R.string.lesson_mark_learned)
+                            },
                         onClick = viewModel::markCompleted,
                         enabled = !state.completed,
                         modifier = Modifier.padding(top = Spacing.lg),
                     )
                     LinguaOutlinedButton(
-                        text = "Ask AI about this lesson",
+                        text = stringResource(R.string.lesson_ask_ai),
                         onClick = { onAskAi(state.lesson?.id ?: 0) },
                         modifier = Modifier.padding(top = Spacing.sm),
                     )

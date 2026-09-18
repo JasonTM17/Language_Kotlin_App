@@ -26,8 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
@@ -49,12 +51,15 @@ fun VocabularyScreen(
             modifier = Modifier.padding(start = Spacing.sm, end = Spacing.md, top = Spacing.md),
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.common_back),
+                )
             }
             Column(modifier = Modifier.padding(start = Spacing.xs)) {
-                Text(text = "Vocabulary", style = MaterialTheme.typography.headlineSmall)
+                Text(text = stringResource(R.string.vocab_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    text = "Keep useful words close and review them at the right time.",
+                    text = stringResource(R.string.vocab_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.xs),
@@ -66,9 +71,9 @@ fun VocabularyScreen(
         OutlinedTextField(
             value = state.query,
             onValueChange = { viewModel.onEvent(VocabularyEvent.SearchChanged(it)) },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search vocabulary") },
-            label = { Text("Search vocabulary") },
-            placeholder = { Text("Word, reading or meaning") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.vocab_search_label)) },
+            label = { Text(stringResource(R.string.vocab_search_label)) },
+            placeholder = { Text(stringResource(R.string.vocab_search_placeholder)) },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
             modifier =

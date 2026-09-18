@@ -30,11 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.ui.components.ErrorState
@@ -134,8 +136,14 @@ private fun HomeHeader(
         Column(
             modifier = Modifier.weight(1f).padding(start = Spacing.md),
         ) {
+            val firstName = profile?.user?.username
             Text(
-                text = greeting() + (profile?.user?.username?.let { ", $it" } ?: ""),
+                text =
+                    when (hour()) {
+                        in MORNING_HOURS -> stringResource(R.string.home_greeting_morning, firstName ?: "")
+                        in AFTERNOON_HOURS -> stringResource(R.string.home_greeting_afternoon, firstName ?: "")
+                        else -> stringResource(R.string.home_greeting_evening, firstName ?: "")
+                    },
                 style = MaterialTheme.typography.headlineSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -210,7 +218,7 @@ private fun DailyGoalCard(state: HomeUiState) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Daily goal",
+                            text = stringResource(R.string.home_daily_goal),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.weight(1f),
@@ -222,14 +230,14 @@ private fun DailyGoalCard(state: HomeUiState) {
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
-                            text = "${state.streakDays} day streak",
+                            text = stringResource(R.string.home_day_streak, state.streakDays),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(start = Spacing.xs),
                         )
                     }
                     Text(
-                        text = "${state.todayMinutes} of ${state.dailyGoalMinutes} minutes",
+                        text = stringResource(R.string.home_minutes_progress, state.todayMinutes, state.dailyGoalMinutes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(top = Spacing.xs),
@@ -246,7 +254,7 @@ private fun ContinueLearningCard(
     lesson: LessonSummaryDto?,
     onContinueLesson: (Long) -> Unit,
 ) {
-    SectionHeader(title = "Continue learning", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.home_continue_learning), modifier = Modifier.padding(top = Spacing.lg))
     if (lesson != null) {
         LinguaCard(onClick = { onContinueLesson(lesson.id) }) {
             Row(
@@ -262,14 +270,17 @@ private fun ContinueLearningCard(
                     Text(lesson.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
                     Text(
                         text =
-                            "${lesson.type.lowercase().replaceFirstChar { it.uppercase() }} · " +
-                                "${lesson.estimatedMinutes} min",
+                            stringResource(
+                                R.string.home_lesson_type_minutes,
+                                lesson.type.lowercase().replaceFirstChar { it.uppercase() },
+                                lesson.estimatedMinutes,
+                            ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Spacing.xs),
                     )
                     Text(
-                        text = "Continue lesson",
+                        text = stringResource(R.string.home_continue_lesson),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
@@ -297,9 +308,9 @@ private fun ContinueLearningCard(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Column {
-                    Text("No lessons available yet", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.home_no_lessons), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        text = "Your first lesson will appear here soon.",
+                        text = stringResource(R.string.home_first_lesson_soon),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -315,7 +326,7 @@ private fun ReviewCard(
     dueVocabularyCount: Int,
     onStartReview: () -> Unit,
 ) {
-    SectionHeader(title = "Review words", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.home_review_words), modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard(onClick = onStartReview) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -331,15 +342,12 @@ private fun ReviewCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text =
-                        if (dueVocabularyCount > 0) {
-                            "$dueVocabularyCount words ready"
-                        } else {
-                            "Nothing due right now"
-                        },
+                        stringResource(R.string.home_words_ready, dueVocabularyCount).takeIf { dueVocabularyCount > 0 }
+                            ?: stringResource(R.string.home_nothing_due),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = "Review flashcards to keep your memory fresh.",
+                    text = stringResource(R.string.home_review_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -356,7 +364,7 @@ private fun ReviewCard(
 /** Shortcut into the AI tutor from the dashboard. */
 @Composable
 private fun AiTutorCard(onOpenAiTutor: () -> Unit) {
-    SectionHeader(title = "AI Tutor", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.home_ai_tutor), modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard(onClick = onOpenAiTutor, containerColor = MaterialTheme.colorScheme.secondaryContainer) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -371,12 +379,12 @@ private fun AiTutorCard(onOpenAiTutor: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Ask your tutor",
+                    stringResource(R.string.home_ask_tutor),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Text(
-                    text = "Get a clear explanation or practice a sentence.",
+                    text = stringResource(R.string.home_ask_tutor_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
@@ -394,14 +402,9 @@ private fun AiTutorCard(onOpenAiTutor: () -> Unit) {
 private val MORNING_HOURS = 5..11
 private val AFTERNOON_HOURS = 12..17
 
-private fun greeting(): String {
-    val hour =
-        java.util.Calendar
-            .getInstance()
-            .get(java.util.Calendar.HOUR_OF_DAY)
-    return when (hour) {
-        in MORNING_HOURS -> "Good morning"
-        in AFTERNOON_HOURS -> "Good afternoon"
-        else -> "Good evening"
-    }
-}
+private fun currentHour(): Int =
+    java.util.Calendar
+        .getInstance()
+        .get(java.util.Calendar.HOUR_OF_DAY)
+
+private fun hour(): Int = currentHour()

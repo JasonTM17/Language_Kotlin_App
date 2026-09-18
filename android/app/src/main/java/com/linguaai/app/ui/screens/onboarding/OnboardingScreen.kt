@@ -24,11 +24,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
@@ -119,19 +121,19 @@ internal fun OnboardingContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Step ${stepIndex + 1} of $total",
+                text = stringResource(R.string.onboarding_step, stepIndex + 1, total),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "Set up your learning path",
+                text = stringResource(R.string.onboarding_path_title),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
-            text = state.step.title,
+            text = stringResource(stepTitleRes(state.step)),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
         )
@@ -178,11 +180,16 @@ internal fun OnboardingContent(
         ) {
             if (state.step != OnboardingStep.LANGUAGE) {
                 TextButton(onClick = { onAction(OnboardingAction.Back) }) {
-                    Text("Back")
+                    Text(stringResource(R.string.common_back))
                 }
             }
             LinguaButton(
-                text = if (state.step == OnboardingStep.DAILY) "Start learning" else "Continue",
+                text =
+                    if (state.step == OnboardingStep.DAILY) {
+                        stringResource(R.string.onboarding_start_learning)
+                    } else {
+                        stringResource(R.string.common_continue)
+                    },
                 onClick = { onAction(OnboardingAction.Next) },
                 enabled = state.canContinue,
                 isLoading = state.isSubmitting,
@@ -198,7 +205,7 @@ private fun LanguageStep(
     onSelect: (Long) -> Unit,
 ) {
     if (state.languages.isEmpty()) {
-        EmptyState(title = "No languages yet", message = "The server has no language catalogue.")
+        EmptyState(title = stringResource(R.string.onboarding_no_languages), message = "The server has no language catalogue.")
         return
     }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -255,7 +262,7 @@ private fun DailyGoalStep(
                         FilterChip(
                             selected = selected == minutes,
                             onClick = { onSelect(minutes) },
-                            label = { Text("$minutes min") },
+                            label = { Text(stringResource(R.string.onboarding_minutes_format, minutes)) },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -316,3 +323,12 @@ private fun SelectableRow(
         }
     }
 }
+
+/** Localized title for each onboarding step, keyed by the view model's step enum. */
+private fun stepTitleRes(step: OnboardingStep): Int =
+    when (step) {
+        OnboardingStep.LANGUAGE -> R.string.onboarding_what_learn
+        OnboardingStep.LEVEL -> R.string.onboarding_how_strong
+        OnboardingStep.GOAL -> R.string.onboarding_what_goal
+        OnboardingStep.DAILY -> R.string.home_daily_goal
+    }

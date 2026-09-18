@@ -26,17 +26,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+
+/** A result reads as strong work once this fraction of answers is correct. */
+private const val STRONG_WORK_FRACTION = 0.8f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,10 +55,13 @@ fun QuizScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.quiz?.title ?: "Quiz") },
+                title = { Text(state.quiz?.title ?: stringResource(R.string.quiz_title_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -72,9 +80,9 @@ fun QuizScreen(
             state.isLoading -> LoadingIndicator(modifier = Modifier.padding(padding))
             state.quiz == null ->
                 EmptyState(
-                    title = "Quiz unavailable",
-                    message = state.error ?: "This quiz could not be loaded.",
-                    actionLabel = "Retry",
+                    title = stringResource(R.string.quiz_unavailable),
+                    message = state.error ?: stringResource(R.string.quiz_not_loaded),
+                    actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::load,
                     modifier = Modifier.padding(padding),
                 )
@@ -89,7 +97,7 @@ fun QuizScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     Text(
-                        text = "Choose the best answer for each question.",
+                        text = stringResource(R.string.quiz_instruction),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -97,7 +105,7 @@ fun QuizScreen(
                         LinguaCard(modifier = Modifier.padding(top = Spacing.sm)) {
                             Column(modifier = Modifier.padding(Spacing.md)) {
                                 Text(
-                                    text = "Question ${index + 1}",
+                                    text = stringResource(R.string.quiz_question_number, index + 1),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
@@ -137,7 +145,7 @@ fun QuizScreen(
                         )
                     }
                     LinguaButton(
-                        text = "Submit answers",
+                        text = stringResource(R.string.quiz_submit),
                         onClick = { viewModel.onEvent(QuizEvent.Submit) },
                         enabled = state.allAnswered,
                         isLoading = state.isSubmitting,
@@ -182,12 +190,15 @@ private fun QuizResultContent(
             )
         }
         Text(
-            text = if (fraction >= 0.8f) "Strong work" else "Keep practicing",
+            text =
+                stringResource(
+                    if (fraction >= STRONG_WORK_FRACTION) R.string.quiz_strong_work else R.string.quiz_keep_practicing,
+                ),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = Spacing.md),
         )
         Text(
-            text = "Your score is $score out of $total",
+            text = stringResource(R.string.quiz_score_out_of, score, total),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs),
@@ -195,7 +206,7 @@ private fun QuizResultContent(
         if (weakTopics.isNotEmpty()) {
             LinguaCard(modifier = Modifier.padding(top = Spacing.lg)) {
                 Column(modifier = Modifier.padding(Spacing.md)) {
-                    Text("Worth revisiting", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.quiz_worth_revisiting), style = MaterialTheme.typography.titleSmall)
                     weakTopics.forEach { topic ->
                         Text(
                             text = topic,
@@ -207,12 +218,12 @@ private fun QuizResultContent(
             }
         }
         LinguaButton(
-            text = "Ask your tutor about mistakes",
+            text = stringResource(R.string.quiz_ask_mistakes),
             onClick = onAskAi,
             modifier = Modifier.padding(top = Spacing.lg),
         )
         LinguaOutlinedButton(
-            text = "Done",
+            text = stringResource(R.string.common_done),
             onClick = onDone,
             modifier = Modifier.padding(top = Spacing.sm),
         )

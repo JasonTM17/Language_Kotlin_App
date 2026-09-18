@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">LinguaAI</string>
+    <string name="tagline">Học thông minh hơn với gia sư ngôn ngữ AI</string>
+
+    <!-- Common -->
+    <string name="common_continue">Tiếp tục</string>
+    <string name="common_back">Quay lại</string>
+    <string name="common_retry">Thử lại</string>
+    <string name="common_done">Xong</string>
+    <string name="common_sign_out">Đăng xuất</string>
+    <string name="common_send_message">Gửi tin nhắn</string>
+    <string name="common_message">Tin nhắn</string>
+    <string name="common_email">Email</string>
+    <string name="common_password">Mật khẩu</string>
+    <string name="common_username">Tên người dùng</string>
+    <string name="common_something_wrong">Đã xảy ra lỗi</string>
+
+    <!-- Auth -->
+    <string name="login_tagline">Một cách học nhẹ nhàng hơn mỗi ngày</string>
+    <string name="login_title">Đăng nhập</string>
+    <string name="login_no_account">Chưa có tài khoản? Đăng ký</string>
+    <string name="register_title">Tạo tài khoản</string>
+    <string name="register_have_account">Đã có tài khoản? Đăng nhập</string>
+    <string name="register_password_hint">Ít nhất 8 ký tự</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_path_title">Thiết lập lộ trình học</string>
+    <string name="onboarding_step">Bước %1$d trên %2$d</string>
+    <string name="onboarding_what_learn">Bạn muốn học gì?</string>
+    <string name="onboarding_how_strong">Trình độ hiện tại của bạn?</string>
+    <string name="onboarding_what_goal">Mục tiêu của bạn là gì?</string>
+    <string name="onboarding_daily_question">Mỗi ngày bạn muốn học bao nhiêu phút?</string>
+    <string name="onboarding_no_languages">Chưa có ngôn ngữ nào</string>
+    <string name="onboarding_start_learning">Bắt đầu học</string>
+    <string name="onboarding_minutes_format">%1$d phút</string>
+
+    <!-- Home -->
+    <string name="home_greeting_morning">Chào buổi sáng, %1$s</string>
+    <string name="home_greeting_afternoon">Chào buổi chiều, %1$s</string>
+    <string name="home_greeting_evening">Chào buổi tối, %1$s</string>
+    <string name="home_daily_goal">Mục tiêu hằng ngày</string>
+    <string name="home_day_streak">Chuỗi %1$d ngày</string>
+    <string name="home_minutes_progress">%1$d trên %2$d phút</string>
+    <string name="home_continue_learning">Học tiếp</string>
+    <string name="home_no_lessons">Chưa có bài học nào</string>
+    <string name="home_first_lesson_soon">Bài học đầu tiên sẽ sớm xuất hiện tại đây.</string>
+    <string name="home_continue_lesson">Học tiếp bài này</string>
+    <string name="home_lesson_type_minutes">%1$s · %2$d phút</string>
+    <string name="home_review_words">Ôn tập từ vựng</string>
+    <string name="home_words_ready">%1$d từ sẵn sàng</string>
+    <string name="home_nothing_due">Chưa có từ nào đến hạn</string>
+    <string name="home_review_hint">Ôn thẻ ghi nhớ để giữ trí nhớ luôn tươi mới.</string>
+    <string name="home_ai_tutor">Gia sư AI</string>
+    <string name="home_ask_tutor">Hỏi gia sư</string>
+    <string name="home_ask_tutor_hint">Nhận giải thích rõ ràng hoặc luyện một câu.</string>
+
+    <!-- AI home -->
+    <string name="ai_home_title">Gia sư AI</string>
+    <string name="ai_home_subtitle">Người bạn luyện tập kiên nhẫn cho những lúc bạn bí.</string>
+    <string name="ai_home_ask_card">Hỏi gia sư</string>
+    <string name="ai_home_ask_hint">Giải thích ngữ pháp, từ vựng hoặc bài học.</string>
+    <string name="ai_home_practice">Luyện tập</string>
+    <string name="ai_home_correct">Sửa câu</string>
+    <string name="ai_home_quiz_me">Kiểm tra tôi</string>
+    <string name="ai_home_quiz_hint">Tạo năm câu hỏi theo trình độ hiện tại.</string>
+    <string name="ai_home_recent">Hội thoại gần đây</string>
+    <string name="ai_home_no_conversations">Chưa có hội thoại nào</string>
+    <string name="ai_home_start_chat">Bắt đầu trò chuyện để xem lịch sử tại đây.</string>
+
+    <!-- AI chat -->
+    <string name="chat_title_tutor">Gia sư AI</string>
+    <string name="chat_title_practice">Luyện hội thoại</string>
+    <string name="chat_title_correction">Sửa câu</string>
+    <string name="chat_title_grammar">Huấn luyện ngữ pháp</string>
+    <string name="chat_title_mistakes">Ôn lỗi sai</string>
+    <string name="chat_empty_title">Gia sư AI của bạn</string>
+    <string name="chat_empty_body">Câu trả lời dựa trên kho học liệu của khóa học và luôn trích dẫn nguồn.</string>
+    <string name="chat_prompt_grammar">Giải thích một điểm ngữ pháp trong bài học</string>
+    <string name="chat_prompt_questions">Cho tôi năm câu hỏi luyện tập</string>
+    <string name="chat_prompt_food">Làm sao để gọi món một cách lịch sự?</string>
+    <string name="chat_prompt_travel">Dạy tôi ba câu tiếng Anh hữu ích khi du lịch</string>
+    <string name="chat_input_placeholder">Hỏi bất cứ điều gì về bài học…</string>
+    <string name="chat_grounded">Dựa trên kho học liệu của bạn</string>
+    <string name="chat_score_action">Kết thúc &amp; chấm điểm</string>
+    <string name="chat_score_again">Chấm lại</string>
+    <string name="chat_score_title">Điểm luyện tập: %1$d/100</string>
+    <string name="chat_score_breakdown">Ngữ pháp %1$d · Từ vựng %2$d · Tự nhiên %3$d</string>
+    <string name="chat_needs_work">Cần cải thiện: %1$s</string>
+    <string name="chat_next">Gợi ý: %1$s</string>
+
+    <!-- Learn -->
+    <string name="learn_title">Học</string>
+    <string name="learn_daily_quiz">Kiểm tra hằng ngày</string>
+    <string name="learn_quiz_hint">Năm câu hỏi nhanh để kiểm tra tiến trình.</string>
+    <string name="learn_build_habit">Xây thói quen nhỏ bằng những bài học tập trung.</string>
+    <string name="lesson_ask_ai">Hỏi AI về bài học này</string>
+    <string name="lesson_mark_learned">Đánh dấu đã học</string>
+    <string name="lesson_completed">Đã học ✓</string>
+
+    <!-- Vocabulary -->
+    <string name="vocab_title">Từ vựng</string>
+    <string name="vocab_subtitle">Giữ từ hữu ích gần tay và ôn tập đúng thời điểm.</string>
+    <string name="vocab_search_label">Tìm từ vựng</string>
+    <string name="vocab_search_placeholder">Từ, cách đọc hoặc nghĩa</string>
+
+    <!-- Grammar -->
+    <string name="grammar_title">Ngữ pháp</string>
+    <string name="grammar_subtitle">Quan sát mẫu câu rồi áp dụng vào ngữ cảnh.</string>
+    <string name="grammar_empty">Chưa có bài ngữ pháp nào</string>
+    <string name="grammar_unavailable">Không khả dụng</string>
+    <string name="grammar_examples">Ví dụ</string>
+    <string name="grammar_ask_tutor">Hỏi gia sư</string>
+
+    <!-- Flashcard -->
+    <string name="flashcard_title">Ôn tập từ vựng</string>
+    <string name="flashcard_card_position">Thẻ %1$d trên %2$d</string>
+    <string name="flashcard_show_answer">Lật đáp án</string>
+
+    <!-- Quiz -->
+    <string name="quiz_title_fallback">Bài kiểm tra</string>
+    <string name="quiz_instruction">Chọn đáp án tốt nhất cho mỗi câu hỏi.</string>
+    <string name="quiz_question_number">Câu hỏi %1$d</string>
+    <string name="quiz_unavailable">Không tải được bài kiểm tra</string>
+    <string name="quiz_not_loaded">Không thể tải bài kiểm tra này.</string>
+    <string name="quiz_submit">Nộp bài</string>
+    <string name="quiz_strong_work">Làm tốt lắm</string>
+    <string name="quiz_keep_practicing">Tiếp tục luyện nhé</string>
+    <string name="quiz_score_out_of">Bạn đúng %1$d trên %2$d câu</string>
+    <string name="quiz_worth_revisiting">Nên xem lại</string>
+    <string name="quiz_ask_mistakes">Hỏi gia sư về lỗi sai</string>
+
+    <!-- Progress -->
+    <string name="progress_title">Tiến trình của bạn</string>
+    <string name="progress_streak_current">Chuỗi hiện tại</string>
+    <string name="progress_last_14_days">14 ngày qua</string>
+    <string name="progress_active_days">Ngày hoạt động</string>
+    <string name="progress_avg_score">Điểm trung bình</string>
+    <string name="progress_minutes">Phút</string>
+    <string name="progress_quiz_attempts">Bài kiểm tra</string>
+    <string name="progress_vocab_mastery">Độ thành thạo từ vựng</string>
+    <string name="progress_worth_revisiting">Nên xem lại</string>
+    <string name="progress_none">Chưa có tiến trình</string>
+    <string name="progress_due_review">%1$d từ đến hạn ôn</string>
+    <string name="progress_count_format">%1$d / %2$d</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Hồ sơ</string>
+    <string name="profile_level">Trình độ %1$s</string>
+    <string name="profile_appearance">Giao diện</string>
+    <string name="profile_theme">Chủ đề</string>
+    <string name="profile_reminders">Nhắc nhở</string>
+    <string name="profile_daily_reminder">Nhắc học hằng ngày</string>
+    <string name="profile_remind_at">Nhắc tôi lúc</string>
+    <string name="profile_daily_goal">Mục tiêu hằng ngày</string>
+    <string name="profile_minutes_a_day">%1$d phút mỗi ngày</string>
+    <string name="profile_keep_close">Giữ mục tiêu và nhịp học luôn sát bên mình.</string>
+    <string name="profile_sign_out">Đăng xuất</string>
+
+    <!-- States -->
+    <string name="state_offline_banner">Bạn đang ngoại tuyến — hiển thị nội dung đã lưu.</string>
+    <string name="state_stale_banner">Lỗi kết nối — hiển thị dữ liệu đồng bộ gần nhất.</string>
+    <string name="state_something_wrong">Đã xảy ra lỗi</string>
+</resources>

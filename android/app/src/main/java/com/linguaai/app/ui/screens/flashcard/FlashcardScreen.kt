@@ -27,9 +27,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.domain.srs.ReviewGrade
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.LinguaButton
@@ -48,10 +50,13 @@ fun FlashcardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Review words") },
+                title = { Text(stringResource(R.string.flashcard_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -98,7 +103,7 @@ private fun FlashcardContent(
                 .padding(horizontal = Spacing.md, vertical = Spacing.md),
     ) {
         Text(
-            text = "Card ${state.currentIndex + 1} of ${state.queue.size}",
+            text = stringResource(R.string.flashcard_card_position, state.currentIndex + 1, state.queue.size),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -168,7 +173,7 @@ private fun FlashcardContent(
                         }
                     } else {
                         LinguaButton(
-                            text = "Show answer",
+                            text = stringResource(R.string.flashcard_show_answer),
                             onClick = { onEvent(FlashcardEvent.Reveal) },
                             modifier = Modifier.padding(top = Spacing.xl),
                         )

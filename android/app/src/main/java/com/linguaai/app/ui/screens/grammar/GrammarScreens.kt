@@ -24,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaButton
@@ -43,9 +45,9 @@ fun GrammarScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.lg)) {
-            Text(text = "Grammar", style = MaterialTheme.typography.headlineSmall)
+            Text(text = stringResource(R.string.grammar_title), style = MaterialTheme.typography.headlineSmall)
             Text(
-                text = "Notice the patterns, then use them in context.",
+                text = stringResource(R.string.grammar_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs),
@@ -56,9 +58,9 @@ fun GrammarScreen(
             state.isLoading && state.items.isEmpty() -> LoadingIndicator(modifier = Modifier.weight(1f))
             state.items.isEmpty() ->
                 EmptyState(
-                    title = "No grammar lessons yet",
+                    title = stringResource(R.string.grammar_empty),
                     message = state.error ?: "Grammar points for your level will appear here.",
-                    actionLabel = "Retry",
+                    actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::refresh,
                     modifier = Modifier.weight(1f),
                 )
@@ -111,10 +113,13 @@ fun GrammarDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.grammar?.title ?: "Grammar") },
+                title = { Text(state.grammar?.title ?: stringResource(R.string.grammar_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -124,7 +129,7 @@ fun GrammarDetailScreen(
             state.isLoading -> LoadingIndicator(modifier = Modifier.padding(padding))
             state.grammar == null ->
                 EmptyState(
-                    title = "Unavailable",
+                    title = stringResource(R.string.grammar_unavailable),
                     message = state.error ?: "This grammar point could not be loaded.",
                     modifier = Modifier.padding(padding),
                 )
@@ -144,7 +149,7 @@ fun GrammarDetailScreen(
                     grammar.usage?.let { GrammarSection("Usage", it) }
                     if (grammar.examples.isNotEmpty()) {
                         Text(
-                            "Examples",
+                            stringResource(R.string.grammar_examples),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(top = Spacing.md),
                         )
@@ -164,7 +169,7 @@ fun GrammarDetailScreen(
                     }
                     grammar.notes?.let { GrammarSection("Notes", it) }
                     LinguaButton(
-                        text = "Ask your tutor",
+                        text = stringResource(R.string.grammar_ask_tutor),
                         onClick = { onAskAi(grammar.id) },
                         modifier = Modifier.padding(top = Spacing.md),
                     )

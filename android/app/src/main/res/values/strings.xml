@@ -1,5 +1,165 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
     <string name="app_name">LinguaAI</string>
     <string name="tagline">Learn smarter with your personal AI language tutor</string>
+
+    <!-- Common -->
+    <string name="common_continue">Continue</string>
+    <string name="common_back">Back</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_done">Done</string>
+    <string name="common_sign_out">Sign out</string>
+    <string name="common_send_message">Send message</string>
+    <string name="common_message">Message</string>
+    <string name="common_email">Email</string>
+    <string name="common_password">Password</string>
+    <string name="common_username">Username</string>
+    <string name="common_something_wrong">Something went wrong</string>
+
+    <!-- Auth -->
+    <string name="login_tagline">A calmer way to learn every day</string>
+    <string name="login_title">Log in</string>
+    <string name="login_no_account">New here? Create an account</string>
+    <string name="register_title">Create account</string>
+    <string name="register_have_account">Already have an account? Log in</string>
+    <string name="register_password_hint">At least 8 characters</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_path_title">Set up your learning path</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_what_learn">What do you want to learn?</string>
+    <string name="onboarding_how_strong">How strong are you now?</string>
+    <string name="onboarding_what_goal">What is your goal?</string>
+    <string name="onboarding_daily_question">How many minutes per day do you want to study?</string>
+    <string name="onboarding_no_languages">No languages yet</string>
+    <string name="onboarding_start_learning">Start learning</string>
+    <string name="onboarding_minutes_format">%1$d min</string>
+
+    <!-- Home -->
+    <string name="home_greeting_morning">Good morning, %1$s</string>
+    <string name="home_greeting_afternoon">Good afternoon, %1$s</string>
+    <string name="home_greeting_evening">Good evening, %1$s</string>
+    <string name="home_daily_goal">Daily goal</string>
+    <string name="home_day_streak">%1$d day streak</string>
+    <string name="home_minutes_progress">%1$d of %2$d minutes</string>
+    <string name="home_continue_learning">Continue learning</string>
+    <string name="home_no_lessons">No lessons available yet</string>
+    <string name="home_first_lesson_soon">Your first lesson will appear here soon.</string>
+    <string name="home_continue_lesson">Continue lesson</string>
+    <string name="home_lesson_type_minutes">%1$s · %2$d min</string>
+    <string name="home_review_words">Review words</string>
+    <string name="home_words_ready">%1$d words ready</string>
+    <string name="home_nothing_due">Nothing due right now</string>
+    <string name="home_review_hint">Review flashcards to keep your memory fresh.</string>
+    <string name="home_ai_tutor">AI Tutor</string>
+    <string name="home_ask_tutor">Ask your tutor</string>
+    <string name="home_ask_tutor_hint">Get a clear explanation or practice a sentence.</string>
+
+    <!-- AI home -->
+    <string name="ai_home_title">AI Tutor</string>
+    <string name="ai_home_subtitle">A patient practice partner for the moments you get stuck.</string>
+    <string name="ai_home_ask_card">Ask your tutor</string>
+    <string name="ai_home_ask_hint">Explain a grammar point, word or lesson.</string>
+    <string name="ai_home_practice">Practice</string>
+    <string name="ai_home_correct">Correct</string>
+    <string name="ai_home_quiz_me">Quiz me</string>
+    <string name="ai_home_quiz_hint">Create five questions from your current level.</string>
+    <string name="ai_home_recent">Recent conversations</string>
+    <string name="ai_home_no_conversations">No conversations yet</string>
+    <string name="ai_home_start_chat">Start a chat and your history will appear here.</string>
+
+    <!-- AI chat -->
+    <string name="chat_title_tutor">AI Tutor</string>
+    <string name="chat_title_practice">Conversation practice</string>
+    <string name="chat_title_correction">Sentence correction</string>
+    <string name="chat_title_grammar">Grammar coach</string>
+    <string name="chat_title_mistakes">Mistakes review</string>
+    <string name="chat_empty_title">Your AI tutor</string>
+    <string name="chat_empty_body">Answers are grounded in your course corpus and cite where they come from.</string>
+    <string name="chat_prompt_grammar">Explain a grammar point from my lesson</string>
+    <string name="chat_prompt_questions">Give me five practice questions</string>
+    <string name="chat_prompt_food">How do I order food politely?</string>
+    <string name="chat_prompt_travel">Teach me three useful travel phrases</string>
+    <string name="chat_input_placeholder">Ask anything about your lesson…</string>
+    <string name="chat_grounded">Grounded in your course</string>
+    <string name="chat_score_action">Finish &amp; score</string>
+    <string name="chat_score_again">Score again</string>
+    <string name="chat_score_title">Practice score: %1$d/100</string>
+    <string name="chat_score_breakdown">Grammar %1$d · Vocabulary %2$d · Naturalness %3$d</string>
+    <string name="chat_needs_work">Needs work: %1$s</string>
+    <string name="chat_next">Next: %1$s</string>
+
+    <!-- Learn -->
+    <string name="learn_title">Learn</string>
+    <string name="learn_daily_quiz">Daily quiz</string>
+    <string name="learn_quiz_hint">Five quick questions to check your progress.</string>
+    <string name="learn_build_habit">Build a small habit with focused lessons.</string>
+    <string name="lesson_ask_ai">Ask AI about this lesson</string>
+    <string name="lesson_mark_learned">Mark as learned</string>
+    <string name="lesson_completed">Completed ✓</string>
+
+    <!-- Vocabulary -->
+    <string name="vocab_title">Vocabulary</string>
+    <string name="vocab_subtitle">Keep useful words close and review them at the right time.</string>
+    <string name="vocab_search_label">Search vocabulary</string>
+    <string name="vocab_search_placeholder">Word, reading or meaning</string>
+
+    <!-- Grammar -->
+    <string name="grammar_title">Grammar</string>
+    <string name="grammar_subtitle">Notice the patterns, then use them in context.</string>
+    <string name="grammar_empty">No grammar lessons yet</string>
+    <string name="grammar_unavailable">Unavailable</string>
+    <string name="grammar_examples">Examples</string>
+    <string name="grammar_ask_tutor">Ask your tutor</string>
+
+    <!-- Flashcard -->
+    <string name="flashcard_title">Review words</string>
+    <string name="flashcard_card_position">Card %1$d of %2$d</string>
+    <string name="flashcard_show_answer">Show answer</string>
+
+    <!-- Quiz -->
+    <string name="quiz_title_fallback">Quiz</string>
+    <string name="quiz_instruction">Choose the best answer for each question.</string>
+    <string name="quiz_question_number">Question %1$d</string>
+    <string name="quiz_unavailable">Quiz unavailable</string>
+    <string name="quiz_not_loaded">This quiz could not be loaded.</string>
+    <string name="quiz_submit">Submit answers</string>
+    <string name="quiz_strong_work">Strong work</string>
+    <string name="quiz_keep_practicing">Keep practicing</string>
+    <string name="quiz_score_out_of">Your score is %1$d out of %2$d</string>
+    <string name="quiz_worth_revisiting">Worth revisiting</string>
+    <string name="quiz_ask_mistakes">Ask your tutor about mistakes</string>
+
+    <!-- Progress -->
+    <string name="progress_title">Your progress</string>
+    <string name="progress_streak_current">Current streak</string>
+    <string name="progress_last_14_days">Last 14 days</string>
+    <string name="progress_active_days">Active days</string>
+    <string name="progress_avg_score">Avg score</string>
+    <string name="progress_minutes">Minutes</string>
+    <string name="progress_quiz_attempts">Quiz attempts</string>
+    <string name="progress_vocab_mastery">Vocabulary mastery</string>
+    <string name="progress_worth_revisiting">Worth revisiting</string>
+    <string name="progress_none">No progress yet</string>
+    <string name="progress_due_review">%1$d due for review</string>
+    <string name="progress_count_format">%1$d / %2$d</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_level">Level %1$s</string>
+    <string name="profile_appearance">Appearance</string>
+    <string name="profile_theme">Theme</string>
+    <string name="profile_reminders">Reminders</string>
+    <string name="profile_daily_reminder">Daily study reminder</string>
+    <string name="profile_remind_at">Remind me at</string>
+    <string name="profile_daily_goal">Daily goal</string>
+    <string name="profile_minutes_a_day">%1$d minutes a day</string>
+    <string name="profile_keep_close">Keep your goals and study rhythm close at hand.</string>
+    <string name="profile_sign_out">Sign out</string>
+
+    <!-- States -->
+    <string name="state_offline_banner">You\'re offline. Showing cached content.</string>
+    <string name="state_stale_banner">Connection issue — showing the last synced data.</string>
+    <string name="state_something_wrong">Something went wrong</string>
 </resources>

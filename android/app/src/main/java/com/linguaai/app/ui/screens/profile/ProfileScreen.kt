@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.ui.components.ErrorState
@@ -99,7 +101,7 @@ private fun ProfileContent(
             ErrorState(
                 message = state.error,
                 modifier = Modifier.fillMaxWidth(),
-                retryLabel = "Retry",
+                retryLabel = stringResource(R.string.common_retry),
                 onRetry = onRetry,
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -110,7 +112,7 @@ private fun ProfileContent(
                         .fillMaxWidth()
                         .padding(horizontal = Spacing.md, vertical = Spacing.lg),
             ) {
-                Text("Sign out")
+                Text(stringResource(R.string.profile_sign_out))
             }
         }
         return
@@ -124,9 +126,9 @@ private fun ProfileContent(
                 .padding(horizontal = Spacing.md),
     ) {
         Column(modifier = Modifier.padding(top = Spacing.lg)) {
-            Text("Profile", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.profile_title), style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Keep your goals and study rhythm close at hand.",
+                stringResource(R.string.profile_keep_close),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs),
@@ -155,7 +157,7 @@ private fun ProfileContent(
         Spacer(modifier = Modifier.height(Spacing.lg))
 
         LinguaOutlinedButton(
-            text = "Sign out",
+            text = stringResource(R.string.profile_sign_out),
             onClick = onSignOut,
             enabled = !state.isSaving,
         )
@@ -215,7 +217,7 @@ private fun AccountCard(profile: ProfileData?) {
                 val level = profile?.level
                 if (level != null) {
                     Text(
-                        text = "Level $level",
+                        text = stringResource(R.string.profile_level, level),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
@@ -232,11 +234,11 @@ private fun DailyGoalSection(
     dailyGoalMinutes: Int,
     onDailyGoal: (Int) -> Unit,
 ) {
-    SectionHeader(title = "Daily goal", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.profile_daily_goal), modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Text(
-                text = "$dailyGoalMinutes minutes a day",
+                text = stringResource(R.string.profile_minutes_a_day, dailyGoalMinutes),
                 style = MaterialTheme.typography.bodyMedium,
             )
             FlowRow(
@@ -262,7 +264,7 @@ private fun AppearanceSection(
     themeMode: String,
     onThemeMode: (String) -> Unit,
 ) {
-    SectionHeader(title = "Appearance", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.profile_appearance), modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -273,7 +275,7 @@ private fun AppearanceSection(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = "Theme",
+                    text = stringResource(R.string.profile_theme),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = Spacing.sm),
                 )
@@ -307,9 +309,10 @@ private fun RemindersSection(
     onReminderHour: (Int) -> Unit,
     onNotifications: (Boolean) -> Unit,
 ) {
-    SectionHeader(title = "Reminders", modifier = Modifier.padding(top = Spacing.lg))
+    SectionHeader(title = stringResource(R.string.profile_reminders), modifier = Modifier.padding(top = Spacing.lg))
     LinguaCard {
         Column(modifier = Modifier.padding(Spacing.md)) {
+            val dailyReminderLabel = stringResource(R.string.profile_daily_reminder)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Filled.Notifications,
@@ -318,7 +321,7 @@ private fun RemindersSection(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = "Daily study reminder",
+                    text = dailyReminderLabel,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier =
                         Modifier
@@ -328,13 +331,13 @@ private fun RemindersSection(
                 Switch(
                     checked = enabled,
                     onCheckedChange = onNotifications,
-                    modifier = Modifier.semantics { contentDescription = "Daily study reminder" },
+                    modifier = Modifier.semantics { contentDescription = dailyReminderLabel },
                 )
             }
 
             if (enabled) {
                 Text(
-                    text = "Remind me at " + "%02d:00".format(reminderHour),
+                    text = stringResource(R.string.profile_remind_at) + " %02d:00".format(reminderHour),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.sm),

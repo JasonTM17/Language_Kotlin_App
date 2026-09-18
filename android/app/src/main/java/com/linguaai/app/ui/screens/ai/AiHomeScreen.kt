@@ -27,10 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.GeneratedQuizQuestionDto
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
@@ -70,14 +72,14 @@ private fun AiHomeContent(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 ToolCard(
-                    label = "Practice",
+                    label = stringResource(R.string.ai_home_practice),
                     icon = Icons.Filled.TheaterComedy,
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     onClick = { onOpenConversation(null, "conversation-practice") },
                 )
                 ToolCard(
-                    label = "Correct",
+                    label = stringResource(R.string.ai_home_correct),
                     icon = Icons.Filled.Spellcheck,
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -94,14 +96,14 @@ private fun AiHomeContent(
             item { SectionHeader("Generated quiz", modifier = Modifier.padding(top = Spacing.md)) }
             items(state.generatedQuiz) { question -> QuizPreviewCard(question) }
         }
-        item { SectionHeader("Recent conversations", modifier = Modifier.padding(top = Spacing.md)) }
+        item { SectionHeader(stringResource(R.string.ai_home_recent), modifier = Modifier.padding(top = Spacing.md)) }
         if (state.isLoading && state.conversations.isEmpty()) {
             item { LoadingIndicator(modifier = Modifier.padding(top = Spacing.md)) }
         } else if (state.conversations.isEmpty()) {
             item {
                 EmptyState(
-                    title = "No conversations yet",
-                    message = state.conversationError ?: "Start a chat and your history will appear here.",
+                    title = stringResource(R.string.ai_home_no_conversations),
+                    message = state.conversationError ?: stringResource(R.string.ai_home_start_chat),
                     actionLabel = if (state.conversationError == null) null else "Retry",
                     onAction = if (state.conversationError == null) null else onRetryConversations,
                 )
@@ -119,9 +121,9 @@ private fun AiHomeContent(
 @Composable
 private fun TutorHeader() {
     Column(modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.sm)) {
-        Text(text = "AI Tutor", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.ai_home_title), style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "A patient practice partner for the moments you get stuck.",
+            text = stringResource(R.string.ai_home_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs),
@@ -145,12 +147,12 @@ private fun AskTutorCard(onClick: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Ask your tutor",
+                    stringResource(R.string.ai_home_ask_card),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "Explain a grammar point, word or lesson.",
+                    text = stringResource(R.string.ai_home_ask_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -197,9 +199,9 @@ private fun QuizGeneratorCard(onClick: () -> Unit) {
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text("Quiz me", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.ai_home_quiz_me), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = "Create five questions from your current level.",
+                    text = stringResource(R.string.ai_home_quiz_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

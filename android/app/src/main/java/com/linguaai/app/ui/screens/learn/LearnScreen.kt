@@ -25,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
@@ -80,9 +82,9 @@ private fun LearnContent(
 @Composable
 private fun LearnHeader() {
     Column(modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.lg)) {
-        Text(text = "Learn", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.learn_title), style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "Build a small habit with focused lessons.",
+            text = stringResource(R.string.learn_build_habit),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs),
@@ -129,12 +131,12 @@ private fun DailyQuizCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Daily quiz",
+                    stringResource(R.string.learn_daily_quiz),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "Five quick questions to check your progress.",
+                    text = stringResource(R.string.learn_quiz_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )

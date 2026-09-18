@@ -29,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.ActivityDayDto
 import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.ui.components.EmptyState
@@ -89,14 +91,14 @@ private fun ProgressContent(
             visible = !isOnline || state.isStale,
             message =
                 if (isOnline) {
-                    "Connection issue — showing the last synced data."
+                    stringResource(R.string.state_stale_banner)
                 } else {
-                    "You're offline. Showing cached content."
+                    stringResource(R.string.state_offline_banner)
                 },
             modifier = Modifier.padding(top = Spacing.sm),
         )
 
-        SectionHeader(title = "Your progress", modifier = Modifier.padding(top = Spacing.md))
+        SectionHeader(title = stringResource(R.string.progress_title), modifier = Modifier.padding(top = Spacing.md))
 
         when {
             state.isLoading && summary == null -> LoadingIndicator(modifier = Modifier.padding(top = Spacing.xxl))
@@ -111,7 +113,7 @@ private fun ProgressContent(
 
             summary == null ->
                 EmptyState(
-                    title = "No progress yet",
+                    title = stringResource(R.string.progress_none),
                     message = "Study a few cards or take a quiz and your progress will appear here.",
                     modifier = Modifier.padding(top = Spacing.lg),
                 )
@@ -131,13 +133,13 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
 
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
         StatTile(
-            label = "Minutes",
+            label = stringResource(R.string.progress_minutes),
             value = summary.totals.minutesStudied.toString(),
             icon = Icons.Filled.Insights,
             modifier = Modifier.weight(1f),
         )
         StatTile(
-            label = "Active days",
+            label = stringResource(R.string.progress_active_days),
             value = summary.totals.activeDays.toString(),
             icon = Icons.Filled.LocalFireDepartment,
             modifier = Modifier.weight(1f),
@@ -148,13 +150,13 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
 
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
         StatTile(
-            label = "Quiz attempts",
+            label = stringResource(R.string.progress_quiz_attempts),
             value = summary.totals.quizAttempts.toString(),
             icon = Icons.Filled.Quiz,
             modifier = Modifier.weight(1f),
         )
         StatTile(
-            label = "Avg score",
+            label = stringResource(R.string.progress_avg_score),
             value =
                 summary.totals.quizAverageScore
                     ?.let { "${(it * PERCENT_SCALE).toInt()}%" }
@@ -165,17 +167,17 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
     }
 
     if (summary.vocabulary.tracked > 0) {
-        SectionHeader(title = "Vocabulary mastery", modifier = Modifier.padding(top = Spacing.lg))
+        SectionHeader(title = stringResource(R.string.progress_vocab_mastery), modifier = Modifier.padding(top = Spacing.lg))
         VocabularyCard(summary)
     }
 
     if (summary.recentActivity.isNotEmpty()) {
-        SectionHeader(title = "Last 14 days", modifier = Modifier.padding(top = Spacing.lg))
+        SectionHeader(title = stringResource(R.string.progress_last_14_days), modifier = Modifier.padding(top = Spacing.lg))
         ActivityCard(summary.recentActivity)
     }
 
     if (summary.weakTopics.isNotEmpty()) {
-        SectionHeader(title = "Worth revisiting", modifier = Modifier.padding(top = Spacing.lg))
+        SectionHeader(title = stringResource(R.string.progress_worth_revisiting), modifier = Modifier.padding(top = Spacing.lg))
         WeakTopicsCard(summary)
     }
 }
@@ -192,7 +194,7 @@ private fun StreakCard(summary: ProgressSummaryDto) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Current streak",
+                    text = stringResource(R.string.progress_streak_current),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -274,7 +276,7 @@ private fun VocabularyCard(summary: ProgressSummaryDto) {
 
             if (vocab.dueForReview > 0) {
                 Text(
-                    text = "${vocab.dueForReview} due for review",
+                    text = stringResource(R.string.progress_due_review, vocab.dueForReview),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.md),
@@ -299,7 +301,7 @@ private fun MasteryRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "$count / $total",
+                text = stringResource(R.string.progress_count_format, count, total),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

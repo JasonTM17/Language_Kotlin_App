@@ -54,11 +54,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.ui.components.ErrorState
@@ -76,10 +78,10 @@ private const val CONVERSATION_PRACTICE_MODE = "conversation-practice"
 /** Shown on an empty transcript so the tutor never starts from a dead screen. */
 private val SUGGESTED_PROMPTS =
     listOf(
-        "Explain a grammar point from my lesson",
-        "Give me five practice questions",
-        "How do I order food politely?",
-        "Teach me three useful travel phrases",
+        R.string.chat_prompt_grammar,
+        R.string.chat_prompt_questions,
+        R.string.chat_prompt_food,
+        R.string.chat_prompt_travel,
     )
 
 /** Sources display per assistant bubble; more than this hurts readability. */
@@ -126,10 +128,13 @@ fun AiChatContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(chatTitle(state.mode)) },
+                title = { Text(stringResource(chatTitle(state.mode))) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -246,7 +251,8 @@ private fun EmptyTranscript(onUsePrompt: (String) -> Unit) {
             modifier = Modifier.padding(top = Spacing.xs),
         )
         Spacer(modifier = Modifier.weight(1f))
-        SUGGESTED_PROMPTS.forEach { prompt ->
+        SUGGESTED_PROMPTS.forEach { promptRes ->
+            val prompt = stringResource(promptRes)
             SuggestionChip(
                 onClick = { onUsePrompt(prompt) },
                 label = { Text(prompt) },
@@ -278,7 +284,13 @@ private fun ColumnScope.PracticeScoreAction(
                 strokeWidth = 2.dp,
             )
         } else {
-            Text(if (state.practiceScore == null) "Finish & score" else "Score again")
+            Text(
+                if (state.practiceScore == null) {
+                    stringResource(R.string.chat_score_action)
+                } else {
+                    stringResource(R.string.chat_score_again)
+                },
+            )
         }
     }
 }
@@ -336,7 +348,7 @@ private fun ChatComposer(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Send message",
+                contentDescription = stringResource(R.string.common_send_message),
             )
         }
     }
@@ -354,12 +366,17 @@ private fun PracticeScoreCard(score: PracticeScoreDto) {
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             Text(
-                "Practice score: ${score.score}/100",
+                stringResource(R.string.chat_score_title, score.score),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
-                "Grammar ${score.grammarScore} · Vocabulary ${score.vocabularyScore} · Naturalness ${score.naturalness}",
+                stringResource(
+                    R.string.chat_score_breakdown,
+                    score.grammarScore,
+                    score.vocabularyScore,
+                    score.naturalness,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
@@ -368,14 +385,14 @@ private fun PracticeScoreCard(score: PracticeScoreDto) {
             }
             score.mistakes.forEach {
                 Text(
-                    "Needs work: $it",
+                    stringResource(R.string.chat_needs_work, it),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
             score.recommendations.forEach {
                 Text(
-                    "Next: $it",
+                    stringResource(R.string.chat_next, it),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
@@ -384,13 +401,13 @@ private fun PracticeScoreCard(score: PracticeScoreDto) {
     }
 }
 
-private fun chatTitle(mode: String): String =
+private fun chatTitle(mode: String): Int =
     when (mode) {
-        CONVERSATION_PRACTICE_MODE -> "Conversation practice"
-        "sentence-correction" -> "Sentence correction"
-        "grammar-explain" -> "Grammar coach"
-        "mistakes" -> "Mistakes review"
-        else -> "AI Tutor"
+        CONVERSATION_PRACTICE_MODE -> R.string.chat_title_practice
+        "sentence-correction" -> R.string.chat_title_correction
+        "grammar-explain" -> R.string.chat_title_grammar
+        "mistakes" -> R.string.chat_title_mistakes
+        else -> R.string.chat_title_tutor
     }
 
 private fun chatPlaceholder(
@@ -456,7 +473,7 @@ private fun MessageBubble(message: ChatMessage) {
 @Composable
 private fun SourceChips(sources: List<AiSourceDto>) {
     Text(
-        text = "Grounded in your course",
+        text = stringResource(R.string.chat_grounded),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = Spacing.xs),
