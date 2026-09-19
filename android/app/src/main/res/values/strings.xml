@@ -84,6 +84,7 @@
     <string name="chat_hint_correction">Enter a sentence to correct…</string>
     <string name="chat_hint_mistakes">Ask about a mistake…</string>
     <string name="onboarding_selected">Selected</string>
+    <string name="onboarding_catalogue_unavailable">The server has no language catalogue.</string>
     <string name="chat_empty_body">Answers are grounded in your course corpus and cite where they come from.</string>
     <string name="chat_prompt_grammar">Explain a grammar point from my lesson</string>
     <string name="chat_prompt_questions">Give me five practice questions</string>

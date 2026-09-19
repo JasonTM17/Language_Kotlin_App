@@ -217,7 +217,7 @@ private fun ColumnScope.ChatTranscript(
                                     onClick = onRetry,
                                     modifier = Modifier.testTag("ai-chat-retry"),
                                 ) {
-                                    Text("Retry")
+                                    Text(stringResource(R.string.common_retry))
                                 }
                             }
                         }

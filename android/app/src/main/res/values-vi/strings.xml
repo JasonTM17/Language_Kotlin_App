@@ -84,6 +84,7 @@
     <string name="chat_hint_correction">Nhập một câu để được sửa…</string>
     <string name="chat_hint_mistakes">Hỏi về một lỗi sai…</string>
     <string name="onboarding_selected">Đã chọn</string>
+    <string name="onboarding_catalogue_unavailable">Máy chủ chưa có danh mục ngôn ngữ nào.</string>
     <string name="chat_empty_body">Câu trả lời dựa trên kho học liệu của khóa học và luôn trích dẫn nguồn.</string>
     <string name="chat_prompt_grammar">Giải thích một điểm ngữ pháp trong bài học</string>
     <string name="chat_prompt_questions">Cho tôi năm câu hỏi luyện tập</string>
