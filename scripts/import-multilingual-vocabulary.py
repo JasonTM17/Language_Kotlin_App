@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "scripts" / "multilingual-vocabulary-manifest.json"
 DEFAULT_CACHE = ROOT / ".cache" / "multilingual-vocabulary"
 BATCH_SIZE = 2_000
+CATALOGUE_TOTAL_QUOTA = 2_000_000
 MAX_WORD_LENGTH = 120
 MAX_MEANING_LENGTH = 500
 MAX_READING_LENGTH = 200
@@ -87,8 +88,8 @@ def validate_manifest(source: dict, languages: list[LanguageSpec]) -> None:
     ids = [spec.language_id for spec in languages]
     if len(set(codes)) != len(codes) or len(set(ids)) != len(ids):
         raise ValueError("manifest language codes and ids must be unique")
-    if sum(spec.quota for spec in languages) != 1_000_000:
-        raise ValueError("manifest quotas must sum to exactly 1,000,000")
+    if sum(spec.quota for spec in languages) != CATALOGUE_TOTAL_QUOTA:
+        raise ValueError(f"manifest quotas must sum to exactly {CATALOGUE_TOTAL_QUOTA:,}")
     if not source.get("license") or not source.get("repositoryUrl"):
         raise ValueError("manifest must carry source license and repository URL")
     for spec in languages:
@@ -421,7 +422,7 @@ def process_language(
 def run_self_test() -> None:
     source, specs = load_manifest(DEFAULT_MANIFEST)
     assert source["license"]
-    assert sum(spec.quota for spec in specs) == 1_000_000
+    assert sum(spec.quota for spec in specs) == CATALOGUE_TOTAL_QUOTA
     assert sql_literal("a'b\\c\n") == "'a\\'b\\\\c\\n'"
     row = normalize_entry({"": "hola", "d": ["hello"], "p": ["intj"], "i": "[ola]"}, specs[0], 0)
     assert row and row.meaning == "hello" and row.pronunciation == "[ola]"
@@ -429,7 +430,7 @@ def run_self_test() -> None:
     oversized_definition = "x" * (MAX_MEANING_LENGTH + 1)
     assert normalize_entry({"": "oversized", "d": [oversized_definition]}, specs[0], 0) is None
     assert compact_text("x" * MAX_READING_LENGTH, MAX_READING_LENGTH) == "x" * MAX_READING_LENGTH
-    print(f"self-test: PASS ({len(specs)} languages, 1,000,000 quota rows)")
+    print(f"self-test: PASS ({len(specs)} languages, {CATALOGUE_TOTAL_QUOTA:,} quota rows)")
 
 
 def parse_args() -> argparse.Namespace:

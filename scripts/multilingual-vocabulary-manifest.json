@@ -12,8 +12,14 @@
       "id": 1,
       "code": "ja",
       "name": "Japanese",
-      "levels": ["N5", "N4", "N3", "N2", "N1"],
-      "quota": 60000,
+      "levels": [
+        "N5",
+        "N4",
+        "N3",
+        "N2",
+        "N1"
+      ],
+      "quota": 90000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-ja.json?inline=false",
       "sha256": "6d05259f777cd637d7edbe27081eb3c1da5c48968987118daec9c772af0a22ce"
     },
@@ -21,8 +27,14 @@
       "id": 2,
       "code": "en",
       "name": "English",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 195085,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 528585,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-en.json?inline=false",
       "sha256": "3ec247fdbef539ee2afb133aae7b5f053958b6a09e1b2b0e8da2adf3b9731848"
     },
@@ -30,8 +42,15 @@
       "id": 3,
       "code": "ko",
       "name": "Korean",
-      "levels": ["TOPIK1", "TOPIK2", "TOPIK3", "TOPIK4", "TOPIK5", "TOPIK6"],
-      "quota": 35000,
+      "levels": [
+        "TOPIK1",
+        "TOPIK2",
+        "TOPIK3",
+        "TOPIK4",
+        "TOPIK5",
+        "TOPIK6"
+      ],
+      "quota": 45000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-ko.json?inline=false",
       "sha256": "36ca48678e6903d639a88e7534783011899c7c74b04dec03e127f9898f8136c4"
     },
@@ -39,8 +58,14 @@
       "id": 4,
       "code": "es",
       "name": "Spanish",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 120000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 250000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-es.json?inline=false",
       "sha256": "359a05596730a4c5ee09c54ddef11329f44c10bacabdea39afdfdfdb9716c2ec"
     },
@@ -48,8 +73,14 @@
       "id": 5,
       "code": "fr",
       "name": "French",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 90000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 180000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-fr.json?inline=false",
       "sha256": "595905bf0ccd91c43143c93fdef81c2f5ed9627c0105c10ed63c34ceca3f1f0e"
     },
@@ -57,8 +88,15 @@
       "id": 6,
       "code": "zh",
       "name": "Chinese",
-      "levels": ["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6"],
-      "quota": 70000,
+      "levels": [
+        "HSK1",
+        "HSK2",
+        "HSK3",
+        "HSK4",
+        "HSK5",
+        "HSK6"
+      ],
+      "quota": 120000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-zh.json?inline=false",
       "sha256": "2a988a4750d8dc85367427eee3488b676061a20ed836553b82b857957ba65c0b"
     },
@@ -66,8 +104,14 @@
       "id": 7,
       "code": "de",
       "name": "German",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 90000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 170000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-de.json?inline=false",
       "sha256": "05dd60f7bcdbd21f71ab975e8a1fd474b076c1227f088200bd6b5c7af6ee5465"
     },
@@ -75,8 +119,14 @@
       "id": 8,
       "code": "it",
       "name": "Italian",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 80000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 160000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-it.json?inline=false",
       "sha256": "b6374140b1d1b8a18956e4330c23c38f69f618930c55a9911a367a6bfe6022d9"
     },
@@ -84,8 +134,14 @@
       "id": 9,
       "code": "pt",
       "name": "Portuguese",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 70000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 140000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-pt.json?inline=false",
       "sha256": "d19a651d02d4eccd3ce68290fc67f3c5c9782d98a30a094d1c40aa2964eb3ba7"
     },
@@ -93,8 +149,14 @@
       "id": 10,
       "code": "ru",
       "name": "Russian",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 70000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 180000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-ru.json?inline=false",
       "sha256": "5e7522b6c6709d57c8edf34000cffa92fdb70a6af978037efda4a3e01a4cac59"
     },
@@ -102,7 +164,12 @@
       "id": 11,
       "code": "ar",
       "name": "Arabic",
-      "levels": ["A1", "A2", "B1", "B2"],
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
       "quota": 24269,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-ar.json?inline=false",
       "sha256": "d64e9b3582496615a4c4953e094128378f3c98022e86a4c709193b6b7d8480d7"
@@ -111,7 +178,12 @@
       "id": 12,
       "code": "hi",
       "name": "Hindi",
-      "levels": ["A1", "A2", "B1", "B2"],
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
       "quota": 7000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-hi.json?inline=false",
       "sha256": "ec5e2ad22df8f0fc2ffdbc273c1ee08786c31e89c9ddda6d80018d41d086bfbd"
@@ -120,7 +192,12 @@
       "id": 13,
       "code": "id",
       "name": "Indonesian",
-      "levels": ["A1", "A2", "B1", "B2"],
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
       "quota": 3500,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-id.json?inline=false",
       "sha256": "08103dd7d64f1df6e26a00e9e4b2ee43d106668e14e5533a9204589b311ca727"
@@ -129,7 +206,12 @@
       "id": 14,
       "code": "th",
       "name": "Thai",
-      "levels": ["A1", "A2", "B1", "B2"],
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
       "quota": 16507,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-th.json?inline=false",
       "sha256": "6e201ca2e2ceab4330d2c31335a7433e78b1936fb2e39e3c3ff6866203e14bbd"
@@ -138,8 +220,13 @@
       "id": 15,
       "code": "tr",
       "name": "Turkish",
-      "levels": ["A1", "A2", "B1", "B2"],
-      "quota": 35000,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
+      "quota": 36000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-tr.json?inline=false",
       "sha256": "58b1745b7e765b9797dc10f82231cce697e59bb82083a9c3b81a279f31e04316"
     },
@@ -147,7 +234,13 @@
       "id": 16,
       "code": "vi",
       "name": "Vietnamese",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
       "quota": 9139,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-vi.json?inline=false",
       "sha256": "fd453493cef0a1277adaa539c9e4806d3553bfb2c12d4476d406113e21aa5c1a"
@@ -156,8 +249,14 @@
       "id": 17,
       "code": "nl",
       "name": "Dutch",
-      "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 24500,
+      "levels": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "quota": 40000,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-nl.json?inline=false",
       "sha256": "006155776154a10c629d3346184b24b78459afa29586b63983471058fa24375f"
     }
