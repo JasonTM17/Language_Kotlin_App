@@ -58,7 +58,7 @@ fun SplashScreen(
             mascotSize = 128.dp,
         )
         Text(
-            text = "LinguaAI",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(top = Spacing.md),
         )

@@ -348,16 +348,21 @@ class MysqlSink:
         self.command += ["mysql", "sh", "-lc", shell]
 
     def _execute(self, sql: str) -> str:
-        result = subprocess.run(
-            self.command,
-            input=f"SET NAMES utf8mb4;\n{sql}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            timeout=180,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                self.command,
+                input=f"SET NAMES utf8mb4;\n{sql}",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                timeout=180,
+                check=False,
+            )
+        except subprocess.SubprocessError as error:
+            # str(error) would embed the full command list, which can carry
+            # MYSQL_PWD; report the failure class without the command line.
+            raise RuntimeError(f"mysql exec failed before returning: {type(error).__name__}") from None
         if result.returncode != 0:
             detail = (result.stderr or result.stdout or "").strip()[-2_000:]
             raise RuntimeError(f"mysql command failed with exit {result.returncode}: {detail}")
