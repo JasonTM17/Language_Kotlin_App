@@ -3,7 +3,7 @@
 LinguaAI keeps two kinds of vocabulary data in MySQL:
 
 - 900 curated seed rows used by the original learning flows.
-- 1,000,000 imported dictionary rows across 17 language codes. Imported rows
+- 2,000,000 imported dictionary rows across 17 language codes. Imported rows
   are marked with a `WIKTIONARY...` category so they can be audited or removed
   without touching curated content or learner progress.
 
@@ -37,29 +37,31 @@ refuses to process a file whose checksum does not match the manifest.
 
 | Code | Imported rows |
 | --- | ---: |
-| `en` | 195,085 |
-| `es` | 120,000 |
-| `fr` | 90,000 |
-| `de` | 90,000 |
-| `it` | 80,000 |
-| `pt` | 70,000 |
-| `ru` | 70,000 |
-| `zh` | 70,000 |
-| `ja` | 60,000 |
-| `ko` | 35,000 |
-| `tr` | 35,000 |
-| `nl` | 24,500 |
+| `en` | 529,559 |
+| `es` | 250,000 |
+| `ru` | 180,000 |
+| `fr` | 180,000 |
+| `de` | 170,000 |
+| `it` | 160,000 |
+| `pt` | 140,000 |
+| `zh` | 120,000 |
+| `ja` | 90,000 |
+| `ko` | 45,000 |
+| `tr` | 35,026 |
+| `nl` | 40,000 |
 | `ar` | 24,269 |
 | `th` | 16,507 |
 | `vi` | 9,139 |
 | `hi` | 7,000 |
 | `id` | 3,500 |
-| **Total** | **1,000,000** |
+| **Total** | **2,000,000** |
 
-Arabic, Thai and Vietnamese are capped at the valid rows available under the
-strict no-truncation contract. The released quota is allocated to English,
-whose verified source has sufficient valid coverage. This keeps the total exact
-without corrupting definitions.
+Arabic, Thai, Vietnamese, Turkish and Korean are capped at the unique
+`(language_id, word)` pairs their sources actually contain — the dry-run counts
+raw entries, while the import deduplicates, so a quota above the unique
+availability is refused before any write. The released slack is allocated to
+English, whose verified source has sufficient valid coverage. This keeps the
+total exact without corrupting definitions.
 
 ## Run and verify
 

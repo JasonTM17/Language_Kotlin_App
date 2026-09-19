@@ -113,7 +113,7 @@ Public content endpoints (authentication not required).
 | `GET` | `/api/v1/quizzes/{id}` | Quiz with its questions |
 
 The current Flyway catalogue exposes 17 learning languages and contains
-1,000,900 vocabulary records: 1,000,000 checksum-verified dictionary imports
+2,000,900 vocabulary records: 2,000,000 checksum-verified dictionary imports
 plus 900 curated seed records. Each language advertises its own level set
 through `/languages`, and vocabulary accepts the same level through the `level`
 query parameter.

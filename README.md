@@ -20,7 +20,7 @@ key inside the app.
 
 **Learning**
 - Onboarding by language, level and daily goal
-- Multilingual catalogue with 17 learning languages, 1,000,000 imported
+- Multilingual catalogue with 17 learning languages, 2,000,000 imported
   dictionary entries and 900 curated seed records, plus bounded search, level
   filters and favourites — see the [catalogue import guide](docs/data/multilingual-vocabulary.md)
 - Lesson catalogue, grammar reference and review flows
