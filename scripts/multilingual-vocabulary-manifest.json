@@ -34,7 +34,7 @@
         "B2",
         "C1"
       ],
-      "quota": 528585,
+      "quota": 529559,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-en.json?inline=false",
       "sha256": "3ec247fdbef539ee2afb133aae7b5f053958b6a09e1b2b0e8da2adf3b9731848"
     },
@@ -226,7 +226,7 @@
         "B1",
         "B2"
       ],
-      "quota": 36000,
+      "quota": 35026,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-tr.json?inline=false",
       "sha256": "58b1745b7e765b9797dc10f82231cce697e59bb82083a9c3b81a279f31e04316"
     },
