@@ -22,7 +22,7 @@
       "code": "en",
       "name": "English",
       "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 180000,
+      "quota": 195085,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-en.json?inline=false",
       "sha256": "3ec247fdbef539ee2afb133aae7b5f053958b6a09e1b2b0e8da2adf3b9731848"
     },
@@ -103,7 +103,7 @@
       "code": "ar",
       "name": "Arabic",
       "levels": ["A1", "A2", "B1", "B2"],
-      "quota": 35000,
+      "quota": 24269,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-ar.json?inline=false",
       "sha256": "d64e9b3582496615a4c4953e094128378f3c98022e86a4c709193b6b7d8480d7"
     },
@@ -130,7 +130,7 @@
       "code": "th",
       "name": "Thai",
       "levels": ["A1", "A2", "B1", "B2"],
-      "quota": 17000,
+      "quota": 16507,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-th.json?inline=false",
       "sha256": "6e201ca2e2ceab4330d2c31335a7433e78b1936fb2e39e3c3ff6866203e14bbd"
     },
@@ -148,7 +148,7 @@
       "code": "vi",
       "name": "Vietnamese",
       "levels": ["A1", "A2", "B1", "B2", "C1"],
-      "quota": 13000,
+      "quota": 9139,
       "sourceUrl": "https://gitlab.com/tdulcet/compact-dictionary/-/raw/main/wiktionary/dictionary-vi.json?inline=false",
       "sha256": "fd453493cef0a1277adaa539c9e4806d3553bfb2c12d4476d406113e21aa5c1a"
     },

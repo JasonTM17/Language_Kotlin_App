@@ -30,7 +30,7 @@ from typing import Iterator
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "scripts" / "multilingual-vocabulary-manifest.json"
 DEFAULT_CACHE = ROOT / ".cache" / "multilingual-vocabulary"
-BATCH_SIZE = 500
+BATCH_SIZE = 2_000
 MAX_WORD_LENGTH = 120
 MAX_MEANING_LENGTH = 500
 MAX_READING_LENGTH = 200
@@ -294,7 +294,7 @@ def row_sql(row: VocabularyRow) -> str:
         row.example_translation,
         row.category,
     )
-    rendered = [str(values[0])] + [sql_literal(value) for value in values[1:]]
+    rendered = [str(values[0])] + [sql_literal(value) for value in values[1:]] + ["CURRENT_TIMESTAMP"]
     return "(" + ",".join(rendered) + ")"
 
 
@@ -308,55 +308,65 @@ class MysqlSink:
             '--default-character-set=utf8mb4 --binary-mode --batch --skip-column-names '
             f'{target}'
         )
-        self.process = subprocess.Popen(
-            ["docker", "compose", "-f", str(compose_file), "exec", "-T", "mysql", "sh", "-lc", shell],
-            stdin=subprocess.PIPE,
+        self.command = [
+            "docker",
+            "compose",
+            "-f",
+            str(compose_file),
+            "exec",
+            "-T",
+            "mysql",
+            "sh",
+            "-lc",
+            shell,
+        ]
+
+    def _execute(self, sql: str) -> str:
+        result = subprocess.run(
+            self.command,
+            input=f"SET NAMES utf8mb4;\n{sql}",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
+            timeout=180,
+            check=False,
         )
-        if self.process.stdin is None or self.process.stdout is None:
-            raise RuntimeError("failed to open mysql stdin")
-        self.stdin = self.process.stdin
-        self.stdout = self.process.stdout
-        self.stdin.write("SET NAMES utf8mb4;\n")
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()[-2_000:]
+            raise RuntimeError(f"mysql command failed with exit {result.returncode}: {detail}")
+        return result.stdout.strip()
 
-    def _read_integer(self) -> int:
-        line = self.stdout.readline()
+    @staticmethod
+    def _parse_integer(output: str) -> int:
+        line = output.splitlines()[-1] if output.splitlines() else ""
         if not line:
-            raise RuntimeError("mysql import ended before returning an affected-row count")
+            raise RuntimeError("mysql returned no affected-row count")
         try:
             return int(line.strip())
         except ValueError as error:
             raise RuntimeError(f"mysql returned a non-numeric affected-row count: {line.strip()!r}") from error
 
     def dictionary_count(self, language_id: int) -> int:
-        self.stdin.write(
+        output = self._execute(
             "SELECT COUNT(*) FROM vocabularies "
             f"WHERE language_id={language_id} AND category LIKE 'WIKTIONARY%';\n",
         )
-        self.stdin.flush()
-        return self._read_integer()
+        return self._parse_integer(output)
 
     def write_batch(self, rows: list[VocabularyRow]) -> int:
         if not rows:
             return 0
         values = ",\n".join(row_sql(row) for row in rows)
-        self.stdin.write(
+        output = self._execute(
             "INSERT IGNORE INTO vocabularies "
             "(language_id, level, word, reading, pronunciation, meaning, example, example_translation, category, created_at) "
             f"VALUES\n{values};\nSELECT ROW_COUNT();\n"
         )
-        self.stdin.flush()
-        return self._read_integer()
+        return self._parse_integer(output)
 
     def close(self) -> None:
-        self.stdin.close()
-        return_code = self.process.wait()
-        if return_code != 0:
-            stderr = (self.process.stderr.read() if self.process.stderr else "").strip()
-            raise RuntimeError(f"mysql import failed with exit {return_code}: {stderr[-2000:]}")
+        return None
 
 
 def process_language(
@@ -415,6 +425,7 @@ def run_self_test() -> None:
     assert sql_literal("a'b\\c\n") == "'a\\'b\\\\c\\n'"
     row = normalize_entry({"": "hola", "d": ["hello"], "p": ["intj"], "i": "[ola]"}, specs[0], 0)
     assert row and row.meaning == "hello" and row.pronunciation == "[ola]"
+    assert row_sql(row).endswith(",CURRENT_TIMESTAMP)")
     oversized_definition = "x" * (MAX_MEANING_LENGTH + 1)
     assert normalize_entry({"": "oversized", "d": [oversized_definition]}, specs[0], 0) is None
     assert compact_text("x" * MAX_READING_LENGTH, MAX_READING_LENGTH) == "x" * MAX_READING_LENGTH

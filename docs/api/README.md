@@ -112,10 +112,19 @@ Public content endpoints (authentication not required).
 | `GET` | `/api/v1/grammar/{id}` | Grammar detail |
 | `GET` | `/api/v1/quizzes/{id}` | Quiz with its questions |
 
-The current Flyway catalogue exposes Japanese, English, Korean, Spanish, French,
-Chinese and German. It contains 900 vocabulary records in total; each language
-advertises its own level set through `/languages`, and vocabulary accepts the
-same level through the `level` query parameter.
+The current Flyway catalogue exposes 17 learning languages and contains
+1,000,900 vocabulary records: 1,000,000 checksum-verified dictionary imports
+plus 900 curated seed records. Each language advertises its own level set
+through `/languages`, and vocabulary accepts the same level through the `level`
+query parameter.
+
+`GET /api/v1/vocabulary` is bounded for catalogue-scale reads. `limit` defaults
+to `100` and accepts `0..200`; `offset` defaults to `0` and must be non-negative.
+The existing filters (`languageId`, `level`, `category`, `query`) compose with
+pagination, and invalid values return `400 VALIDATION_ERROR`. The endpoint
+returns an array, so clients should request pages instead of loading the full
+catalogue. `/api/v1/categories` is a distinct query over the category column
+and returns the complete distinct category list.
 
 ### `POST /api/v1/quizzes/{id}/submit`
 

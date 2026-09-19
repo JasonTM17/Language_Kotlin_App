@@ -67,6 +67,13 @@ Two variables are worth calling out:
   development and demos.
 - `AI_PROVIDER=openai-compatible` with `AI_BASE_URL` and `AI_API_KEY` runs
   against any OpenAI-compatible endpoint.
+- `QDRANT_URL=http://qdrant:6333` selects the Qdrant retrieval engine in the
+  Compose stack. Keep `RAG_AUTO_INDEX=false` during a large data load and run
+  the authenticated reindex operation explicitly after the import.
+
+The reproducible million-row vocabulary load is documented in the
+[multilingual catalogue guide](data/multilingual-vocabulary.md). Its raw source
+files are cached under `.cache/multilingual-vocabulary` and are never committed.
 
 ## Conventions
 

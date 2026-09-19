@@ -9,8 +9,8 @@ The tutor's knowledge was limited to the learner profile, the lesson/grammar in
 focus, and the rolling conversation summary. When a learner asked about a word
 or rule the course corpus already documents, the model answered from its general
 weights — sometimes contradicting the course material — and the platform's own
-content (900+ curated vocabulary records, grammar reference, lessons, growing
-user-facing catalogue) played no part in the answer.
+content (the curated vocabulary seed, grammar reference, lessons, and the
+growing user-facing catalogue) played no part in the answer.
 
 Grounding answers in the corpus requires retrieval over it, at a scale that
 grows with the catalogue. The corpus was validated to 100k+ embedded chunks in

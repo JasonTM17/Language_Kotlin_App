@@ -20,8 +20,9 @@ key inside the app.
 
 **Learning**
 - Onboarding by language, level and daily goal
-- Multilingual catalogue with 7 languages and 900 seeded vocabulary records,
-  plus search, level filters and favourites
+- Multilingual catalogue with 17 learning languages, 1,000,000 imported
+  dictionary entries and 900 curated seed records, plus bounded search, level
+  filters and favourites — see the [catalogue import guide](docs/data/multilingual-vocabulary.md)
 - Lesson catalogue, grammar reference and review flows
 - Flashcards with a pluggable spaced-repetition scheduler (`ReviewScheduler`, SM-2 derivative)
 - Quiz engine with attempt tracking and grading
@@ -144,8 +145,8 @@ android/          Kotlin + Compose app (single module, layered packages)
 server/           Ktor backend
   src/main/kotlin/com/linguaai/server/
     api/ ai/ config/ db/ ops/ plugins/ repository/ routes/ security/
-  src/main/resources/db/migration/   Flyway V1 schema, V2/V3 catalogue seeds, V5 knowledge chunks
-scripts/          Live E2E harness (`e2e-bigdata.sh`)
+  src/main/resources/db/migration/   Flyway V1 schema, V2/V3 catalogue seeds, V5 knowledge chunks, V7 language/index metadata
+scripts/          Live E2E harness and reproducible catalogue importer
 docs/             architecture + ADRs · API · ERD · diagrams · guides
 plans/            local planning artefacts (gitignored)
 ```
@@ -157,6 +158,7 @@ plans/            local planning artefacts (gitignored)
 | [Architecture](docs/architecture/README.md) | Layers, AI gateway, offline-first, token refresh, plus seven ADRs |
 | [API reference](docs/api/README.md) | Every endpoint, error codes, token shapes, failure mapping |
 | [Database](docs/database/erd.md) | ER diagram of all 17 tables and the constraints that carry design weight |
+| [Catalogue data](docs/data/multilingual-vocabulary.md) | Source attribution, quotas, checksum-verified import and reindex procedure |
 | [Diagrams](docs/diagrams/README.md) | System, layering, auth, AI path, offline sync, progress aggregation |
 | [Development](docs/DEVELOPMENT.md) | Setup, run, conventions, troubleshooting |
 | [Testing](docs/TESTING.md) | What each suite covers and what is deliberately missing |
@@ -178,6 +180,10 @@ Stated rather than glossed over:
 - **Scale is validated, not "bigdata".** The live stack has been exercised at 100k+ corpus rows /
   100k+ embedded chunks on a single-node Docker Compose deployment; that is pipeline load
   evidence, not a distributed-systems claim.
+- **The million-row catalogue is source data, not a ranked curriculum.** The import preserves
+  third-party dictionary glosses and POS categories; frequency/rank-based pedagogy remains a
+  separate product phase. See the [catalogue guide](docs/data/multilingual-vocabulary.md) for
+  licenses, checksums and the bounded reindex workflow.
 - **The current Room migration chain through version 6 has executed on the
   `linguaai-api35` emulator with 22/22 instrumented tests passing.** A fresh
   authenticated route walk also exercised Home, Learn, Vocabulary, Grammar,

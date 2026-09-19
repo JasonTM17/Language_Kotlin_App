@@ -182,6 +182,16 @@ latency percentiles after the seed, and teardown. The harness is
 `scripts/e2e-bigdata.sh`; this validates pipeline load on one node — it is not
 a distributed-systems claim.
 
+### Million-row multilingual catalogue
+
+Flyway V7 adds the language metadata and catalogue indexes needed by the
+checksum-verified importer. The repository keeps the 900 curated seed records
+and imports one million source dictionary entries across 17 language codes;
+the raw JSONL files stay in the local ignored cache. Catalogue reads use
+bounded `limit`/`offset` pagination, while RAG reindexing remains an explicit
+ops operation so a large import cannot unexpectedly block application startup.
+See the [catalogue data guide](../data/multilingual-vocabulary.md).
+
 ## Token refresh
 
 ```mermaid
