@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -299,13 +300,30 @@ def row_sql(row: VocabularyRow) -> str:
     return "(" + ",".join(rendered) + ")"
 
 
+def load_compose_env(dotenv_path: Path) -> dict[str, str]:
+    """Read KEY=VALUE pairs from the project .env, ignoring quotes and comments."""
+    env: dict[str, str] = {}
+    if not dotenv_path.is_file():
+        return env
+    for line in dotenv_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        env[key.strip()] = value
+    return env
+
+
 class MysqlSink:
     def __init__(self, compose_file: Path, service: str, database: str | None):
         if database is not None and not SAFE_IDENTIFIER.fullmatch(database):
             raise ValueError("database must contain only letters, digits and underscores")
         target = f'"{database}"' if database else '"$MYSQL_DATABASE"'
         shell = (
-            'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql --protocol=socket -uroot '
+            'MYSQL_PWD="${MYSQL_PWD:-$MYSQL_ROOT_PASSWORD}" exec mysql --protocol=socket -uroot '
             '--default-character-set=utf8mb4 --binary-mode --batch --skip-column-names '
             f'{target}'
         )
@@ -316,11 +334,18 @@ class MysqlSink:
             str(compose_file),
             "exec",
             "-T",
-            "mysql",
-            "sh",
-            "-lc",
-            shell,
         ]
+        # A recreated stack can carry a stale MYSQL_ROOT_PASSWORD in the container
+        # env while the data volume still holds the password the last .env-based
+        # init actually set. Resolve host-side and inject per exec; the container
+        # env stays the fallback. Local dev tool: the value lives only in the
+        # process args of docker compose, never in logs or output.
+        password = os.environ.get("DB_ROOT_PASSWORD") or load_compose_env(
+            compose_file.parent / ".env"
+        ).get("DB_ROOT_PASSWORD")
+        if password:
+            self.command += ["-e", f"MYSQL_PWD={password}"]
+        self.command += ["mysql", "sh", "-lc", shell]
 
     def _execute(self, sql: str) -> str:
         result = subprocess.run(
