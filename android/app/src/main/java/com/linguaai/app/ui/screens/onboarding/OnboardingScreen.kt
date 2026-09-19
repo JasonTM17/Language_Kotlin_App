@@ -144,7 +144,7 @@ internal fun OnboardingContent(
                 state.error != null ->
                     ErrorState(
                         message = state.error.orEmpty(),
-                        retryLabel = "Retry",
+                        retryLabel = stringResource(R.string.common_retry),
                         onRetry = { onAction(OnboardingAction.Retry) },
                     )
                 else ->
@@ -245,7 +245,7 @@ private fun DailyGoalStep(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Text(
-            text = "How many minutes per day do you want to study?",
+            text = stringResource(R.string.onboarding_daily_question),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -315,7 +315,7 @@ private fun SelectableRow(
             if (selected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.onboarding_selected),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(24.dp),
                 )

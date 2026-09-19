@@ -3,30 +3,32 @@ package com.linguaai.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ---- Light palette ----
-// Moss, clay and paper-like neutrals keep the learning surface calm while
-// preserving enough contrast for long reading sessions.
-val PrimaryLight = Color(0xFF2D5A4A)
+// Livelier emerald leadership with warm cream surfaces and coral/amber
+// celebration accents; refreshed from the Stitch design pass (DESIGN.md in
+// plans/260919-0843-brand-uiux-bigdata/assets) while keeping the calm,
+// paper-like reading base.
+val PrimaryLight = Color(0xFF0F7A4E)
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFD6E8DC)
-val OnPrimaryContainerLight = Color(0xFF103A2D)
+val PrimaryContainerLight = Color(0xFFC9EFD8)
+val OnPrimaryContainerLight = Color(0xFF06341F)
 
-val SecondaryLight = Color(0xFF9A543D)
+val SecondaryLight = Color(0xFFC74324)
 val OnSecondaryLight = Color(0xFFFFFFFF)
-val SecondaryContainerLight = Color(0xFFF4DDD4)
-val OnSecondaryContainerLight = Color(0xFF5D2416)
+val SecondaryContainerLight = Color(0xFFFFE0D4)
+val OnSecondaryContainerLight = Color(0xFF4A1505)
 
-val TertiaryLight = Color(0xFF8A5A0A)
+val TertiaryLight = Color(0xFFA96A00)
 val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFF9E6BA)
+val TertiaryContainerLight = Color(0xFFFFEFC7)
 val OnTertiaryContainerLight = Color(0xFF3A2600)
 
-val BackgroundLight = Color(0xFFF4F6F1)
+val BackgroundLight = Color(0xFFFAF7F0)
 val OnBackgroundLight = Color(0xFF1B211D)
-val SurfaceLight = Color(0xFFFCFDF9)
+val SurfaceLight = Color(0xFFFFFDF8)
 val OnSurfaceLight = Color(0xFF1B211D)
-val SurfaceVariantLight = Color(0xFFE4ECE5)
-val OnSurfaceVariantLight = Color(0xFF455149)
-val OutlineLight = Color(0xFF6E7B72)
+val SurfaceVariantLight = Color(0xFFECF2EA)
+val OnSurfaceVariantLight = Color(0xFF45514A)
+val OutlineLight = Color(0xFF79857C)
 
 val ErrorLight = Color(0xFFB3261E)
 val OnErrorLight = Color(0xFFFFFFFF)
@@ -34,26 +36,26 @@ val ErrorContainerLight = Color(0xFFF9DEDC)
 val OnErrorContainerLight = Color(0xFF410E0B)
 
 // ---- Dark palette ----
-val PrimaryDark = Color(0xFFA9D1BD)
-val OnPrimaryDark = Color(0xFF123A2B)
-val PrimaryContainerDark = Color(0xFF1D4938)
-val OnPrimaryContainerDark = Color(0xFFC6EBD6)
+val PrimaryDark = Color(0xFF7FDCA8)
+val OnPrimaryDark = Color(0xFF003921)
+val PrimaryContainerDark = Color(0xFF0A5136)
+val OnPrimaryContainerDark = Color(0xFFC9EFD8)
 
-val SecondaryDark = Color(0xFFF0B39D)
-val OnSecondaryDark = Color(0xFF542111)
-val SecondaryContainerDark = Color(0xFF743B29)
-val OnSecondaryContainerDark = Color(0xFFFFDBCD)
+val SecondaryDark = Color(0xFFFFB59A)
+val OnSecondaryDark = Color(0xFF551F0B)
+val SecondaryContainerDark = Color(0xFF78301B)
+val OnSecondaryContainerDark = Color(0xFFFFE0D4)
 
-val TertiaryDark = Color(0xFFE9BD67)
+val TertiaryDark = Color(0xFFFFC95C)
 val OnTertiaryDark = Color(0xFF432D00)
 val TertiaryContainerDark = Color(0xFF604100)
-val OnTertiaryContainerDark = Color(0xFFFFDEAE)
+val OnTertiaryContainerDark = Color(0xFFFFEFC7)
 
-val BackgroundDark = Color(0xFF121A16)
+val BackgroundDark = Color(0xFF101914)
 val OnBackgroundDark = Color(0xFFE4ECE5)
-val SurfaceDark = Color(0xFF1C2721)
+val SurfaceDark = Color(0xFF18241D)
 val OnSurfaceDark = Color(0xFFE4ECE5)
-val SurfaceVariantDark = Color(0xFF2B3A32)
+val SurfaceVariantDark = Color(0xFF2A3A30)
 val OnSurfaceVariantDark = Color(0xFFB9C8BE)
 val OutlineDark = Color(0xFF829287)
 
@@ -63,5 +65,5 @@ val ErrorContainerDark = Color(0xFF93000A)
 val OnErrorContainerDark = Color(0xFFFFDAD6)
 
 // ---- Semantic accents (used by charts & progress indicators) ----
-val StreakFlame = Color(0xFFB46A4A)
+val StreakFlame = Color(0xFFE06B3C)
 val SuccessGreen = Color(0xFF2F6B4F)

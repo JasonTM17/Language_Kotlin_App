@@ -25,11 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.linguaai.app.R
 import com.linguaai.app.ui.theme.Spacing
 
 /** The app-wide filled action button with a consistent loading state. */
@@ -180,15 +182,21 @@ fun EmptyState(
     icon: ImageVector? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    art: (@Composable () -> Unit)? = null,
 ) {
+    val visual =
+        when {
+            art != null -> StateVisual.Art(art)
+            icon != null -> StateVisual.Icon(icon, MaterialTheme.colorScheme.onSurfaceVariant)
+            else -> null
+        }
     StateScaffold(
         modifier = modifier,
-        icon = icon,
+        visual = visual,
         title = title,
         message = message,
         actionLabel = actionLabel,
         onAction = onAction,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -203,26 +211,36 @@ fun ErrorState(
 ) {
     StateScaffold(
         modifier = modifier,
-        icon = null,
-        title = "Something went wrong",
+        visual = null,
+        title = stringResource(R.string.state_something_wrong),
         message = message,
         actionLabel = retryLabel,
         actionModifier = retryModifier,
         onAction = onRetry,
-        tint = MaterialTheme.colorScheme.error,
     )
+}
+
+/** The leading visual of a state scaffold: a tinted icon or a full artwork slot. */
+private sealed interface StateVisual {
+    data class Icon(
+        val imageVector: ImageVector,
+        val tint: Color,
+    ) : StateVisual
+
+    data class Art(
+        val content: @Composable () -> Unit,
+    ) : StateVisual
 }
 
 @Composable
 private fun StateScaffold(
     modifier: Modifier,
-    icon: ImageVector?,
+    visual: StateVisual?,
     title: String,
     message: String,
     actionLabel: String?,
     actionModifier: Modifier = Modifier,
     onAction: (() -> Unit)?,
-    tint: Color,
 ) {
     Column(
         modifier =
@@ -231,13 +249,16 @@ private fun StateScaffold(
                 .padding(Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(48.dp),
-            )
+        when (visual) {
+            is StateVisual.Art -> visual.content()
+            is StateVisual.Icon ->
+                Icon(
+                    imageVector = visual.imageVector,
+                    contentDescription = null,
+                    tint = visual.tint,
+                    modifier = Modifier.size(48.dp),
+                )
+            null -> Unit
         }
         Text(
             text = title,

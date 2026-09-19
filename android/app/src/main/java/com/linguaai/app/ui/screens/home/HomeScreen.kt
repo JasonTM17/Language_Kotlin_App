@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +44,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
+import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
 
 @Composable
@@ -181,18 +181,7 @@ private fun DailyGoalCard(state: HomeUiState) {
         shape = MaterialTheme.shapes.large,
         shadowElevation = 1.dp,
     ) {
-        Box(
-            modifier =
-                Modifier.background(
-                    Brush.linearGradient(
-                        colors =
-                            listOf(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
-                            ),
-                    ),
-                ),
-        ) {
+        Box(modifier = Modifier.background(BrandGradients.hero())) {
             Row(
                 modifier = Modifier.padding(Spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
@@ -205,14 +194,14 @@ private fun DailyGoalCard(state: HomeUiState) {
                     CircularProgressIndicator(
                         progress = { fraction },
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surface,
+                        color = BrandGradients.OnHero,
+                        trackColor = BrandGradients.OnHero.copy(alpha = 0.35f),
                         strokeWidth = 8.dp,
                     )
                     Text(
                         text = "${(fraction * 100).toInt()}%",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = BrandGradients.OnHero,
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
@@ -220,26 +209,26 @@ private fun DailyGoalCard(state: HomeUiState) {
                         Text(
                             text = stringResource(R.string.home_daily_goal),
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = BrandGradients.OnHero,
                             modifier = Modifier.weight(1f),
                         )
                         Icon(
                             imageVector = Icons.Filled.LocalFireDepartment,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
+                            tint = BrandGradients.OnHeroAmber,
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
                             text = stringResource(R.string.home_day_streak, state.streakDays),
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = BrandGradients.OnHero,
                             modifier = Modifier.padding(start = Spacing.xs),
                         )
                     }
                     Text(
                         text = stringResource(R.string.home_minutes_progress, state.todayMinutes, state.dailyGoalMinutes),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = BrandGradients.OnHeroMuted,
                         modifier = Modifier.padding(top = Spacing.xs),
                     )
                 }

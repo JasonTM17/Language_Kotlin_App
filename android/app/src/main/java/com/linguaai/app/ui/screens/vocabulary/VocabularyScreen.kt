@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
@@ -34,6 +35,8 @@ import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LinguaMascot
+import com.linguaai.app.ui.components.LinguaMascotPose
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
@@ -103,11 +106,24 @@ fun VocabularyScreen(
             state.isLoading && state.vocabulary.isEmpty() -> LoadingIndicator(modifier = Modifier.weight(1f))
             state.vocabulary.isEmpty() ->
                 EmptyState(
-                    title = if (state.query.isBlank()) "No vocabulary yet" else "No matches",
-                    message = state.error ?: "Try a different search or level filter.",
-                    actionLabel = "Retry",
+                    title =
+                        if (state.query.isBlank()) {
+                            stringResource(R.string.vocab_empty_title)
+                        } else {
+                            stringResource(R.string.vocab_empty_no_matches)
+                        },
+                    message = state.error ?: stringResource(R.string.vocab_empty_hint),
+                    actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::refresh,
                     modifier = Modifier.weight(1f),
+                    art = {
+                        LinguaMascot(
+                            pose = LinguaMascotPose.Book,
+                            contentDescription = stringResource(R.string.mascot_content_description),
+                            mascotSize = 96.dp,
+                            animated = false,
+                        )
+                    },
                 )
             else ->
                 LazyColumn(

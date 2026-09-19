@@ -14,10 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.linguaai.app.ui.components.LinguaMarkTile
+import com.linguaai.app.R
+import com.linguaai.app.ui.components.LinguaMascot
 import com.linguaai.app.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
@@ -51,9 +53,9 @@ fun SplashScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        LinguaMarkTile(
-            contentDescription = "LinguaAI",
-            tileSize = 72.dp,
+        LinguaMascot(
+            contentDescription = stringResource(R.string.mascot_content_description),
+            mascotSize = 128.dp,
         )
         Text(
             text = "LinguaAI",
@@ -61,7 +63,7 @@ fun SplashScreen(
             modifier = Modifier.padding(top = Spacing.md),
         )
         Text(
-            text = "Small steps. Real progress.",
+            text = stringResource(R.string.splash_tagline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.sm),

@@ -37,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -52,6 +53,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -64,9 +67,10 @@ import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.ui.components.ErrorState
-import com.linguaai.app.ui.components.LinguaMark
+import com.linguaai.app.ui.components.LinguaMascot
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
+import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
 
 /**
@@ -237,14 +241,17 @@ private fun EmptyTranscript(onUsePrompt: (String) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.weight(1f))
-        LinguaMark(modifier = Modifier.size(64.dp))
+        LinguaMascot(
+            contentDescription = stringResource(R.string.mascot_content_description),
+            mascotSize = 104.dp,
+        )
         Text(
-            text = "Your AI tutor",
+            text = stringResource(R.string.chat_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = Spacing.md),
         )
         Text(
-            text = "Answers are grounded in your course corpus and cite where they come from.",
+            text = stringResource(R.string.chat_empty_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -410,16 +417,19 @@ private fun chatTitle(mode: String): Int =
         else -> R.string.chat_title_tutor
     }
 
+@Composable
 private fun chatPlaceholder(
     mode: String,
     conversationId: Long?,
 ): String =
     when {
-        mode == CONVERSATION_PRACTICE_MODE && conversationId == null -> "Describe a role-play scenario…"
-        mode == CONVERSATION_PRACTICE_MODE -> "Reply in the target language…"
-        mode == "sentence-correction" -> "Enter a sentence to correct…"
-        mode == "mistakes" -> "Ask about a mistake…"
-        else -> "Ask anything about your lesson…"
+        mode == CONVERSATION_PRACTICE_MODE && conversationId == null ->
+            stringResource(R.string.chat_hint_practice_setup)
+        mode == CONVERSATION_PRACTICE_MODE ->
+            stringResource(R.string.chat_hint_practice_reply)
+        mode == "sentence-correction" -> stringResource(R.string.chat_hint_correction)
+        mode == "mistakes" -> stringResource(R.string.chat_hint_mistakes)
+        else -> stringResource(R.string.chat_hint_general)
     }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -445,9 +455,9 @@ private fun MessageBubble(message: ChatMessage) {
                     .clip(bubbleShape)
                     .background(
                         if (isUser) {
-                            MaterialTheme.colorScheme.primaryContainer
+                            BrandGradients.AccentPill
                         } else {
-                            MaterialTheme.colorScheme.surfaceVariant
+                            SolidColor(MaterialTheme.colorScheme.surfaceVariant)
                         },
                     ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
@@ -456,9 +466,14 @@ private fun MessageBubble(message: ChatMessage) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
+                        color = if (isUser) BrandGradients.OnHero else LocalContentColor.current,
                     )
                 } else {
-                    Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = message.content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isUser) BrandGradients.OnHero else Color.Unspecified,
+                    )
                 }
                 if (!isUser && message.sources.isNotEmpty()) {
                     SourceChips(message.sources)
