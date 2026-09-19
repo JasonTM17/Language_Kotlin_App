@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lingua the owl, waving. Flat playful brand mascot; pairs with a soft
+     radial glow rendered by LinguaMascot in Compose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <!-- feet peek below the body -->
+    <path
+        android:fillColor="#E06B3C"
+        android:pathData="M84,196 a14,9 0 1 0 28,0 a14,9 0 1 0 -28,0 Z" />
+    <path
+        android:fillColor="#E06B3C"
+        android:pathData="M128,196 a14,9 0 1 0 28,0 a14,9 0 1 0 -28,0 Z" />
+    <!-- body -->
+    <path
+        android:pathData="M120,36 L120,36 C168,36 194,72 194,118 C194,170 162,202 120,202 C78,202 46,170 46,118 C46,72 72,36 120,36 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="120"
+                android:startY="36"
+                android:endX="120"
+                android:endY="202"
+                android:startColor="#189258"
+                android:endColor="#0C6B41" />
+        </aapt:attr>
+    </path>
+    <!-- belly -->
+    <path
+        android:fillColor="#F7F1E4"
+        android:pathData="M70,150 a50,42 0 1 0 100,0 a50,42 0 1 0 -100,0 Z" />
+    <!-- belly feathers -->
+    <path
+        android:strokeColor="#E3D8C4"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M106,142 Q120,154 134,142" />
+    <path
+        android:strokeColor="#E3D8C4"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M100,160 Q120,174 140,160" />
+    <path
+        android:strokeColor="#E3D8C4"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M108,178 Q120,188 132,178" />
+    <!-- resting left wing -->
+    <path
+        android:fillColor="#0C6B41"
+        android:pathData="M68,124 C52,132 46,152 54,168 C64,164 74,150 78,134 Z" />
+    <!-- waving right wing -->
+    <path
+        android:fillColor="#0C6B41"
+        android:pathData="M172,132 C194,124 208,104 208,84 C196,88 184,100 176,116 Z" />
+    <!-- eyes -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,96 a27,27 0 1 0 54,0 a27,27 0 1 0 -54,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M120,96 a27,27 0 1 0 54,0 a27,27 0 1 0 -54,0 Z" />
+    <path
+        android:fillColor="#1F2A24"
+        android:pathData="M85,99 a12,12 0 1 0 24,0 a12,12 0 1 0 -24,0 Z" />
+    <path
+        android:fillColor="#1F2A24"
+        android:pathData="M131,99 a12,12 0 1 0 24,0 a12,12 0 1 0 -24,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M88,93.5 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M134,93.5 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M99,105 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M145,105 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0 Z" />
+    <!-- beak -->
+    <path
+        android:fillColor="#E06B3C"
+        android:pathData="M120,112 L134,124 L120,140 L106,124 Z" />
+    <!-- graduation cap -->
+    <path
+        android:fillColor="#0B4F32"
+        android:pathData="M120,18 L172,38 L120,58 L68,38 Z" />
+    <path
+        android:fillColor="#FFC95C"
+        android:pathData="M116,34 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 Z" />
+    <path
+        android:strokeColor="#FFC95C"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M170,40 L176,72" />
+    <path
+        android:fillColor="#FFC95C"
+        android:pathData="M170,79 a7,7 0 1 0 14,0 a7,7 0 1 0 -14,0 Z" />
+</vector>

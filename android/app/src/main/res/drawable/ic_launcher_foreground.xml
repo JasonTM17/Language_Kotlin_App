@@ -4,32 +4,42 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- LinguaAI mark: an open book inside a conversation bubble with an AI spark. -->
-    <path
-        android:fillColor="#2D5A4A"
-        android:pathData="M22,46 C22,36.6 29.6,29 39,29 H69 C78.4,29 86,36.6 86,46 V65 C86,74.4 78.4,82 69,82 H62 L54,91 L46,82 H39 C29.6,82 22,74.4 22,65 Z" />
-    <path
-        android:fillColor="#F4F6F1"
-        android:pathData="M29,48 C35,43 43,42 51,47 V73 C43,68 35,68 29,73 Z" />
-    <path
-        android:fillColor="#F4F6F1"
-        android:pathData="M57,47 C65,42 73,43 79,48 V73 C73,68 65,68 57,73 Z" />
-    <path
-        android:fillColor="#9A543D"
-        android:pathData="M52,46 H56 V75 H52 Z" />
-    <path
-        android:fillColor="#2D5A4A"
-        android:pathData="M34,52.8 H47 V55.2 H34 Z" />
-    <path
-        android:fillColor="#2D5A4A"
-        android:pathData="M61,52.8 H74 V55.2 H61 Z" />
-    <path
-        android:fillColor="#2D5A4A"
-        android:pathData="M34,60.8 H45 V63.2 H34 Z" />
-    <path
-        android:fillColor="#2D5A4A"
-        android:pathData="M61,60.8 H72 V63.2 H61 Z" />
-    <path
-        android:fillColor="#9A543D"
-        android:pathData="M54,15 L57,21 L63,24 L57,27 L54,33 L51,27 L45,24 L51,21 Z" />
+    <!-- LinguaAI mark: an open book inside a conversation bubble with an AI spark.
+         Group-scaled to stay inside the 66dp adaptive-icon safe zone on every mask. -->
+    <group
+        android:scaleX="0.92"
+        android:scaleY="0.92"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#FAF7F0"
+            android:pathData="M22,46 C22,36.6 29.6,29 39,29 H69 C78.4,29 86,36.6 86,46 V65 C86,74.4 78.4,82 69,82 H62 L54,91 L46,82 H39 C29.6,82 22,74.4 22,65 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M29,48 C35,43 43,42 51,47 V73 C43,68 35,68 29,73 Z" />
+        <path
+            android:fillColor="#EAF4EC"
+            android:pathData="M57,47 C65,42 73,43 79,48 V73 C73,68 65,68 57,73 Z" />
+        <path
+            android:fillColor="#E06B3C"
+            android:pathData="M52,46 H56 V75 H52 Z" />
+        <path
+            android:fillColor="#0F7A4E"
+            android:pathData="M34,52.8 H47 V55.2 H34 Z" />
+        <path
+            android:fillColor="#0F7A4E"
+            android:pathData="M61,52.8 H74 V55.2 H61 Z" />
+        <path
+            android:fillColor="#0F7A4E"
+            android:pathData="M34,60.8 H45 V63.2 H34 Z" />
+        <path
+            android:fillColor="#0F7A4E"
+            android:pathData="M61,60.8 H72 V63.2 H61 Z" />
+        <path
+            android:fillColor="#FFC95C"
+            android:pathData="M54,15 L57,21 L63,24 L57,27 L54,33 L51,27 L45,24 L51,21 Z" />
+        <path
+            android:fillColor="#FFC95C"
+            android:pathData="M73,17 a2.6,2.6 0 1 0 5.2,0 a2.6,2.6 0 1 0 -5.2,0 Z" />
+    </group>
 </vector>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Themed-icon silhouette: the same mark in a single tintable layer. -->
+    <group
+        android:scaleX="0.92"
+        android:scaleY="0.92"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M22,46 C22,36.6 29.6,29 39,29 H69 C78.4,29 86,36.6 86,46 V65 C86,74.4 78.4,82 69,82 H62 L54,91 L46,82 H39 C29.6,82 22,74.4 22,65 Z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="2.4"
+            android:pathData="M29,48 C35,43 43,42 51,47 V73 C43,68 35,68 29,73 Z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="2.4"
+            android:pathData="M57,47 C65,42 73,43 79,48 V73 C73,68 65,68 57,73 Z" />
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M52,46 H56 V75 H52 Z" />
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M54,15 L57,21 L63,24 L57,27 L54,33 L51,27 L45,24 L51,21 Z" />
+    </group>
+</vector>
