@@ -201,7 +201,7 @@ private fun AccountCard(profile: ProfileData?) {
                 modifier = Modifier.weight(1f).padding(start = Spacing.md),
             ) {
                 Text(
-                    text = profile?.user?.username ?: "Learner",
+                    text = profile?.user?.username ?: stringResource(R.string.profile_default_name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -286,9 +286,9 @@ private fun AppearanceSection(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 listOf(
-                    SettingsDataStore.THEME_SYSTEM to "System",
-                    SettingsDataStore.THEME_LIGHT to "Light",
-                    SettingsDataStore.THEME_DARK to "Dark",
+                    SettingsDataStore.THEME_SYSTEM to stringResource(R.string.profile_theme_system),
+                    SettingsDataStore.THEME_LIGHT to stringResource(R.string.profile_theme_light),
+                    SettingsDataStore.THEME_DARK to stringResource(R.string.profile_theme_dark),
                 ).forEach { (mode, label) ->
                     FilterChip(
                         selected = themeMode == mode,

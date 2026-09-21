@@ -145,9 +145,9 @@ fun GrammarDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     val grammar = state.grammar!!
-                    grammar.structure?.let { GrammarSection("Structure", it) }
-                    grammar.meaning?.let { GrammarSection("Meaning", it) }
-                    grammar.usage?.let { GrammarSection("Usage", it) }
+                    grammar.structure?.let { GrammarSection(stringResource(R.string.grammar_structure), it) }
+                    grammar.meaning?.let { GrammarSection(stringResource(R.string.grammar_meaning), it) }
+                    grammar.usage?.let { GrammarSection(stringResource(R.string.grammar_usage), it) }
                     if (grammar.examples.isNotEmpty()) {
                         Text(
                             stringResource(R.string.grammar_examples),
@@ -168,7 +168,7 @@ fun GrammarDetailScreen(
                             }
                         }
                     }
-                    grammar.notes?.let { GrammarSection("Notes", it) }
+                    grammar.notes?.let { GrammarSection(stringResource(R.string.grammar_notes), it) }
                     LinguaButton(
                         text = stringResource(R.string.grammar_ask_tutor),
                         onClick = { onAskAi(grammar.id) },

@@ -46,13 +46,13 @@ fun LessonDetailScreen(
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(state.completed) {
-        if (state.completed) snackbar.showSnackbar("Lesson completed. Progress will sync.")
+        if (state.completed) snackbar.showSnackbar(context.getString(R.string.lesson_completed_snackbar))
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.lesson?.title ?: "Lesson") },
+                title = { Text(state.lesson?.title ?: stringResource(R.string.lesson_fallback_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -70,7 +70,7 @@ fun LessonDetailScreen(
             state.lesson == null ->
                 ErrorState(
                     message = state.error?.render() ?: stringResource(R.string.lesson_unavailable),
-                    retryLabel = "Retry",
+                    retryLabel = stringResource(R.string.common_retry),
                     onRetry = viewModel::load,
                     modifier = Modifier.padding(padding),
                 )

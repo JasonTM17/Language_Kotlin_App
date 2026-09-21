@@ -103,9 +103,9 @@ private fun LearnTools(
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.md),
     ) {
-        ToolCard("Vocabulary", Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f), onOpenVocabulary)
-        ToolCard("Grammar", Icons.Filled.School, Modifier.weight(1f), onOpenGrammar)
-        ToolCard("Review", Icons.Filled.Refresh, Modifier.weight(1f), onOpenFlashcards)
+        ToolCard(stringResource(R.string.vocab_title), Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f), onOpenVocabulary)
+        ToolCard(stringResource(R.string.grammar_title), Icons.Filled.School, Modifier.weight(1f), onOpenGrammar)
+        ToolCard(stringResource(R.string.review_title), Icons.Filled.Refresh, Modifier.weight(1f), onOpenFlashcards)
     }
 }
 
@@ -183,12 +183,12 @@ private fun ColumnScope.LessonList(
         state.lessons.isEmpty() -> {
             val hasError = state.error != null
             EmptyState(
-                title = if (hasError) "Couldn't load lessons" else "Your lesson path is ready",
+                title = stringResource(if (hasError) R.string.learn_error_title else R.string.learn_ready_title),
                 message =
                     state.error?.render()
-                        ?: "Lessons for your level will appear here. Explore vocabulary while you wait.",
+                        ?: stringResource(R.string.learn_ready_hint),
                 icon = Icons.AutoMirrored.Filled.MenuBook,
-                actionLabel = if (hasError) "Retry" else "Explore vocabulary",
+                actionLabel = stringResource(if (hasError) R.string.common_retry else R.string.learn_explore_vocab),
                 onAction = if (hasError) onRefresh else onOpenVocabulary,
                 modifier = Modifier.weight(1f),
             )
