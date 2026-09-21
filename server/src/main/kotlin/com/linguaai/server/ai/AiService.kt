@@ -485,6 +485,7 @@ class AiService(
                                     ErrorCodes.RATE_LIMITED,
                                     "The AI tutor is busy. Please retry shortly.",
                                     cause = e,
+                                    retryAfterSeconds = e.retryAfterSeconds,
                                 )
                             AiProviderException.Kind.TIMEOUT ->
                                 ApiException(
@@ -575,6 +576,7 @@ class AiService(
                 HttpStatusCode.TooManyRequests,
                 ErrorCodes.RATE_LIMITED,
                 "AI rate limit reached (${config.aiRateLimitPerMinute}/minute). Please wait a moment.",
+                retryAfterSeconds = rateLimiter.retryAfterSeconds(userId),
             )
         }
     }
@@ -634,6 +636,43 @@ class AiService(
             )
         }
 
+    /**
+     * The practice-score prompt asks for `mistakes` as objects with
+     * said/better/why, while the wire DTO declares plain strings. Decoding the
+     * prompt-shaped answer straight away rejected every compliant model reply,
+     * so flatten the richer shape into the string the client renders.
+     */
+    private fun normalizeMistakes(jsonText: String): String {
+        val root =
+            runCatching { json.parseToJsonElement(jsonText) as? kotlinx.serialization.json.JsonObject }
+                .getOrNull() ?: return jsonText
+        val mistakes = root["mistakes"] as? kotlinx.serialization.json.JsonArray ?: return jsonText
+        if (mistakes.isEmpty() || mistakes.all { it is kotlinx.serialization.json.JsonPrimitive }) return jsonText
+
+        val flattened =
+            mistakes.map { element ->
+                val obj = element as? kotlinx.serialization.json.JsonObject
+                if (obj == null) {
+                    element
+                } else {
+                    kotlinx.serialization.json.JsonPrimitive(
+                        listOf(
+                            obj.stringOrNull("said"),
+                            obj.stringOrNull("better"),
+                            obj.stringOrNull("why"),
+                        ).filterNotNull().joinToString(" -> "),
+                    )
+                }
+            }
+        return json.encodeToString(
+            kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.JsonObject(root.toMutableMap().apply { put("mistakes", kotlinx.serialization.json.JsonArray(flattened)) }),
+        )
+    }
+
+    private fun kotlinx.serialization.json.JsonObject.stringOrNull(key: String): String? =
+        (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+
     private fun parsePracticeScore(raw: String): PracticeScoreDto =
         try {
             val cleaned =
@@ -643,7 +682,7 @@ class AiService(
                     .removePrefix("```")
                     .removeSuffix("```")
                     .trim()
-            json.decodeFromString<PracticeScoreDto>(cleaned).also { score ->
+            json.decodeFromString<PracticeScoreDto>(normalizeMistakes(cleaned)).also { score ->
                 require(score.score in SCORE_RANGE) { "score is outside 0..100" }
                 require(score.grammarScore in SCORE_RANGE) { "grammarScore is outside 0..100" }
                 require(score.vocabularyScore in SCORE_RANGE) { "vocabularyScore is outside 0..100" }

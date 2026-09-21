@@ -9,6 +9,12 @@ class ApiException(
     val code: String,
     message: String,
     cause: Throwable? = null,
+    /**
+     * Seconds the client should wait before retrying. Only meaningful on 429;
+     * it becomes the HTTP `Retry-After` header so the tutor can show a real
+     * countdown instead of an open-ended "wait a moment".
+     */
+    val retryAfterSeconds: Long? = null,
 ) : RuntimeException(message, cause)
 
 /** Consistent error envelope returned for every failed request. */

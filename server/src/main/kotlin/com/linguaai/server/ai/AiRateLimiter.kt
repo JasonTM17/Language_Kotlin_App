@@ -36,4 +36,21 @@ class AiRateLimiter(
             return true
         }
     }
+
+    /**
+     * Seconds until the oldest counted request ages out of the window and a new
+     * slot frees up. Without this the client can only guess, and the learner
+     * who is 5 seconds from recovery sees the same message as one who is 60.
+     */
+    fun retryAfterSeconds(
+        userId: Long,
+        now: Instant = Instant.now(),
+    ): Long {
+        val window = windows[userId] ?: return 1L
+        synchronized(window) {
+            val oldest = window.hits.peekFirst() ?: return 1L
+            val freesAt = oldest.plusMillis(windowMillis)
+            return maxOf(1L, java.time.Duration.between(now, freesAt).seconds + 1L)
+        }
+    }
 }

@@ -19,6 +19,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
+import io.ktor.server.response.header
 import io.ktor.server.response.respondText
 import io.ktor.util.AttributeKey
 import kotlinx.serialization.json.Json
@@ -66,7 +67,7 @@ fun Application.configureMonitoring() {
 fun Application.configureStatusPages() {
     install(StatusPages) {
         exception<ApiException> { call, cause ->
-            call.respondError(cause.status, cause.code, cause.message ?: cause.code)
+            call.respondError(cause.status, cause.code, cause.message ?: cause.code, cause.retryAfterSeconds)
         }
         exception<BadRequestException> { call, _ ->
             call.respondError(HttpStatusCode.BadRequest, ErrorCodes.VALIDATION, "Malformed request body.")
@@ -86,7 +87,11 @@ private suspend fun ApplicationCall.respondError(
     status: HttpStatusCode,
     code: String,
     message: String,
+    retryAfterSeconds: Long? = null,
 ) {
+    if (retryAfterSeconds != null) {
+        response.header(io.ktor.http.HttpHeaders.RetryAfter, retryAfterSeconds.toString())
+    }
     respondText(
         text =
             jsonMapper.encodeToString(
