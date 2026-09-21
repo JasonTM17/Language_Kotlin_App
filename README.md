@@ -31,8 +31,13 @@ key inside the app.
 - Chat, grammar explanation, sentence correction, conversation practice with scoring
 - **Retrieval-grounded answers**: chat and grammar turns retrieve the most relevant
   course-corpus chunks (vocabulary, grammar, lessons), cite them in the reply
-  (`sources[]`), and the Android client renders the citations as chips — see
+  (`sources[]`), and the Android client renders the citations as chips that open
+  the cited lesson or grammar page — see
   [ADR-0007](docs/architecture/adr/0007-retrieval-grounded-tutor.md)
+- Tutors reply with the emphasis and bullets the server prompt asks the model for,
+  rendered natively rather than as raw markup
+- Interruptible replies, a scroll-to-latest control, and a real rate-limit
+  countdown driven by the server's `Retry-After` grant
 - Pluggable vector engine: **Qdrant** in Docker Compose, or a dependency-free SQL
   cosine store offline; validated live at 100k-vector scale
   (`scripts/e2e-bigdata.sh`)
