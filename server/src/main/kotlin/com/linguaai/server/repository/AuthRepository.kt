@@ -155,7 +155,6 @@ class AuthRepository {
         }
 
     /** MySQL's error code for a duplicate-key insert (unique email race). */
-    /** MySQL's error code for a duplicate-key insert (unique email race). */
     private val mysqlDuplicateKeyError = 1062
 
     private fun Throwable.isDuplicateKey(): Boolean {

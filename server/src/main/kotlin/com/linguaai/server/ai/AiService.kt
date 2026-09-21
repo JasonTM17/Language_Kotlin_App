@@ -15,7 +15,6 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -697,8 +696,11 @@ class AiService(
                 }
             }
         return json.encodeToString(
-            kotlinx.serialization.json.JsonObject.serializer(),
-            kotlinx.serialization.json.JsonObject(root.toMutableMap().apply { put("mistakes", kotlinx.serialization.json.JsonArray(flattened)) }),
+            kotlinx.serialization.json.JsonObject
+                .serializer(),
+            kotlinx.serialization.json.JsonObject(
+                root.toMutableMap().apply { put("mistakes", kotlinx.serialization.json.JsonArray(flattened)) },
+            ),
         )
     }
 

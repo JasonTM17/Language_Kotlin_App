@@ -1,6 +1,7 @@
 package com.linguaai.server
 
 import com.linguaai.server.config.AppConfig
+import com.linguaai.server.repository.AiRepository
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -484,12 +485,6 @@ class AiIntegrationTest {
         }
 
     /**
-     * The practice-score prompt asks the model for mistakes as objects, while
-     * the wire DTO declares plain strings. Before normalization a fully
-     * compliant reply failed to decode and returned an unrecoverable 502, and
-     * the mock hid it by emitting the string form instead.
-     */
-    /**
      * Citations used to exist only in the live response, so reopening a
      * conversation showed the same answer with its grounding silently gone and
      * the learner could not tell whether it had ever been grounded. This pins
@@ -501,7 +496,7 @@ class AiIntegrationTest {
             // withApp gets a fresh in-memory database per test, so this is the only row.
             registerAndLogin("citations@example.com")
             val userId = 1L
-            val repository = com.linguaai.server.repository.AiRepository()
+            val repository = AiRepository()
             val conversation =
                 repository.createConversation(
                     userId = userId,
@@ -528,6 +523,12 @@ class AiIntegrationTest {
             )
         }
 
+    /**
+     * The practice-score prompt asks the model for mistakes as objects, while
+     * the wire DTO declares plain strings. Before normalization a fully
+     * compliant reply failed to decode and returned an unrecoverable 502, and
+     * the mock hid it by emitting the string form instead.
+     */
     @Test
     fun `practice score accepts the object-shaped mistakes the prompt mandates`() =
         withApp(mockScenario = "prompt_shaped_practice_score") {
@@ -542,8 +543,11 @@ class AiIntegrationTest {
                     setBody("""{"scenario":"ordering food politely"}""")
                 }
             val conversationId =
-                json.parseToJsonElement(started.bodyAsText()).jsonObject["conversationId"]!!
-                    .jsonPrimitive.content
+                json
+                    .parseToJsonElement(started.bodyAsText())
+                    .jsonObject["conversationId"]!!
+                    .jsonPrimitive
+                    .content
             client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
                 auth(this)
                 header(HttpHeaders.ContentType, "application/json")
@@ -555,7 +559,8 @@ class AiIntegrationTest {
 
             assertEquals(HttpStatusCode.OK, score.status)
             val mistakes =
-                json.parseToJsonElement(score.bodyAsText())
+                json
+                    .parseToJsonElement(score.bodyAsText())
                     .jsonObject["mistakes"]!!
                     .jsonArray
                     .map { it.jsonPrimitive.content }

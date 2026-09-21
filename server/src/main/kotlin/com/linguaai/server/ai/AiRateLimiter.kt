@@ -50,7 +50,12 @@ class AiRateLimiter(
         synchronized(window) {
             val oldest = window.hits.peekFirst() ?: return 1L
             val freesAt = oldest.plusMillis(windowMillis)
-            return maxOf(1L, java.time.Duration.between(now, freesAt).seconds + 1L)
+            return maxOf(
+                1L,
+                java.time.Duration
+                    .between(now, freesAt)
+                    .seconds + 1L,
+            )
         }
     }
 }
