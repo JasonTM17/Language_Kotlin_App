@@ -67,3 +67,25 @@ val OnErrorContainerDark = Color(0xFFFFDAD6)
 // ---- Semantic accents (used by charts & progress indicators) ----
 val StreakFlame = Color(0xFFE06B3C)
 val SuccessGreen = Color(0xFF2F6B4F)
+
+// ---- Progress-suite accents (heatmap ladder + achievement tiers) ----
+// Heatmap intensity ladder, light mode: empty → hottest.
+val HeatmapLight0 = Color(0xFFEAF2EA)
+val HeatmapLight1 = Color(0xFFBFE3CB)
+val HeatmapLight2 = Color(0xFF7FC79B)
+val HeatmapLight3 = Color(0xFF3F9E6B)
+val HeatmapLight4 = Color(0xFF0F7A4E)
+
+// Heatmap intensity ladder, dark mode.
+val HeatmapDark0 = Color(0xFF22302A)
+val HeatmapDark1 = Color(0xFF1D4938)
+val HeatmapDark2 = Color(0xFF2A6E4E)
+val HeatmapDark3 = Color(0xFF3F9E6B)
+val HeatmapDark4 = Color(0xFF7FDCA8)
+
+// Achievement tiers.
+val BadgeGold = Color(0xFFE8B93B)
+val BadgeSilver = Color(0xFFB9C4BD)
+val BadgeBronze = Color(0xFFCE8F5A)
+val BadgeLockedContainerLight = Color(0xFFEEF1EC)
+val BadgeLockedContainerDark = Color(0xFF253029)

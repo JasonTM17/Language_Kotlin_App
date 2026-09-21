@@ -1,6 +1,7 @@
 package com.linguaai.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,7 +111,7 @@ fun LinguaOutlinedButton(
     }
 }
 
-/** Standard content card with unified elevation and full-width layout. */
+/** Standard content card with unified elevation, hairline border and full width. */
 @Composable
 fun LinguaCard(
     modifier: Modifier = Modifier,
@@ -119,18 +120,26 @@ fun LinguaCard(
     content: @Composable () -> Unit,
 ) {
     val colors = CardDefaults.cardColors(containerColor = containerColor)
-    val elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 3.dp)
+    val elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 4.dp)
+    val bordered =
+        modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                shape = MaterialTheme.shapes.medium,
+            )
     if (onClick != null) {
         Card(
             onClick = onClick,
-            modifier = modifier.fillMaxWidth(),
+            modifier = bordered,
             colors = colors,
             elevation = elevation,
             shape = MaterialTheme.shapes.medium,
         ) { content() }
     } else {
         Card(
-            modifier = modifier.fillMaxWidth(),
+            modifier = bordered,
             colors = colors,
             elevation = elevation,
             shape = MaterialTheme.shapes.medium,

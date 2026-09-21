@@ -13,12 +13,33 @@ import androidx.compose.ui.unit.sp
  */
 val LinguaTypography =
     Typography(
+        displayLarge =
+            TextStyle(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 42.sp,
+                lineHeight = 48.sp,
+            ),
+        displayMedium =
+            TextStyle(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 38.sp,
+                lineHeight = 44.sp,
+            ),
         displaySmall =
             TextStyle(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold,
                 fontSize = 34.sp,
                 lineHeight = 40.sp,
+            ),
+        headlineLarge =
+            TextStyle(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp,
+                lineHeight = 36.sp,
             ),
         headlineMedium =
             TextStyle(

@@ -32,6 +32,14 @@ object BrandGradients {
     /** Warm amber highlight (flame, tassel) that reads on the hero gradient. */
     val OnHeroAmber: Color = Color(0xFFFFDF9E)
 
+    /** Badge medallion gradient (gold tier). */
+    val BadgeGold: Brush =
+        Brush.linearGradient(colors = listOf(Color(0xFFF3CE63), Color(0xFFD99B23)))
+
+    /** Soft radial glow behind mascots and celebration moments. */
+    fun mascotGlow(color: Color): Brush =
+        Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent))
+
     /** Theme-aware hero gradient. */
     @Composable
     fun hero(): Brush = if (isSystemInDarkTheme()) HeroDark else HeroLight
