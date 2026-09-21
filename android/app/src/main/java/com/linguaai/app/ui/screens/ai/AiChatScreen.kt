@@ -1,5 +1,6 @@
 package com.linguaai.app.ui.screens.ai
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -106,6 +107,15 @@ private const val SOURCE_TITLE_MAX_LENGTH = 32
 
 /** RoundedCornerShape takes a percentage; 50 gives a pill. */
 private const val PILL_PERCENT = 50
+
+/** Android's minimum comfortable tap target; compact chat controls still owe it. */
+private val MIN_TOUCH_TARGET_DP = 48.dp
+
+/**
+ * Citations sit inside a bubble, so a full 48dp row would outweigh the reply.
+ * 40dp keeps them tappable — they measured 23.6dp, under WCAG 2.5.8's floor.
+ */
+private val CHIP_MIN_HEIGHT_DP = 40.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -359,11 +369,13 @@ private fun NoticeBanner(
                 modifier = Modifier.weight(1f),
             )
             if (actionLabel != null && onAction != null) {
+                // TextButton defaults its label to colorScheme.primary, which
+                // silently ignores the container this banner chose.
                 TextButton(
                     onClick = onAction,
                     modifier = Modifier.testTag("ai-chat-retry"),
                 ) {
-                    Text(text = actionLabel)
+                    Text(text = actionLabel, color = contentColor)
                 }
             }
         }
@@ -696,22 +708,30 @@ private fun TextSurfaceButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The tint alone disappeared on the dark surface, so the pill carries a
+    // hairline of the same hue; and at 22dp tall it was a miss the learner paid
+    // for mid-generation, so the row keeps a full touch target.
     Surface(
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+        contentColor = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(PILL_PERCENT),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)),
         modifier = modifier.clickable(onClick = onClick),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+            modifier =
+                Modifier
+                    .heightIn(min = MIN_TOUCH_TARGET_DP)
+                    .padding(horizontal = Spacing.md),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(16.dp),
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(Spacing.xs))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
@@ -781,13 +801,16 @@ private fun SourceChip(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+            modifier =
+                Modifier
+                    .heightIn(min = CHIP_MIN_HEIGHT_DP)
+                    .padding(horizontal = Spacing.sm),
         ) {
             Icon(
                 imageVector = sourceIcon(source.sourceType),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(16.dp),
             )
             Text(
                 text = source.title.take(SOURCE_TITLE_MAX_LENGTH),

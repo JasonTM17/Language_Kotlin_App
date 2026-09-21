@@ -5,15 +5,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.domain.model.AppError
@@ -116,6 +119,52 @@ class AiChatScreenTest {
         composeRule.onNodeWithTag("ai-chat-stop").assertIsDisplayed().performClick()
 
         composeRule.runOnIdle { assertEquals(1, stopCount) }
+    }
+
+    /**
+     * The tutor's controls are small by design, but a tap target under 24dp is a
+     * miss the learner pays for mid-generation. Asserting the measured bounds
+     * keeps the pill's and chip's compact look honest about being reachable: the
+     * interrupt control gets Android's full 48dp, in-bubble citations 40dp.
+     */
+    @Test
+    fun chatControls_meetTheMinimumTouchTarget() {
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        isSending = true,
+                        messages =
+                            listOf(
+                                ChatMessage(
+                                    "ASSISTANT",
+                                    "Use ので for a plain reason clause.",
+                                    isPending = true,
+                                    sources =
+                                        listOf(
+                                            AiSourceDto(
+                                                title = "Reason clauses node",
+                                                sourceType = "GRAMMAR",
+                                                sourceId = 12L,
+                                                chunkIndex = 0,
+                                                level = "N4",
+                                                score = 0.91,
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                onStop = {},
+            )
+        }
+
+        for ((tag, minDp) in listOf("ai-chat-stop" to 48, "ai-chat-source" to 40)) {
+            composeRule
+                .onNodeWithTag(tag)
+                .assertWidthIsAtLeast(minDp.dp)
+                .assertHeightIsAtLeast(minDp.dp)
+        }
     }
 
     @Test
