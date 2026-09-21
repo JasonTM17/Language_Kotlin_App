@@ -37,6 +37,7 @@ import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 private const val DAILY_GOALS_PER_ROW = 3
 
@@ -143,7 +144,7 @@ internal fun OnboardingContent(
                 state.isLoading -> LoadingIndicator()
                 state.error != null ->
                     ErrorState(
-                        message = state.error.orEmpty(),
+                        message = state.error?.render().orEmpty(),
                         retryLabel = stringResource(R.string.common_retry),
                         onRetry = { onAction(OnboardingAction.Retry) },
                     )

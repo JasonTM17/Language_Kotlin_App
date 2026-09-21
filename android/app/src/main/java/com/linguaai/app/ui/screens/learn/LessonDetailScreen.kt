@@ -33,6 +33,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,7 @@ fun LessonDetailScreen(
             state.isLoading -> LoadingIndicator()
             state.lesson == null ->
                 ErrorState(
-                    message = state.error ?: "Lesson unavailable",
+                    message = state.error?.render() ?: stringResource(R.string.lesson_unavailable),
                     retryLabel = "Retry",
                     onRetry = viewModel::load,
                     modifier = Modifier.padding(padding),

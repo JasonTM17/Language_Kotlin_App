@@ -3,13 +3,15 @@ package com.linguaai.app.ui.screens.grammar
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.GrammarDto
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,7 @@ data class GrammarListUiState(
     val isLoading: Boolean = true,
     val items: List<GrammarDto> = emptyList(),
     val isOffline: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 @HiltViewModel
@@ -75,7 +77,7 @@ class GrammarViewModel
             when (val result = learningContentRepository.refreshGrammar(languageId, null)) {
                 is AppResult.Failure ->
                     _uiState.update {
-                        it.copy(isOffline = result.error == AppError.NetworkUnavailable, error = result.error.toUserMessage())
+                        it.copy(isOffline = result.error == AppError.NetworkUnavailable, error = result.error.toUiMessage())
                     }
                 else -> _uiState.update { it.copy(isOffline = false, error = null) }
             }
@@ -86,7 +88,7 @@ class GrammarViewModel
                 it.copy(
                     isLoading = false,
                     items = emptyList(),
-                    error = "Choose a learning language before opening grammar.",
+                    error = UiMessage(R.string.msg_need_language_grammar),
                 )
             }
         }
@@ -95,7 +97,7 @@ class GrammarViewModel
 data class GrammarDetailUiState(
     val isLoading: Boolean = true,
     val grammar: GrammarDto? = null,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 @HiltViewModel
@@ -121,7 +123,7 @@ class GrammarDetailViewModel
                     is AppResult.Success -> _uiState.update { it.copy(isLoading = false, grammar = result.data) }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                            it.copy(isLoading = false, error = result.error.toUiMessage())
                         }
                 }
             }

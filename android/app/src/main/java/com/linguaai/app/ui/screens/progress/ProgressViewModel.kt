@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.ProgressRepository
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import com.linguaai.app.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,7 @@ import javax.inject.Inject
 data class ProgressUiState(
     val isLoading: Boolean = true,
     val summary: ProgressSummaryDto? = null,
-    val error: String? = null,
+    val error: UiMessage? = null,
     /** True when the shown data came from the cache after a failed refresh. */
     val isStale: Boolean = false,
 ) {
@@ -75,7 +76,7 @@ class ProgressViewModel
                             // Keep cached data; only surface an error when there is nothing to show.
                             it.copy(
                                 isLoading = false,
-                                error = if (it.summary == null) result.error.toUserMessage() else null,
+                                error = if (it.summary == null) result.error.toUiMessage() else null,
                                 isStale = it.summary != null,
                             )
                         }

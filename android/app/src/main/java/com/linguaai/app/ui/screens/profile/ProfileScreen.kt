@@ -49,6 +49,7 @@ import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 private val DAILY_GOAL_OPTIONS = listOf(10, 15, 20, 30, 45, 60)
 private val REMINDER_HOURS = (6..22).toList()
@@ -99,7 +100,7 @@ private fun ProfileContent(
         // sign-out stays one tap away below the error.
         Column(modifier = modifier.fillMaxSize()) {
             ErrorState(
-                message = state.error,
+                message = state.error?.render().orEmpty(),
                 modifier = Modifier.fillMaxWidth(),
                 retryLabel = stringResource(R.string.common_retry),
                 onRetry = onRetry,
@@ -147,7 +148,7 @@ private fun ProfileContent(
 
         if (state.error != null) {
             Text(
-                text = state.error,
+                text = state.error.render(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = Spacing.md),

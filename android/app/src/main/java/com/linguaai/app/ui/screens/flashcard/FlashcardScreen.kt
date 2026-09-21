@@ -38,6 +38,7 @@ import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,18 +69,18 @@ fun FlashcardScreen(
                 EmptyState(
                     title =
                         when {
-                            state.error != null -> "Review is paused"
+                            state.error != null -> stringResource(R.string.flashcard_review_paused)
                             state.reviewedCount > 0 -> "Session complete"
                             else -> "Nothing due right now"
                         },
                     message =
-                        state.error
+                        state.error?.render()
                             ?: if (state.reviewedCount > 0) {
                                 "You reviewed ${state.reviewedCount} words. Come back later for the next batch."
                             } else {
                                 "All caught up. New words unlock as review times arrive."
                             },
-                    actionLabel = if (state.error != null) "Back" else "Done",
+                    actionLabel = if (state.error != null) stringResource(R.string.common_back) else stringResource(R.string.common_done),
                     onAction = onBack,
                     modifier = Modifier.padding(padding),
                 )

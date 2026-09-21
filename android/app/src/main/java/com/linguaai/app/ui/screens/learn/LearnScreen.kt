@@ -35,6 +35,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @Composable
 fun LearnScreen(
@@ -184,7 +185,7 @@ private fun ColumnScope.LessonList(
             EmptyState(
                 title = if (hasError) "Couldn't load lessons" else "Your lesson path is ready",
                 message =
-                    state.error
+                    state.error?.render()
                         ?: "Lessons for your level will appear here. Explore vocabulary while you wait.",
                 icon = Icons.AutoMirrored.Filled.MenuBook,
                 actionLabel = if (hasError) "Retry" else "Explore vocabulary",

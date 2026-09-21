@@ -2,6 +2,7 @@ package com.linguaai.app.ui.screens.flashcard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.local.dao.VocabularyDao
 import com.linguaai.app.data.local.entity.VocabularyEntity
@@ -13,6 +14,7 @@ import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.domain.srs.ReviewGrade
 import com.linguaai.app.domain.srs.ReviewScheduler
+import com.linguaai.app.ui.util.UiMessage
 import com.linguaai.app.work.ProgressEventRecorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +36,7 @@ data class FlashcardUiState(
     val reviewedCount: Int = 0,
     val isSubmittingGrade: Boolean = false,
     val finished: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 ) {
     val current: VocabularyCard? get() = queue.getOrNull(currentIndex)
 }
@@ -78,7 +80,7 @@ class FlashcardViewModel
                             isLoading = false,
                             queue = emptyList(),
                             finished = true,
-                            error = "We need your learning language before review can start.",
+                            error = UiMessage(R.string.msg_need_language_review),
                         )
                     }
                     return@launch

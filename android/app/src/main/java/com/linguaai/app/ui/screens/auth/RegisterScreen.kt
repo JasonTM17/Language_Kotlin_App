@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @Composable
 fun RegisterScreen(
@@ -137,9 +138,9 @@ internal fun RegisterContent(
                 modifier = Modifier.fillMaxWidth().padding(top = Spacing.md),
             )
 
-            state.formError?.let { message ->
+            state.formError?.let { error ->
                 Text(
-                    text = message,
+                    text = error.render(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = Spacing.md),

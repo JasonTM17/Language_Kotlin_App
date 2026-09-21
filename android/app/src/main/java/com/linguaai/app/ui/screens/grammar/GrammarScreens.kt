@@ -35,6 +35,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @Composable
 fun GrammarScreen(
@@ -59,7 +60,7 @@ fun GrammarScreen(
             state.items.isEmpty() ->
                 EmptyState(
                     title = stringResource(R.string.grammar_empty),
-                    message = state.error ?: "Grammar points for your level will appear here.",
+                    message = state.error?.render() ?: stringResource(R.string.grammar_list_empty_hint),
                     actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::refresh,
                     modifier = Modifier.weight(1f),
@@ -130,7 +131,7 @@ fun GrammarDetailScreen(
             state.grammar == null ->
                 EmptyState(
                     title = stringResource(R.string.grammar_unavailable),
-                    message = state.error ?: "This grammar point could not be loaded.",
+                    message = state.error?.render() ?: stringResource(R.string.grammar_detail_unloaded),
                     modifier = Modifier.padding(padding),
                 )
             else ->

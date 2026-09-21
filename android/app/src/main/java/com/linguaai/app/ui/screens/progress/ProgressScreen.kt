@@ -44,6 +44,7 @@ import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 /** The server reports quiz accuracy as a 0..1 ratio; the UI shows a percentage. */
 private const val PERCENT_SCALE = 100
@@ -105,7 +106,7 @@ private fun ProgressContent(
 
             summary == null && state.error != null ->
                 ErrorState(
-                    message = state.error,
+                    message = state.error.render(),
                     modifier = Modifier.padding(top = Spacing.lg),
                     retryLabel = "Try again",
                     onRetry = onRetry,

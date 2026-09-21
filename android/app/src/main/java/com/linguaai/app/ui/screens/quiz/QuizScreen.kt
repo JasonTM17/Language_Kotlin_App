@@ -39,6 +39,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 /** A result reads as strong work once this fraction of answers is correct. */
 private const val STRONG_WORK_FRACTION = 0.8f
@@ -81,7 +82,7 @@ fun QuizScreen(
             state.quiz == null ->
                 EmptyState(
                     title = stringResource(R.string.quiz_unavailable),
-                    message = state.error ?: stringResource(R.string.quiz_not_loaded),
+                    message = state.error?.render() ?: stringResource(R.string.quiz_not_loaded),
                     actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::load,
                     modifier = Modifier.padding(padding),
@@ -137,9 +138,9 @@ fun QuizScreen(
                             }
                         }
                     }
-                    state.error?.let {
+                    state.error?.let { error ->
                         Text(
-                            text = it,
+                            text = error.render(),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
                         )

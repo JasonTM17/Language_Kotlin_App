@@ -2,12 +2,14 @@ package com.linguaai.app.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.R
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.usecase.LoginUseCase
 import com.linguaai.app.domain.usecase.RegisterUseCase
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +32,7 @@ data class LoginUiState(
     val password: String = "",
     val emailError: String? = null,
     val passwordError: String? = null,
-    val formError: String? = null,
+    val formError: UiMessage? = null,
     val isLoading: Boolean = false,
 ) {
     val isSubmitEnabled: Boolean get() = !isLoading && email.isNotBlank() && password.isNotBlank()
@@ -109,9 +111,9 @@ class LoginViewModel
                     when (error.field) {
                         "email" -> copy(emailError = error.reason)
                         "password" -> copy(passwordError = error.reason)
-                        else -> copy(formError = error.reason)
+                        else -> copy(formError = UiMessage(R.string.err_validation_reason, error.reason))
                     }
-                else -> copy(formError = error.toUserMessage())
+                else -> copy(formError = error.toUiMessage())
             }
     }
 
@@ -122,7 +124,7 @@ data class RegisterUiState(
     val emailError: String? = null,
     val usernameError: String? = null,
     val passwordError: String? = null,
-    val formError: String? = null,
+    val formError: UiMessage? = null,
     val isLoading: Boolean = false,
 ) {
     val isSubmitEnabled: Boolean get() = !isLoading && email.isNotBlank() && username.isNotBlank() && password.isNotBlank()
@@ -199,8 +201,8 @@ class RegisterViewModel
                         "email" -> copy(emailError = error.reason)
                         "username" -> copy(usernameError = error.reason)
                         "password" -> copy(passwordError = error.reason)
-                        else -> copy(formError = error.reason)
+                        else -> copy(formError = UiMessage(R.string.err_validation_reason, error.reason))
                     }
-                else -> copy(formError = error.toUserMessage())
+                else -> copy(formError = error.toUiMessage())
             }
     }

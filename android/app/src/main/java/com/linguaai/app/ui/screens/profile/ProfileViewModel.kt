@@ -9,7 +9,8 @@ import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.data.session.SignOutCoordinator
 import com.linguaai.app.domain.model.AppResult
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import com.linguaai.app.work.WorkScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,7 +31,7 @@ data class ProfileUiState(
     val reminderMinute: Int = 0,
     val notificationsEnabled: Boolean = true,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val signedOut: Boolean = false,
 )
 
@@ -80,7 +81,7 @@ class ProfileViewModel
                         }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                            it.copy(isLoading = false, error = result.error.toUiMessage())
                         }
                 }
             }
@@ -107,7 +108,7 @@ class ProfileViewModel
                         }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isSaving = false, error = result.error.toUserMessage())
+                            it.copy(isSaving = false, error = result.error.toUiMessage())
                         }
                 }
             }

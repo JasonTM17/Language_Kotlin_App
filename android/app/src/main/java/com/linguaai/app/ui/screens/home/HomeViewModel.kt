@@ -9,7 +9,8 @@ import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,7 @@ data class HomeUiState(
     val streakDays: Int = 0,
     val dueVocabularyCount: Int = 0,
     val continueLesson: LessonSummaryDto? = null,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val isOffline: Boolean = false,
 )
 
@@ -67,7 +68,7 @@ class HomeViewModel
                     is AppResult.Failure ->
                         _uiState.update { state ->
                             state.copy(
-                                error = profileResult.error.toUserMessage(),
+                                error = profileResult.error.toUiMessage(),
                                 isOffline = profileResult.error == com.linguaai.app.domain.model.AppError.NetworkUnavailable,
                             )
                         }
@@ -108,7 +109,7 @@ class HomeViewModel
                     when (val refresh = learningContentRepository.refreshLessons(languageId, null)) {
                         is AppResult.Failure ->
                             if (_uiState.value.error == null) {
-                                _uiState.update { it.copy(error = refresh.error.toUserMessage()) }
+                                _uiState.update { it.copy(error = refresh.error.toUiMessage()) }
                             }
                         else -> Unit
                     }

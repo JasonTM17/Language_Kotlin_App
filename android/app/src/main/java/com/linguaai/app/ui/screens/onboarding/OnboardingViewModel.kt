@@ -8,7 +8,8 @@ import com.linguaai.app.data.remote.dto.UpdateProfileRequestDto
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +52,7 @@ data class OnboardingUiState(
     val languages: List<LanguageDto> = emptyList(),
     val isLoading: Boolean = false,
     val isSubmitting: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val selectedLanguageId: Long? = null,
     val selectedLevel: String? = null,
     val selectedGoal: String? = null,
@@ -102,7 +103,7 @@ class OnboardingViewModel
                         }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                            it.copy(isLoading = false, error = result.error.toUiMessage())
                         }
                 }
             }
@@ -159,7 +160,7 @@ class OnboardingViewModel
                     }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isSubmitting = false, error = result.error.toUserMessage())
+                            it.copy(isSubmitting = false, error = result.error.toUiMessage())
                         }
                 }
             }

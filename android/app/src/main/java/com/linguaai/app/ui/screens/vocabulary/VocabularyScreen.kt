@@ -40,6 +40,7 @@ import com.linguaai.app.ui.components.LinguaMascotPose
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @Composable
 fun VocabularyScreen(
@@ -112,7 +113,7 @@ fun VocabularyScreen(
                         } else {
                             stringResource(R.string.vocab_empty_no_matches)
                         },
-                    message = state.error ?: stringResource(R.string.vocab_empty_hint),
+                    message = state.error?.render() ?: stringResource(R.string.vocab_empty_hint),
                     actionLabel = stringResource(R.string.common_retry),
                     onAction = viewModel::refresh,
                     modifier = Modifier.weight(1f),

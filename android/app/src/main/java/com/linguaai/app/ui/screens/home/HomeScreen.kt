@@ -46,6 +46,7 @@ import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.render
 
 @Composable
 fun HomeScreen(
@@ -60,7 +61,7 @@ fun HomeScreen(
         state.isLoading -> LoadingIndicator()
         state.profile == null && state.error != null ->
             ErrorState(
-                message = state.error.orEmpty(),
+                message = state.error?.render().orEmpty(),
                 retryLabel = "Retry",
                 onRetry = viewModel::refresh,
             )
@@ -89,9 +90,9 @@ private fun HomeContent(
         ReviewCard(state.dueVocabularyCount, onStartReview)
         AiTutorCard(onOpenAiTutor)
 
-        state.error?.let { message ->
+        state.error?.let { error ->
             Text(
-                text = message,
+                text = error.render(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = Spacing.sm),

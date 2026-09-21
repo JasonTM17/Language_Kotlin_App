@@ -11,7 +11,8 @@ import com.linguaai.app.data.remote.dto.QuizSubmissionAnswerDto
 import com.linguaai.app.data.remote.dto.QuizSubmissionDto
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,7 @@ data class QuizUiState(
     val answers: Map<Long, String> = emptyMap(),
     val isSubmitting: Boolean = false,
     val result: QuizResultDto? = null,
-    val error: String? = null,
+    val error: UiMessage? = null,
 ) {
     val allAnswered: Boolean
         get() = quiz != null && answers.size == quiz!!.questions.size
@@ -68,7 +69,7 @@ class QuizViewModel
                     is AppResult.Success -> _uiState.update { it.copy(isLoading = false, quiz = result.data) }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                            it.copy(isLoading = false, error = result.error.toUiMessage())
                         }
                 }
             }
@@ -116,7 +117,7 @@ class QuizViewModel
                     }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isSubmitting = false, error = result.error.toUserMessage())
+                            it.copy(isSubmitting = false, error = result.error.toUiMessage())
                         }
                 }
             }

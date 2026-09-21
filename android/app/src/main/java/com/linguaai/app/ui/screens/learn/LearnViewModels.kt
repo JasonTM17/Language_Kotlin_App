@@ -2,6 +2,7 @@ package com.linguaai.app.ui.screens.learn
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.remote.dto.LessonDto
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
@@ -9,7 +10,8 @@ import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.ui.util.DEFAULT_LANGUAGE_LEVELS
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +38,7 @@ data class LearnUiState(
     val availableLevels: List<String> = DEFAULT_LANGUAGE_LEVELS,
     val selectedLevel: String? = null,
     val isOffline: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val languageId: Long? = null,
     val firstQuizId: Long? = null,
 )
@@ -93,7 +95,7 @@ class LearnViewModel
                     _uiState.update {
                         it.copy(
                             isOffline = refresh.error == com.linguaai.app.domain.model.AppError.NetworkUnavailable,
-                            error = refresh.error.toUserMessage(),
+                            error = refresh.error.toUiMessage(),
                         )
                     }
                 else -> _uiState.update { it.copy(isOffline = false, error = null) }
@@ -130,7 +132,7 @@ class LearnViewModel
                     isLoading = false,
                     lessons = emptyList(),
                     languageId = null,
-                    error = "Choose a learning language before opening lessons.",
+                    error = UiMessage(R.string.msg_need_language_lessons),
                 )
             }
         }
@@ -152,7 +154,7 @@ data class LessonDetailUiState(
     val isLoading: Boolean = true,
     val lesson: LessonDto? = null,
     val completed: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 @HiltViewModel
@@ -179,7 +181,7 @@ class LessonDetailViewModel
                     is AppResult.Success -> _uiState.update { it.copy(isLoading = false, lesson = result.data) }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, error = result.error.toUserMessage())
+                            it.copy(isLoading = false, error = result.error.toUiMessage())
                         }
                 }
             }

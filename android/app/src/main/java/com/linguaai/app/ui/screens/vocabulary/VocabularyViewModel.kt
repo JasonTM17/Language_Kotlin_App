@@ -2,6 +2,7 @@ package com.linguaai.app.ui.screens.vocabulary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
@@ -9,7 +10,8 @@ import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.ui.util.DEFAULT_LANGUAGE_LEVELS
-import com.linguaai.app.ui.util.toUserMessage
+import com.linguaai.app.ui.util.UiMessage
+import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -35,7 +37,7 @@ data class VocabularyUiState(
     val query: String = "",
     val selectedLevel: String? = null,
     val isOffline: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 sealed interface VocabularyEvent {
@@ -79,7 +81,7 @@ class VocabularyViewModel
                         it.copy(
                             isLoading = false,
                             vocabulary = emptyList(),
-                            error = "Choose a learning language before exploring vocabulary.",
+                            error = UiMessage(R.string.msg_need_language_vocab),
                         )
                     }
                     return@launch
@@ -130,7 +132,7 @@ class VocabularyViewModel
                         it.copy(
                             isLoading = false,
                             vocabulary = emptyList(),
-                            error = "Choose a learning language before exploring vocabulary.",
+                            error = UiMessage(R.string.msg_need_language_vocab),
                         )
                     }
                     return@launch
@@ -147,7 +149,7 @@ class VocabularyViewModel
                 ) {
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isOffline = result.error == AppError.NetworkUnavailable, error = result.error.toUserMessage())
+                            it.copy(isOffline = result.error == AppError.NetworkUnavailable, error = result.error.toUiMessage())
                         }
                     else -> _uiState.update { it.copy(isOffline = false, error = null) }
                 }

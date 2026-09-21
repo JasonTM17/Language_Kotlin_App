@@ -125,6 +125,14 @@
     <string name="err_server">The server is having trouble. Please try again later.</string>
     <string name="err_ai_unavailable">The AI tutor is unavailable right now. Please try again later.</string>
     <string name="err_unknown">Something went wrong. Please try again.</string>
+    <string name="msg_need_language_review">We need your learning language before review can start.</string>
+    <string name="msg_need_language_grammar">Choose a learning language before opening grammar.</string>
+    <string name="msg_need_language_lessons">Choose a learning language before opening lessons.</string>
+    <string name="msg_need_language_vocab">Choose a learning language before exploring vocabulary.</string>
+    <string name="flashcard_review_paused">Review is paused</string>
+    <string name="grammar_list_empty_hint">Grammar points for your level will appear here.</string>
+    <string name="grammar_detail_unloaded">This grammar point could not be loaded.</string>
+    <string name="lesson_unavailable">Lesson unavailable</string>
 
     <!-- Learn -->
     <string name="learn_title">Learn</string>
