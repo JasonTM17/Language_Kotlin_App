@@ -102,6 +102,8 @@
     <string name="chat_tutor_available">Sẵn sàng giúp đỡ</string>
     <string name="chat_generating">Đang trả lời…</string>
     <string name="chat_stop">Dừng</string>
+    <string name="chat_a11y_tutor">Gia sư AI</string>
+    <string name="chat_a11y_you">Bạn</string>
     <string name="chat_scroll_to_bottom">Cuộn xuống tin nhắn mới nhất</string>
     <string name="chat_open_source">Mở %1$s</string>
     <string name="chat_offline_send">Gia sư AI cần kết nối internet. Bài học của bạn vẫn xem được ngoại tuyến.</string>

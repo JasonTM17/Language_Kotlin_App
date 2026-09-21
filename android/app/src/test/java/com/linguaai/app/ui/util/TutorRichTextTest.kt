@@ -1,6 +1,7 @@
 package com.linguaai.app.ui.util
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,5 +98,25 @@ class TutorRichTextTest {
 
         assertEquals("Use ので/から after a plain reason clause.", line.text.text)
         assertTrue(line.text.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `spoken text drops the markers the learner never sees`() {
+        val spoken =
+            tutorPlainText(
+                "**Corrected:** 行きませんでした。\n\n" +
+                    "- marked the topic\n\n" +
+                    "Try `ので`.",
+            )
+
+        assertEquals("Corrected: 行きませんでした。\nmarked the topic\nTry ので.", spoken)
+    }
+
+    @Test
+    fun `spoken text keeps a fenced block's content`() {
+        val spoken = tutorPlainText("before\n```\n私はパンを食べます\n```\nafter")
+
+        assertTrue(spoken.contains("私はパンを食べます"))
+        assertFalse("the fence itself is not speech", spoken.contains("```"))
     }
 }

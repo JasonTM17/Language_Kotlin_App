@@ -42,6 +42,23 @@ sealed interface TutorBlock {
 
 private val BULLET_MARKERS = listOf("- ", "* ", "• ")
 
+/**
+ * The reply as it should be spoken: markers resolved, blocks joined.
+ *
+ * A screen reader cannot see which bubble is coral and which is aligned right,
+ * so the sender has to be named in the text instead.
+ */
+fun tutorPlainText(source: String): String =
+    parseTutorMarkdown(source)
+        .mapNotNull { block ->
+            when (block) {
+                is TutorBlock.Line -> block.text.text
+                is TutorBlock.Bullet -> block.text.text
+                is TutorBlock.Code -> block.text
+                TutorBlock.Blank -> null
+            }
+        }.joinToString("\n")
+
 fun parseTutorMarkdown(source: String): List<TutorBlock> {
     val blocks = mutableListOf<TutorBlock>()
     val fence = StringBuilder()

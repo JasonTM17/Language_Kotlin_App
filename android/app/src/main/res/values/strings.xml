@@ -102,6 +102,8 @@
     <string name="chat_tutor_available">Ready to help</string>
     <string name="chat_generating">Writing…</string>
     <string name="chat_stop">Stop</string>
+    <string name="chat_a11y_tutor">Tutor</string>
+    <string name="chat_a11y_you">You</string>
     <string name="chat_scroll_to_bottom">Scroll to latest message</string>
     <string name="chat_open_source">Open %1$s</string>
     <string name="chat_offline_send">The AI tutor needs an internet connection. Your lessons stay available offline.</string>

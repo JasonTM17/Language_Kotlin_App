@@ -25,6 +25,7 @@ import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.ui.theme.LinguaAiTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -210,6 +211,12 @@ class AiChatScreenTest {
             true,
             spoken.contains("Corrected") && spoken.contains("marked the topic") && head.id == body.id,
         )
+
+        // The announcement names the sender and carries no literal markdown.
+        val described = head.config[SemanticsProperties.ContentDescription].joinToString(" ")
+        assertTrue("got: $described", described.startsWith("Tutor."))
+        assertTrue("got: $described", described.contains("Corrected: 学校に行きませんでした"))
+        assertFalse("markdown must not reach the announcement: $described", described.contains("**"))
     }
 
     @Test

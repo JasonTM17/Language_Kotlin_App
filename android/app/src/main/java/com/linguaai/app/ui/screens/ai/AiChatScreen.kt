@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -85,6 +86,7 @@ import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.TutorRichText
 import com.linguaai.app.ui.util.asUserMessage
+import com.linguaai.app.ui.util.tutorPlainText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -633,6 +635,9 @@ private fun MessageBubble(
     onOpenSource: (AiSourceDto) -> Unit,
 ) {
     val isUser = message.role == "USER"
+    // Colour and alignment say who is speaking; a screen reader gets neither,
+    // so the sender is named in the announcement instead.
+    val senderLabel = stringResource(if (isUser) R.string.chat_a11y_you else R.string.chat_a11y_tutor)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
@@ -674,6 +679,10 @@ private fun MessageBubble(
                         text = message.content,
                         style = MaterialTheme.typography.bodyMedium,
                         color = BrandGradients.OnHero,
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = "$senderLabel. ${message.content}"
+                            },
                     )
                 } else {
                     TutorRichText(
@@ -684,7 +693,9 @@ private fun MessageBubble(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .semantics(mergeDescendants = true) {},
+                                .semantics(mergeDescendants = true) {
+                                    contentDescription = "$senderLabel. ${tutorPlainText(message.content)}"
+                                },
                     )
                 }
                 if (!isUser && message.sources.isNotEmpty()) {
