@@ -195,7 +195,18 @@ private fun NavGraphBuilder.aiGraph(navController: NavHostController) {
     }
     composable<AiChatRoute> { entry ->
         com.linguaai.app.ui.screens.ai
-            .AiChatScreen(onBack = { navController.popBackStack() })
+            .AiChatScreen(
+                onBack = { navController.popBackStack() },
+                onOpenSource = { source ->
+                    // A citation is only actionable where a detail route exists;
+                    // vocabulary hits carry an id the app has no screen for.
+                    when (source.sourceType) {
+                        "LESSON" -> navController.navigate(LessonDetailRoute(source.sourceId))
+                        "GRAMMAR" -> navController.navigate(GrammarDetailRoute(source.sourceId))
+                        else -> Unit
+                    }
+                },
+            )
     }
 }
 

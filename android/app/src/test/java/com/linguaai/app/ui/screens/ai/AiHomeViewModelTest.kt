@@ -6,7 +6,6 @@ import com.linguaai.app.data.remote.dto.AiChatResponseDto
 import com.linguaai.app.data.remote.dto.AiConversationDto
 import com.linguaai.app.data.remote.dto.AiMessageDto
 import com.linguaai.app.data.remote.dto.CorrectRequestDto
-import com.linguaai.app.data.remote.dto.ExplainRequestDto
 import com.linguaai.app.data.remote.dto.GenerateQuizRequestDto
 import com.linguaai.app.data.remote.dto.GeneratedQuizDto
 import com.linguaai.app.data.remote.dto.PracticeReplyRequestDto
@@ -81,9 +80,6 @@ class AiHomeViewModelTest {
 
         override suspend fun chat(body: AiChatRequestDto): Response<AiChatResponseDto> =
             Response.success(AiChatResponseDto(1, "answer", body.mode))
-
-        override suspend fun explain(body: ExplainRequestDto): Response<AiChatResponseDto> =
-            Response.success(AiChatResponseDto(1, "answer", "grammar-explain"))
 
         override suspend fun correct(body: CorrectRequestDto): Response<AiChatResponseDto> =
             Response.success(AiChatResponseDto(1, "answer", "sentence-correction"))

@@ -3,6 +3,7 @@ package com.linguaai.app.data.remote
 import com.linguaai.app.data.remote.dto.ApiErrorEnvelopeDto
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import retrofit2.Response
@@ -22,10 +23,15 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): AppResult<T> =
         } else if (response.isSuccessful) {
             AppResult.Failure(AppError.Unknown)
         } else {
-            AppResult.Failure(toAppError(response.code(), response.errorBody()?.string()))
+            AppResult.Failure(toAppError(response.code(), response.errorBody()?.string(), response.headers()["Retry-After"]))
         }
     } catch (e: HttpException) {
         AppResult.Failure(toAppError(e.code(), null))
+    } catch (e: CancellationException) {
+        // A caller that cancels a request (the tutor's stop action) must see the
+        // cancellation propagate, not a synthetic failure that then rewrites the
+        // transcript the caller has already rolled back.
+        throw e
     } catch (e: IOException) {
         // Losing connectivity is expected, not exceptional, so this is logged at
         // debug level: the exception still reaches the log instead of being
@@ -67,11 +73,13 @@ private val envelopeJson = Json { ignoreUnknownKeys = true }
 fun toAppError(
     httpCode: Int,
     rawErrorBody: String?,
+    retryAfterHeader: String? = null,
 ): AppError {
     val serverCode = serverErrorCode(rawErrorBody)
     return when {
         matches(serverCode, httpCode, CODE_INVALID_CREDENTIALS, HTTP_UNAUTHORIZED) -> AppError.Unauthorized
-        matches(serverCode, httpCode, CODE_RATE_LIMITED, HTTP_RATE_LIMITED) -> AppError.RateLimited
+        matches(serverCode, httpCode, CODE_RATE_LIMITED, HTTP_RATE_LIMITED) ->
+            AppError.RateLimited(retryAfterSeconds = retryAfterHeader?.trim()?.toLongOrNull())
         matches(serverCode, httpCode, CODE_CONFLICT, HTTP_CONFLICT) -> AppError.Conflict
         isValidation(serverCode, httpCode) -> AppError.Validation(reason = serverMessage(rawErrorBody))
         httpCode == HTTP_FORBIDDEN -> AppError.Forbidden

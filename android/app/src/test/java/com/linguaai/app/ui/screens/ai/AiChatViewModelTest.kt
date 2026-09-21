@@ -9,7 +9,6 @@ import com.linguaai.app.data.remote.dto.AiChatResponseDto
 import com.linguaai.app.data.remote.dto.AiConversationDto
 import com.linguaai.app.data.remote.dto.AiMessageDto
 import com.linguaai.app.data.remote.dto.CorrectRequestDto
-import com.linguaai.app.data.remote.dto.ExplainRequestDto
 import com.linguaai.app.data.remote.dto.GenerateQuizRequestDto
 import com.linguaai.app.data.remote.dto.GeneratedQuizDto
 import com.linguaai.app.data.remote.dto.PracticeReplyRequestDto
@@ -28,6 +27,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +38,74 @@ import java.util.ArrayDeque
 class AiChatViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    /**
+     * Regression for the tutor-amnesia bug: the grammar, lesson and mistakes
+     * entries pass a content id as their route argument, so resuming with that
+     * id made the server open a brand new conversation on every turn and the
+     * learner's previous message was never sent again.
+     */
+    @Test
+    fun `grammar explain resumes the conversation the server handed back`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            val viewModel = viewModel(mode = "grammar-explain", conversationId = 99, api = api)
+            advanceUntilIdle()
+
+            viewModel.onInputChanged("first question")
+            viewModel.send()
+            advanceUntilIdle()
+
+            viewModel.onInputChanged("follow-up question")
+            viewModel.send()
+            advanceUntilIdle()
+
+            assertEquals(2, api.chatRequests.size)
+            assertNull(api.chatRequests[0].conversationId)
+            assertEquals(11L, api.chatRequests[1].conversationId)
+        }
+
+    @Test
+    fun `lesson context and mistakes modes both carry the conversation forward`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            for (mode in listOf("lesson-context", "mistakes")) {
+                val api = FakeAiApi()
+                val viewModel = viewModel(mode = mode, conversationId = 7, api = api)
+                advanceUntilIdle()
+
+                viewModel.onInputChanged("one")
+                viewModel.send()
+                advanceUntilIdle()
+                viewModel.onInputChanged("two")
+                viewModel.send()
+                advanceUntilIdle()
+
+                assertEquals(2, api.chatRequests.size)
+                assertEquals("second turn must reuse the server id for $mode", 11L, api.chatRequests[1].conversationId)
+            }
+        }
+
+    @Test
+    fun `stopping a reply withdraws the pending bubble and re-enables the composer`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val api = FakeAiApi()
+            api.chatGate = CompletableDeferred()
+            val viewModel = viewModel(api = api)
+            advanceUntilIdle()
+
+            viewModel.onInputChanged("hello")
+            viewModel.send()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isSending)
+
+            viewModel.stop()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isSending)
+            assertTrue(state.messages.none { it.isPending })
+            assertEquals(listOf("USER"), state.messages.map { it.role })
+        }
 
     @Test
     fun `sentence correction uses the dedicated endpoint`() =
@@ -317,12 +385,14 @@ class AiChatViewModelTest {
     private class FakeAiApi : AiApi {
         val calls = mutableListOf<String>()
         val correctRequests = mutableListOf<CorrectRequestDto>()
+        val chatRequests = mutableListOf<AiChatRequestDto>()
         val practiceStarts = mutableListOf<PracticeStartRequestDto>()
         val practiceReplies = mutableListOf<Pair<Long, PracticeReplyRequestDto>>()
         val practiceScores = mutableListOf<Long>()
         val chatResponses = ArrayDeque<Response<AiChatResponseDto>>()
         var messagesResponse: Response<List<AiMessageDto>> = Response.success(emptyList())
         var messagesGate: CompletableDeferred<Unit>? = null
+        var chatGate: CompletableDeferred<Unit>? = null
 
         override suspend fun conversations(): Response<List<AiConversationDto>> = Response.success(emptyList())
 
@@ -334,16 +404,13 @@ class AiChatViewModelTest {
 
         override suspend fun chat(body: AiChatRequestDto): Response<AiChatResponseDto> {
             calls += "chat"
+            chatRequests += body
+            chatGate?.await()
             return if (chatResponses.isEmpty()) {
                 Response.success(AiChatResponseDto(11, "chat answer", body.mode))
             } else {
                 chatResponses.removeFirst()
             }
-        }
-
-        override suspend fun explain(body: ExplainRequestDto): Response<AiChatResponseDto> {
-            calls += "explain"
-            return Response.success(AiChatResponseDto(21, "explanation", "grammar-explain"))
         }
 
         override suspend fun correct(body: CorrectRequestDto): Response<AiChatResponseDto> {

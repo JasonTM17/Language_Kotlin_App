@@ -1,6 +1,8 @@
 package com.linguaai.app.ui.screens.ai
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -29,7 +32,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -37,7 +42,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -49,12 +53,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -66,12 +72,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
+import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaMascot
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.TutorRichText
+import com.linguaai.app.ui.util.messageRes
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * The role-play mode. It is the only mode with a scoring action, and the only
@@ -93,10 +104,14 @@ private const val MAX_VISIBLE_SOURCES = 4
 
 private const val SOURCE_TITLE_MAX_LENGTH = 32
 
+/** RoundedCornerShape takes a percentage; 50 gives a pill. */
+private const val PILL_PERCENT = 50
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiChatScreen(
     onBack: () -> Unit,
+    onOpenSource: (AiSourceDto) -> Unit,
     viewModel: AiChatViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -107,6 +122,8 @@ fun AiChatScreen(
         onSend = viewModel::send,
         onRetry = viewModel::retry,
         onScorePractice = viewModel::scorePractice,
+        onStop = viewModel::stop,
+        onOpenSource = onOpenSource,
         onBack = onBack,
     )
 }
@@ -119,6 +136,8 @@ fun AiChatContent(
     onSend: () -> Unit,
     onRetry: () -> Unit,
     onScorePractice: () -> Unit,
+    onStop: () -> Unit,
+    onOpenSource: (AiSourceDto) -> Unit,
     onBack: () -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -132,7 +151,9 @@ fun AiChatContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(chatTitle(state.mode))) },
+                title = {
+                    ChatHeader(mode = state.mode)
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -153,14 +174,32 @@ fun AiChatContent(
         ) {
             OfflineBanner(
                 visible = state.isOffline,
+                message = stringResource(R.string.state_offline_banner),
                 modifier = Modifier.padding(horizontal = Spacing.md),
             )
-            ChatTranscript(
-                state = state,
-                listState = listState,
-                onRetry = onRetry,
-                onUsePrompt = onInputChanged,
-            )
+            if (state.offlineSendNotice) {
+                NoticeBanner(
+                    text = stringResource(R.string.chat_offline_send),
+                    modifier = Modifier.padding(horizontal = Spacing.md),
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                ChatTranscript(
+                    state = state,
+                    listState = listState,
+                    onRetry = onRetry,
+                    onUsePrompt = onInputChanged,
+                    onStop = onStop,
+                    onOpenSource = onOpenSource,
+                )
+                ScrollToBottomButton(
+                    listState = listState,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = Spacing.md, bottom = Spacing.sm),
+                )
+            }
             if (state.mode == CONVERSATION_PRACTICE_MODE && state.conversationId != null) {
                 PracticeScoreAction(state = state, onScorePractice = onScorePractice)
             }
@@ -169,26 +208,42 @@ fun AiChatContent(
     }
 }
 
+@Composable
+private fun ChatHeader(mode: String) {
+    Column {
+        Text(
+            text = stringResource(chatModeTitleRes(mode)),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.chat_tutor_available),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 /** The scrolling transcript, and the loading, empty and error states it can be in. */
 @Composable
-private fun ColumnScope.ChatTranscript(
+private fun ChatTranscript(
     state: AiChatUiState,
     listState: LazyListState,
     onRetry: () -> Unit,
     onUsePrompt: (String) -> Unit,
+    onStop: () -> Unit,
+    onOpenSource: (AiSourceDto) -> Unit,
 ) {
     Box(
         modifier =
             Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxSize(),
     ) {
         when {
             state.isLoading -> LoadingIndicator()
             state.messages.isEmpty() && state.error != null ->
                 ErrorState(
-                    message = state.error.orEmpty(),
-                    retryLabel = "Retry",
+                    message = errorMessage(state.error),
+                    retryLabel = stringResource(R.string.common_retry),
                     retryModifier = Modifier.testTag("ai-chat-retry"),
                     onRetry = onRetry,
                 )
@@ -203,23 +258,18 @@ private fun ColumnScope.ChatTranscript(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     items(state.messages) { message ->
-                        MessageBubble(message)
+                        MessageBubble(
+                            message = message,
+                            onStop = onStop,
+                            onOpenSource = onOpenSource,
+                        )
                     }
-                    if (state.error != null) {
+                    state.error?.let { error ->
                         item {
-                            Column {
-                                Text(
-                                    text = state.error.orEmpty(),
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                                TextButton(
-                                    onClick = onRetry,
-                                    modifier = Modifier.testTag("ai-chat-retry"),
-                                ) {
-                                    Text(stringResource(R.string.common_retry))
-                                }
-                            }
+                            ErrorNotice(
+                                error = error,
+                                onRetry = onRetry,
+                            )
                         }
                     }
                     state.practiceScore?.let { score ->
@@ -227,6 +277,118 @@ private fun ColumnScope.ChatTranscript(
                     }
                 }
         }
+    }
+}
+
+/** Resolve an [AppError] into user-facing copy; only the view has resources. */
+@Composable
+private fun errorMessage(error: AppError?): String {
+    if (error == null) return ""
+    return when {
+        error is AppError.Validation && !error.reason.isNullOrBlank() ->
+            stringResource(R.string.err_validation_reason, error.reason.orEmpty())
+        else -> stringResource(error.messageRes())
+    }
+}
+
+@Composable
+private fun ErrorNotice(
+    error: AppError,
+    onRetry: () -> Unit,
+) {
+    val retryAfter = (error as? AppError.RateLimited)?.retryAfterSeconds
+    var secondsLeft by remember(error) { mutableStateOf(retryAfter ?: 0L) }
+    LaunchedEffect(secondsLeft) {
+        while (secondsLeft > 0L) {
+            delay(1000L)
+            secondsLeft -= 1L
+        }
+    }
+
+    Column {
+        if (error is AppError.RateLimited) {
+            NoticeBanner(
+                text =
+                    if (secondsLeft > 0L) {
+                        stringResource(R.string.err_rate_limited) + " " +
+                            stringResource(R.string.chat_retry_in, secondsLeft)
+                    } else {
+                        stringResource(R.string.err_rate_limited)
+                    },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        } else {
+            Text(
+                text = errorMessage(error),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        TextButton(
+            onClick = onRetry,
+            modifier = Modifier.testTag("ai-chat-retry"),
+        ) {
+            Text(
+                if (error is AppError.RateLimited && secondsLeft > 0L) {
+                    stringResource(R.string.chat_retry_now)
+                } else {
+                    stringResource(R.string.common_retry)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoticeBanner(
+    text: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer,
+) {
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = MaterialTheme.shapes.small,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        )
+    }
+}
+
+/** Appears only once the learner has scrolled away from the newest message. */
+@Composable
+private fun ScrollToBottomButton(
+    listState: LazyListState,
+    modifier: Modifier = Modifier,
+) {
+    val scope = rememberCoroutineScope()
+    if (!listState.canScrollForward) return
+    FilledIconButton(
+        onClick = { scope.launch { listState.scrollToItem(Int.MAX_VALUE) } },
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+        modifier =
+            modifier
+                .size(40.dp)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
+                    shape = MaterialTheme.shapes.small,
+                ).testTag("ai-chat-scroll-bottom"),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.ExpandMore,
+            contentDescription = stringResource(R.string.chat_scroll_to_bottom),
+        )
     }
 }
 
@@ -408,11 +570,12 @@ private fun PracticeScoreCard(score: PracticeScoreDto) {
     }
 }
 
-private fun chatTitle(mode: String): Int =
+internal fun chatModeTitleRes(mode: String): Int =
     when (mode) {
         CONVERSATION_PRACTICE_MODE -> R.string.chat_title_practice
         "sentence-correction" -> R.string.chat_title_correction
         "grammar-explain" -> R.string.chat_title_grammar
+        "lesson-context" -> R.string.chat_title_lesson
         "mistakes" -> R.string.chat_title_mistakes
         else -> R.string.chat_title_tutor
     }
@@ -432,9 +595,12 @@ private fun chatPlaceholder(
         else -> stringResource(R.string.chat_hint_general)
     }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MessageBubble(message: ChatMessage) {
+private fun MessageBubble(
+    message: ChatMessage,
+    onStop: () -> Unit,
+    onOpenSource: (AiSourceDto) -> Unit,
+) {
     val isUser = message.role == "USER"
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -451,34 +617,97 @@ private fun MessageBubble(message: ChatMessage) {
             modifier =
                 Modifier
                     .widthIn(max = 320.dp)
-                    .shadow(elevation = 1.dp, shape = bubbleShape, clip = false)
                     .clip(bubbleShape)
-                    .background(
+                    .then(
                         if (isUser) {
-                            BrandGradients.AccentPill
+                            Modifier.background(BrandGradients.AccentPill)
                         } else {
-                            SolidColor(MaterialTheme.colorScheme.surfaceVariant)
+                            // The Stitch spec replaces the grey fill with an ivory
+                            // card and a hairline so long tutor answers read as text,
+                            // not as a tinted block.
+                            Modifier
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                                    shape = bubbleShape,
+                                )
                         },
                     ).padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
             Column {
                 if (message.isPending) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = if (isUser) BrandGradients.OnHero else LocalContentColor.current,
-                    )
-                } else {
+                    PendingReply(onStop = onStop)
+                } else if (isUser) {
                     Text(
                         text = message.content,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isUser) BrandGradients.OnHero else Color.Unspecified,
+                        color = BrandGradients.OnHero,
+                    )
+                } else {
+                    TutorRichText(
+                        content = message.content,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 if (!isUser && message.sources.isNotEmpty()) {
-                    SourceChips(message.sources)
+                    SourceChips(
+                        sources = message.sources,
+                        onOpenSource = onOpenSource,
+                    )
                 }
             }
+        }
+    }
+}
+
+/** The in-flight state: the tutor is visibly working, and can be interrupted. */
+@Composable
+private fun PendingReply(onStop: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = stringResource(R.string.chat_generating),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(Spacing.sm))
+        TextSurfaceButton(
+            label = stringResource(R.string.chat_stop),
+            icon = Icons.Filled.Stop,
+            onClick = onStop,
+            modifier = Modifier.testTag("ai-chat-stop"),
+        )
+    }
+}
+
+@Composable
+private fun TextSurfaceButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+        shape = RoundedCornerShape(PILL_PERCENT),
+        modifier = modifier.clickable(onClick = onClick),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -486,7 +715,10 @@ private fun MessageBubble(message: ChatMessage) {
 /** Retrieved course-corpus citations rendered under an assistant reply. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SourceChips(sources: List<AiSourceDto>) {
+private fun SourceChips(
+    sources: List<AiSourceDto>,
+    onOpenSource: (AiSourceDto) -> Unit,
+) {
     Text(
         text = stringResource(R.string.chat_grounded),
         style = MaterialTheme.typography.labelSmall,
@@ -496,18 +728,47 @@ private fun SourceChips(sources: List<AiSourceDto>) {
     FlowRow(
         modifier = Modifier.padding(top = Spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         sources.take(MAX_VISIBLE_SOURCES).forEach { source ->
-            SourceChip(source)
+            SourceChip(source = source, onOpenSource = onOpenSource)
         }
     }
 }
 
+/**
+ * A citation the learner can act on. Vocabulary hits stay inert because the
+ * vocabulary destination carries no id, so there is nothing to open.
+ */
 @Composable
-private fun SourceChip(source: AiSourceDto) {
+private fun SourceChip(
+    source: AiSourceDto,
+    onOpenSource: (AiSourceDto) -> Unit,
+) {
+    val clickable = source.sourceType == "LESSON" || source.sourceType == "GRAMMAR"
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.small,
+        modifier =
+            Modifier
+                .then(
+                    if (clickable) {
+                        Modifier
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                shape = MaterialTheme.shapes.small,
+                            ).clickable { onOpenSource(source) }
+                            .testTag("ai-chat-source")
+                    } else {
+                        Modifier
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                                shape = MaterialTheme.shapes.small,
+                            )
+                    },
+                ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -527,6 +788,20 @@ private fun SourceChip(source: AiSourceDto) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = Spacing.xs),
             )
+            source.level?.let { level ->
+                Spacer(modifier = Modifier.width(Spacing.xs))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(PILL_PERCENT),
+                ) {
+                    Text(
+                        text = level,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                    )
+                }
+            }
         }
     }
 }

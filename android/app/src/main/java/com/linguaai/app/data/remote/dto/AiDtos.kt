@@ -49,12 +49,6 @@ data class AiMessageDto(
 )
 
 @Serializable
-data class ExplainRequestDto(
-    val grammarId: Long? = null,
-    val text: String? = null,
-)
-
-@Serializable
 data class CorrectRequestDto(
     val sentence: String,
     val conversationId: Long? = null,

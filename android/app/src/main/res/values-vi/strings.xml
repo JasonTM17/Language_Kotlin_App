@@ -98,6 +98,29 @@
     <string name="chat_score_breakdown">Ngữ pháp %1$d · Từ vựng %2$d · Tự nhiên %3$d</string>
     <string name="chat_needs_work">Cần cải thiện: %1$s</string>
     <string name="chat_next">Gợi ý: %1$s</string>
+    <string name="chat_title_lesson">Hỗ trợ bài học</string>
+    <string name="chat_tutor_available">Sẵn sàng giúp đỡ</string>
+    <string name="chat_generating">Đang trả lời…</string>
+    <string name="chat_stop">Dừng</string>
+    <string name="chat_scroll_to_bottom">Cuộn xuống tin nhắn mới nhất</string>
+    <string name="chat_open_source">Mở %1$s</string>
+    <string name="chat_offline_send">Gia sư AI cần kết nối internet. Bài học của bạn vẫn xem được ngoại tuyến.</string>
+    <string name="chat_retry_now">Thử lại ngay</string>
+    <string name="chat_retry_in">Thử lại sau %1$d giây</string>
+    <string name="ai_home_generated_quiz">Đề đã tạo</string>
+    <string name="ai_home_preparing_quiz">Đang chuẩn bị đề…</string>
+    <string name="ai_home_answer">Đáp án: %1$s</string>
+    <string name="err_network">Không có kết nối internet. Dữ liệu học tập của bạn vẫn khả dụng ngoại tuyến.</string>
+    <string name="err_unauthorized">Email hoặc mật khẩu không đúng.</string>
+    <string name="err_forbidden">Bạn không có quyền truy cập nội dung này.</string>
+    <string name="err_not_found">Không tìm thấy nội dung yêu cầu.</string>
+    <string name="err_validation">Vui lòng kiểm tra lại thông tin đã nhập.</string>
+    <string name="err_validation_reason">Vui lòng kiểm tra lại thông tin đã nhập: %1$s</string>
+    <string name="err_conflict">Email này đã được đăng ký.</string>
+    <string name="err_rate_limited">Bạn gửi quá nhiều yêu cầu. Vui lòng đợi một lát rồi thử lại.</string>
+    <string name="err_server">Máy chủ đang gặp sự cố. Vui lòng thử lại sau.</string>
+    <string name="err_ai_unavailable">Gia sư AI hiện không khả dụng. Vui lòng thử lại sau.</string>
+    <string name="err_unknown">Đã xảy ra lỗi. Vui lòng thử lại.</string>
 
     <!-- Learn -->
     <string name="learn_title">Học</string>

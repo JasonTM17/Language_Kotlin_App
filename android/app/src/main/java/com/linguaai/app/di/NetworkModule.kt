@@ -29,7 +29,14 @@ object NetworkModule {
      * because an AI turn on the server can legitimately take a while.
      */
     private const val CONNECT_TIMEOUT_SECONDS = 15L
-    private const val READ_TIMEOUT_SECONDS = 30L
+
+    /**
+     * Must stay above the server's `AI_TIMEOUT_SECONDS` (60 by default). A
+     * shorter read timeout made OkHttp abort a tutor turn that the server was
+     * still completing successfully, which surfaced a saved answer as "no
+     * internet connection" and duplicated the exchange when the learner retried.
+     */
+    private const val READ_TIMEOUT_SECONDS = 75L
 
     private val json =
         Json {

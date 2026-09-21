@@ -5,7 +5,6 @@ import com.linguaai.app.data.remote.dto.AiChatResponseDto
 import com.linguaai.app.data.remote.dto.AiConversationDto
 import com.linguaai.app.data.remote.dto.AiMessageDto
 import com.linguaai.app.data.remote.dto.CorrectRequestDto
-import com.linguaai.app.data.remote.dto.ExplainRequestDto
 import com.linguaai.app.data.remote.dto.GenerateQuizRequestDto
 import com.linguaai.app.data.remote.dto.GeneratedQuizDto
 import com.linguaai.app.data.remote.dto.PracticeReplyRequestDto
@@ -29,11 +28,6 @@ interface AiApi {
     @POST("ai/chat")
     suspend fun chat(
         @Body body: AiChatRequestDto,
-    ): Response<AiChatResponseDto>
-
-    @POST("ai/explain")
-    suspend fun explain(
-        @Body body: ExplainRequestDto,
     ): Response<AiChatResponseDto>
 
     @POST("ai/correct")

@@ -21,7 +21,14 @@ sealed interface AppError {
 
     data object Conflict : AppError
 
-    data object RateLimited : AppError
+    /**
+     * Rate limited. [retryAfterSeconds] carries the server's `Retry-After`
+     * grant when it sent one; the tutor's busy responses always do, and the
+     * composer countdown is the only reason the learner has to wait knowingly.
+     */
+    data class RateLimited(
+        val retryAfterSeconds: Long? = null,
+    ) : AppError
 
     data object ServerError : AppError
 

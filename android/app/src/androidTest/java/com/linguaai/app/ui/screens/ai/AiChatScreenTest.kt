@@ -14,9 +14,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
+import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.ui.theme.LinguaAiTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -79,15 +82,105 @@ class AiChatScreenTest {
 
         composeRule.setContent {
             TestChatContent(
-                state = AiChatUiState(isLoading = false, error = "Provider timed out"),
+                state = AiChatUiState(isLoading = false, error = AppError.ServerError),
                 onRetry = { retryCount++ },
             )
         }
 
-        composeRule.onNodeWithText("Provider timed out").assertIsDisplayed()
+        composeRule.onNodeWithText("The server is having trouble. Please try again later.").assertIsDisplayed()
         composeRule.onNodeWithTag("ai-chat-retry").assertIsDisplayed().performClick()
 
         composeRule.runOnIdle { assertEquals(1, retryCount) }
+    }
+
+    @Test
+    fun lessonCitation_opensTheCitedLessonWhenTapped() {
+        var opened: AiSourceDto? = null
+
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        messages =
+                            listOf(
+                                ChatMessage(
+                                    "ASSISTANT",
+                                    "Use ので for a plain reason clause.",
+                                    sources =
+                                        listOf(
+                                            AiSourceDto(
+                                                title = "Reason clauses",
+                                                sourceType = "LESSON",
+                                                sourceId = 42L,
+                                                chunkIndex = 0,
+                                                level = "N4",
+                                                score = 0.9,
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                onOpenSource = { opened = it },
+            )
+        }
+
+        composeRule.onNodeWithTag("ai-chat-source").performClick()
+
+        assertEquals("LESSON", opened?.sourceType)
+        assertEquals(42L, opened?.sourceId)
+    }
+
+    @Test
+    fun vocabularyCitation_staysInertBecauseNoDetailRouteCarriesItsId() {
+        var opened: AiSourceDto? = null
+
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        messages =
+                            listOf(
+                                ChatMessage(
+                                    "ASSISTANT",
+                                    "ように marks purpose.",
+                                    sources =
+                                        listOf(
+                                            AiSourceDto(
+                                                title = "ように",
+                                                sourceType = "VOCABULARY",
+                                                sourceId = 7L,
+                                                chunkIndex = 0,
+                                                level = null,
+                                                score = 0.8,
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                onOpenSource = { opened = it },
+            )
+        }
+
+        composeRule.onNodeWithTag("ai-chat-source").assertDoesNotExist()
+        assertNull(opened)
+    }
+
+    @Test
+    fun tutorReply_rendersMarkdownWithoutLiteralAsterisks() {
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        messages = listOf(ChatMessage("ASSISTANT", "**Corrected:** 病気だったので、行きませんでした。")),
+                    ),
+            )
+        }
+
+        composeRule.onNodeWithText("Corrected: 病気だったので、行きませんでした。").assertIsDisplayed()
+        composeRule.onNodeWithText("**Corrected:** 病気だったので、行きませんでした。").assertDoesNotExist()
     }
 
     @Test
@@ -148,6 +241,7 @@ class AiChatScreenTest {
         onSend: () -> Unit = {},
         onRetry: () -> Unit = {},
         onScorePractice: () -> Unit = {},
+        onOpenSource: (AiSourceDto) -> Unit = {},
     ) {
         LinguaAiTheme(darkTheme = false) {
             AiChatContent(
@@ -156,6 +250,8 @@ class AiChatScreenTest {
                 onSend = onSend,
                 onRetry = onRetry,
                 onScorePractice = onScorePractice,
+                onStop = {},
+                onOpenSource = onOpenSource,
                 onBack = {},
             )
         }

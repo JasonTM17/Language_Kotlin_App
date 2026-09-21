@@ -6,8 +6,8 @@ import com.linguaai.app.data.remote.api.AiApi
 import com.linguaai.app.data.remote.dto.GenerateQuizRequestDto
 import com.linguaai.app.data.remote.dto.GeneratedQuizQuestionDto
 import com.linguaai.app.data.remote.safeApiCall
+import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
-import com.linguaai.app.ui.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ data class AiHomeUiState(
     val conversations: List<com.linguaai.app.data.remote.dto.AiConversationDto> = emptyList(),
     val generatedQuiz: List<GeneratedQuizQuestionDto> = emptyList(),
     val isGenerating: Boolean = false,
-    val conversationError: String? = null,
-    val quizError: String? = null,
+    val conversationError: AppError? = null,
+    val quizError: AppError? = null,
 )
 
 @HiltViewModel
@@ -45,7 +45,7 @@ class AiHomeViewModel
                     is AppResult.Success -> _uiState.update { it.copy(isLoading = false, conversations = result.data) }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isLoading = false, conversationError = result.error.toUserMessage())
+                            it.copy(isLoading = false, conversationError = result.error)
                         }
                 }
             }
@@ -62,7 +62,7 @@ class AiHomeViewModel
                         }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isGenerating = false, quizError = result.error.toUserMessage())
+                            it.copy(isGenerating = false, quizError = result.error)
                         }
                 }
             }

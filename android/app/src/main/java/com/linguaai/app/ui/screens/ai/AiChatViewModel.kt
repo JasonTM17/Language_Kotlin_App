@@ -14,11 +14,12 @@ import com.linguaai.app.data.remote.dto.PracticeReplyRequestDto
 import com.linguaai.app.data.remote.dto.PracticeScoreDto
 import com.linguaai.app.data.remote.dto.PracticeStartRequestDto
 import com.linguaai.app.data.remote.safeApiCall
+import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
-import com.linguaai.app.ui.util.toUserMessage
 import com.linguaai.app.util.ConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +47,8 @@ data class AiChatUiState(
     val isScoring: Boolean = false,
     val practiceScore: PracticeScoreDto? = null,
     val failedInput: String? = null,
-    val error: String? = null,
+    val error: AppError? = null,
+    val offlineSendNotice: Boolean = false,
 )
 
 /**
@@ -69,6 +71,9 @@ class AiChatViewModel
         private val _uiState = MutableStateFlow(AiChatUiState(mode = routeMode))
         val uiState: StateFlow<AiChatUiState> = _uiState.asStateFlow()
 
+        /** The reply currently in flight, so [stop] can abandon it. */
+        private var sendJob: Job? = null
+
         init {
             observeConnectivity()
             loadHistory()
@@ -84,7 +89,7 @@ class AiChatViewModel
                 _uiState.update {
                     it.copy(
                         isOffline = true,
-                        error = OFFLINE_MESSAGE,
+                        offlineSendNotice = true,
                     )
                 }
                 return
@@ -93,39 +98,59 @@ class AiChatViewModel
             _uiState.update {
                 it.copy(
                     isSending = true,
+                    offlineSendNotice = false,
                     error = null,
                     failedInput = null,
                     input = "",
+                    practiceScore = null,
                     messages = it.messages + ChatMessage("USER", text) + ChatMessage("ASSISTANT", "", isPending = true),
                 )
             }
-            viewModelScope.launch {
-                val request = buildRequest(text)
-                when (val result = sendRequest(text, request)) {
-                    is AppResult.Success -> {
-                        val conversationId = result.data.conversationId
-                        _uiState.update {
-                            it.copy(
-                                isSending = false,
-                                conversationId = conversationId,
-                                failedInput = null,
-                                messages =
-                                    it.messages.dropLast(1) +
-                                        ChatMessage("ASSISTANT", result.data.reply, sources = result.data.sources),
-                            )
+            sendJob =
+                viewModelScope.launch {
+                    val request = buildRequest(text)
+                    when (val result = sendRequest(text, request)) {
+                        is AppResult.Success -> {
+                            val conversationId = result.data.conversationId
+                            _uiState.update {
+                                it.copy(
+                                    isSending = false,
+                                    conversationId = conversationId,
+                                    failedInput = null,
+                                    messages =
+                                        it.messages.dropLast(1) +
+                                            ChatMessage("ASSISTANT", result.data.reply, sources = result.data.sources),
+                                )
+                            }
+                            cacheExchange(conversationId, text, result.data.reply)
                         }
-                        cacheExchange(conversationId, text, result.data.reply)
+                        is AppResult.Failure ->
+                            _uiState.update { state ->
+                                state.copy(
+                                    isSending = false,
+                                    error = result.error,
+                                    failedInput = text,
+                                    messages = state.messages.dropLast(1),
+                                )
+                            }
                     }
-                    is AppResult.Failure ->
-                        _uiState.update { state ->
-                            state.copy(
-                                isSending = false,
-                                error = result.error.toUserMessage(),
-                                failedInput = text,
-                                messages = state.messages.dropLast(1),
-                            )
-                        }
                 }
+        }
+
+        /**
+         * Abandon the reply in flight. The learner's own message stays in the
+         * transcript because the server did persist it for every mode that
+         * reaches [send]; only the empty assistant placeholder is withdrawn.
+         */
+        fun stop() {
+            sendJob?.cancel()
+            sendJob = null
+            _uiState.update { state ->
+                if (!state.isSending) return@update state
+                state.copy(
+                    isSending = false,
+                    messages = if (state.messages.lastOrNull()?.isPending == true) state.messages.dropLast(1) else state.messages,
+                )
             }
         }
 
@@ -165,7 +190,7 @@ class AiChatViewModel
                         }
                     is AppResult.Failure ->
                         _uiState.update {
-                            it.copy(isScoring = false, error = result.error.toUserMessage())
+                            it.copy(isScoring = false, error = result.error)
                         }
                 }
             }
@@ -196,24 +221,48 @@ class AiChatViewModel
                 else -> safeApiCall { aiApi.chat(request) }
             }
 
-        private fun buildRequest(text: String): AiChatRequestDto =
-            when (routeMode) {
-                "grammar-explain" -> AiChatRequestDto(mode = "grammar-explain", message = text, contextGrammarId = routeConversationId)
-                "lesson-context" -> AiChatRequestDto(mode = "general", message = text, contextLessonId = routeConversationId)
-                "mistakes" -> AiChatRequestDto(mode = "mistakes-review", message = text)
+        private fun buildRequest(text: String): AiChatRequestDto {
+            // Every mode must carry the conversation forward. The route argument
+            // is a lesson/grammar/quiz id on first turn, so only the id the server
+            // handed back is safe to resume with; sending the route id instead made
+            // the server open a fresh conversation per message and the tutor lost
+            // all memory of the exchange.
+            val resumeId = _uiState.value.conversationId
+            return when (routeMode) {
+                "grammar-explain" ->
+                    AiChatRequestDto(
+                        conversationId = resumeId,
+                        mode = "grammar-explain",
+                        message = text,
+                        contextGrammarId = routeConversationId,
+                    )
+                "lesson-context" ->
+                    AiChatRequestDto(
+                        conversationId = resumeId,
+                        mode = "general",
+                        message = text,
+                        contextLessonId = routeConversationId,
+                    )
+                "mistakes" ->
+                    AiChatRequestDto(
+                        conversationId = resumeId,
+                        mode = "mistakes-review",
+                        message = text,
+                    )
                 else ->
                     AiChatRequestDto(
-                        conversationId = _uiState.value.conversationId ?: routeConversationId,
+                        conversationId = resumeId ?: routeConversationId,
                         mode = routeMode,
                         message = text,
                     )
             }
+        }
 
         private fun loadHistory() {
             viewModelScope.launch {
                 val conversationId = routeConversationId
                 if (conversationId != null && routeMode in HISTORY_MODES) {
-                    var loadError: String? = null
+                    var loadError: AppError? = null
                     if (networkMonitor.isOnline.value) {
                         when (val result = safeApiCall { aiApi.messages(conversationId) }) {
                             is AppResult.Success -> {
@@ -229,7 +278,7 @@ class AiChatViewModel
                                 return@launch
                             }
                             is AppResult.Failure -> {
-                                loadError = result.error.toUserMessage()
+                                loadError = result.error
                             }
                         }
                     }
@@ -256,7 +305,7 @@ class AiChatViewModel
                     _uiState.update { state ->
                         state.copy(
                             isOffline = !isOnline,
-                            error = if (isOnline && state.error == OFFLINE_MESSAGE) null else state.error,
+                            offlineSendNotice = if (isOnline) false else state.offlineSendNotice,
                         )
                     }
                 }
@@ -310,7 +359,5 @@ class AiChatViewModel
 
         private companion object {
             val HISTORY_MODES = setOf("conversation", "conversation-practice", "sentence-correction")
-            const val OFFLINE_MESSAGE =
-                "AI Tutor requires an internet connection. Your learning data is still available offline."
         }
     }

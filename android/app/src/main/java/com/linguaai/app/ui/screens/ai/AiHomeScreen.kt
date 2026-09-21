@@ -34,12 +34,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.GeneratedQuizQuestionDto
+import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
+import com.linguaai.app.ui.util.messageRes
 
 @Composable
 fun AiHomeScreen(
@@ -93,7 +95,7 @@ private fun AiHomeContent(
             item { QuizErrorCard(error, onGenerateQuiz) }
         }
         if (state.generatedQuiz.isNotEmpty()) {
-            item { SectionHeader("Generated quiz", modifier = Modifier.padding(top = Spacing.md)) }
+            item { SectionHeader(stringResource(R.string.ai_home_generated_quiz), modifier = Modifier.padding(top = Spacing.md)) }
             items(state.generatedQuiz) { question -> QuizPreviewCard(question) }
         }
         item { SectionHeader(stringResource(R.string.ai_home_recent), modifier = Modifier.padding(top = Spacing.md)) }
@@ -103,8 +105,9 @@ private fun AiHomeContent(
             item {
                 EmptyState(
                     title = stringResource(R.string.ai_home_no_conversations),
-                    message = state.conversationError ?: stringResource(R.string.ai_home_start_chat),
-                    actionLabel = if (state.conversationError == null) null else "Retry",
+                    message =
+                        state.conversationError?.let { stringResource(it.messageRes()) } ?: stringResource(R.string.ai_home_start_chat),
+                    actionLabel = if (state.conversationError == null) null else stringResource(R.string.common_retry),
                     onAction = if (state.conversationError == null) null else onRetryConversations,
                 )
             }
@@ -218,24 +221,24 @@ private fun QuizLoadingState() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CircularProgressIndicator(modifier = Modifier.padding(end = Spacing.sm))
-        Text("Preparing your quiz", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.ai_home_preparing_quiz), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
 private fun QuizErrorCard(
-    error: String,
+    error: AppError,
     onRetry: () -> Unit,
 ) {
     LinguaCard(containerColor = MaterialTheme.colorScheme.errorContainer) {
         Column(modifier = Modifier.padding(Spacing.md).testTag("ai-quiz-error")) {
             Text(
-                text = error,
+                text = stringResource(error.messageRes()),
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 style = MaterialTheme.typography.bodySmall,
             )
             TextButton(onClick = onRetry, modifier = Modifier.testTag("ai-quiz-retry")) {
-                Text("Try again", color = MaterialTheme.colorScheme.onErrorContainer)
+                Text(stringResource(R.string.common_retry), color = MaterialTheme.colorScheme.onErrorContainer)
             }
         }
     }
@@ -267,7 +270,7 @@ private fun ConversationCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = mode.replace('-', ' ').replaceFirstChar { it.uppercase() },
+                    text = stringResource(chatModeTitleRes(mode)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -282,7 +285,7 @@ private fun QuizPreviewCard(question: GeneratedQuizQuestionDto) {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Text(question.prompt, style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Answer: ${question.correctAnswer}",
+                text = stringResource(R.string.ai_home_answer, question.correctAnswer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = Spacing.xs),

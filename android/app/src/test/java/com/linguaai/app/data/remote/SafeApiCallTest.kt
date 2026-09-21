@@ -2,6 +2,7 @@ package com.linguaai.app.data.remote
 
 import com.linguaai.app.domain.model.AppError
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -11,6 +12,23 @@ import org.junit.Test
  * message the UI shows, so the order is pinned here rather than left to review.
  */
 class SafeApiCallTest {
+    /**
+     * The tutor's 429 is only actionable if the learner can see how long to
+     * wait, so the server's Retry-After grant has to survive the transport.
+     */
+    @Test
+    fun `retry-after grant survives the transport mapping`() {
+        val error = toAppError(429, null, "20")
+
+        assertEquals(20L, (error as AppError.RateLimited).retryAfterSeconds)
+    }
+
+    @Test
+    fun `a missing or malformed retry-after header leaves the grant unknown`() {
+        assertNull((toAppError(429, null) as AppError.RateLimited).retryAfterSeconds)
+        assertNull((toAppError(429, null, "Wed, 21 Oct 2026 07:28:00 GMT") as AppError.RateLimited).retryAfterSeconds)
+    }
+
     private fun envelope(
         code: String,
         message: String = "Something went wrong",
@@ -25,7 +43,7 @@ class SafeApiCallTest {
 
     @Test
     fun `429 is rate limited`() {
-        assertEquals(AppError.RateLimited, toAppError(429, null))
+        assertEquals(AppError.RateLimited(), toAppError(429, null))
     }
 
     @Test
@@ -69,7 +87,7 @@ class SafeApiCallTest {
     @Test
     fun `the server code is read from the envelope`() {
         assertEquals(AppError.Unauthorized, toAppError(200, envelope("INVALID_CREDENTIALS")))
-        assertEquals(AppError.RateLimited, toAppError(200, envelope("RATE_LIMITED")))
+        assertEquals(AppError.RateLimited(), toAppError(200, envelope("RATE_LIMITED")))
         assertEquals(AppError.Conflict, toAppError(200, envelope("CONFLICT")))
     }
 
