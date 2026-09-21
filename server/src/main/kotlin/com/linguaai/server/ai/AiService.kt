@@ -13,7 +13,9 @@ import com.linguaai.server.repository.ContentRepository
 import com.linguaai.server.repository.ConversationRow
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -73,6 +75,12 @@ data class AiMessageDto(
     val id: Long,
     val role: String,
     val content: String,
+    /**
+     * The corpus chunks this reply was grounded in. Defaulted so a server
+     * predating V8, or a reply from a mode that does not retrieve, still
+     * decodes on the client.
+     */
+    val sources: List<AiSourceDto> = emptyList(),
 )
 
 @Serializable
@@ -156,7 +164,12 @@ class AiService(
     ): List<AiMessageDto> {
         requireOwnership(userId, conversationId)
         return aiRepository.messages(conversationId).map {
-            AiMessageDto(id = it.id, role = it.role, content = it.content)
+            AiMessageDto(
+                id = it.id,
+                role = it.role,
+                content = it.content,
+                sources = decodeSources(it.sources),
+            )
         }
     }
 
@@ -450,6 +463,16 @@ class AiService(
             score = score,
         )
 
+    /**
+     * A stored citation payload that fails to parse must not take the whole
+     * transcript down with it, so a bad value degrades to "no sources" — the
+     * same shape a pre-V8 row has.
+     */
+    private fun decodeSources(raw: String?): List<AiSourceDto> =
+        raw?.let {
+            runCatching { json.decodeFromString(ListSerializer(AiSourceDto.serializer()), it) }.getOrDefault(emptyList())
+        } ?: emptyList()
+
     private suspend fun exchange(
         userId: Long,
         conversation: ConversationRow,
@@ -517,13 +540,22 @@ class AiService(
                 throw failure
             }
 
-        aiRepository.addExchange(conversation.id, turn.userText, reply)
+        val sources = grounding.chunks.map { it.toSourceDto() }
+        // Persisted alongside the reply so a reopened conversation shows the
+        // same citations it had live; without this the grounding evidence
+        // silently disappears the moment the learner navigates away.
+        aiRepository.addExchange(
+            conversationId = conversation.id,
+            userContent = turn.userText,
+            assistantContent = reply,
+            sourcesJson = sources.takeIf { it.isNotEmpty() }?.let { json.encodeToString(ListSerializer(AiSourceDto.serializer()), it) },
+        )
         summarizeIfNeeded(conversation)
         return AiChatResponseDto(
             conversationId = conversation.id,
             reply = reply,
             mode = conversation.mode,
-            sources = grounding.chunks.map { it.toSourceDto() },
+            sources = sources,
         )
     }
 

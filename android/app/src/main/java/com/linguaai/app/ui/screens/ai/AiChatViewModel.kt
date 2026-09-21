@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -132,7 +134,7 @@ class AiChatViewModel
                                             ChatMessage("ASSISTANT", result.data.reply, sources = result.data.sources),
                                 )
                             }
-                            cacheExchange(conversationId, text, result.data.reply)
+                            cacheExchange(conversationId, text, result.data.reply, result.data.sources)
                         }
                         is AppResult.Failure -> {
                             if (sequence != sendSequence) return@launch
@@ -283,7 +285,7 @@ class AiChatViewModel
                                     it.copy(
                                         isLoading = false,
                                         conversationId = conversationId,
-                                        messages = result.data.map { m -> ChatMessage(m.role, m.content) },
+                                        messages = result.data.map { m -> ChatMessage(m.role, m.content, sources = m.sources) },
                                         error = null,
                                     )
                                 }
@@ -301,7 +303,7 @@ class AiChatViewModel
                             isLoading = false,
                             conversationId = conversationId,
                             isOffline = !networkMonitor.isOnline.value,
-                            messages = cached.map { m -> ChatMessage(m.role, m.content) },
+                            messages = cached.map { m -> ChatMessage(m.role, m.content, sources = decodeSources(m.sourcesJson)) },
                             failedInput = null,
                             error = loadError,
                         )
@@ -329,6 +331,7 @@ class AiChatViewModel
             conversationId: Long,
             userText: String,
             assistantText: String,
+            sources: List<AiSourceDto>,
         ) {
             try {
                 cacheDao.insertAll(
@@ -338,6 +341,7 @@ class AiChatViewModel
                             conversationId = conversationId,
                             role = "ASSISTANT",
                             content = assistantText,
+                            sourcesJson = encodeSources(sources),
                         ),
                     ),
                 )
@@ -360,6 +364,7 @@ class AiChatViewModel
                             conversationId = conversationId,
                             role = it.role,
                             content = it.content,
+                            sourcesJson = encodeSources(it.sources),
                         )
                     },
                 )
@@ -371,6 +376,23 @@ class AiChatViewModel
         }
 
         private companion object {
+            private val cacheJson = Json { ignoreUnknownKeys = true }
+
             val HISTORY_MODES = setOf("conversation", "conversation-practice", "sentence-correction")
+
+            /**
+             * A citation payload that no longer decodes must not break the
+             * transcript, so it degrades to "no sources" like a pre-migration
+             * cached row.
+             */
+            fun decodeSources(raw: String?): List<AiSourceDto> =
+                raw?.let {
+                    runCatching { cacheJson.decodeFromString<List<AiSourceDto>>(it) }.getOrDefault(emptyList())
+                } ?: emptyList()
+
+            fun encodeSources(sources: List<AiSourceDto>): String? =
+                sources
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { runCatching { cacheJson.encodeToString(ListSerializer(AiSourceDto.serializer()), it) }.getOrNull() }
         }
     }

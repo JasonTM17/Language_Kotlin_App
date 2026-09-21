@@ -145,8 +145,35 @@ class LinguaDatabaseMigrationTest {
         db.close()
     }
 
+    /**
+     * Cached turns written before this migration carry no citations, which must
+     * read back as "not grounded" rather than breaking the row or the open.
+     */
     @Test
-    fun migrate1To6_runsTheWholeChain() {
+    fun migrate6To7_addsNullableSourcesAndKeepsCachedRows() {
+        helper.createDatabase(TEST_DB, 6).close()
+
+        val db =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                7,
+                true,
+                LinguaDatabase.MIGRATION_6_7,
+            )
+
+        db.execSQL(
+            "INSERT INTO ai_message_cache (conversationId, role, content, cachedAt) " +
+                "VALUES (7, 'ASSISTANT', 'cached before sources', 1)",
+        )
+        db.query("SELECT sourcesJson FROM ai_message_cache").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
+        }
+        db.close()
+    }
+
+    @Test
+    fun migrate1To7_runsTheWholeChain() {
         helper.createDatabase(TEST_DB, 1).close()
 
         val db =
@@ -159,6 +186,7 @@ class LinguaDatabaseMigrationTest {
                 LinguaDatabase.MIGRATION_3_4,
                 LinguaDatabase.MIGRATION_4_5,
                 LinguaDatabase.MIGRATION_5_6,
+                LinguaDatabase.MIGRATION_6_7,
             )
 
         db.close()

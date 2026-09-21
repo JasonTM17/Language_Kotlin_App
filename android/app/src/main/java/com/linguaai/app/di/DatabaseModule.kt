@@ -30,6 +30,7 @@ object DatabaseModule {
                 LinguaDatabase.MIGRATION_3_4,
                 LinguaDatabase.MIGRATION_4_5,
                 LinguaDatabase.MIGRATION_5_6,
+                LinguaDatabase.MIGRATION_6_7,
             ).fallbackToDestructiveMigrationOnDowngrade()
             .build()
 

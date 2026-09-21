@@ -97,6 +97,12 @@ data class AiMessageCacheEntity(
     val role: String,
     val content: String,
     val cachedAt: Long = System.currentTimeMillis(),
+    /**
+     * Serialized citations for this reply. Cached so the grounding evidence a
+     * learner saw live is still there when they reopen the conversation
+     * offline, instead of the answer quietly becoming unsourced.
+     */
+    val sourcesJson: String? = null,
 )
 
 /**

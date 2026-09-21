@@ -46,6 +46,11 @@ data class AiMessageDto(
     val id: Long,
     val role: String,
     val content: String,
+    /**
+     * Citations the server grounded this reply in. Defaulted so a transcript
+     * from a server predating the stored-sources column still decodes.
+     */
+    val sources: List<AiSourceDto> = emptyList(),
 )
 
 @Serializable

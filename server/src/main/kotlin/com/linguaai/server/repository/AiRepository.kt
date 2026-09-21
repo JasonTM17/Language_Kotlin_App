@@ -36,6 +36,7 @@ data class MessageRow(
     val role: String,
     val content: String,
     val tokenCount: Int?,
+    val sources: String?,
 )
 
 /** Persistence for AI conversations, messages and the rolling summary. */
@@ -120,6 +121,7 @@ class AiRepository {
         conversationId: Long,
         userContent: String,
         assistantContent: String,
+        sourcesJson: String? = null,
     ) = transaction {
         val now = LocalDateTime.now()
         AiMessages.insert { row ->
@@ -134,6 +136,7 @@ class AiRepository {
             row[AiMessages.role] = "ASSISTANT"
             row[AiMessages.content] = assistantContent
             row[AiMessages.tokenCount] = null
+            row[AiMessages.sources] = sourcesJson
             row[AiMessages.createdAt] = now
         }
         AiConversations.update({ AiConversations.id eq conversationId }) {
@@ -164,6 +167,7 @@ class AiRepository {
                         role = row[AiMessages.role],
                         content = row[AiMessages.content],
                         tokenCount = row[AiMessages.tokenCount],
+                        sources = row[AiMessages.sources],
                     )
                 }.takeLast(limit)
         }

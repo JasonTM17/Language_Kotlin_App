@@ -26,7 +26,7 @@ import com.linguaai.app.data.local.entity.VocabularyEntity
         AiMessageCacheEntity::class,
         ProgressCacheEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class LinguaDatabase : RoomDatabase() {
@@ -54,6 +54,7 @@ abstract class LinguaDatabase : RoomDatabase() {
         private const val SCHEMA_V4 = 4
         private const val SCHEMA_V5 = 5
         private const val SCHEMA_V6 = 6
+        private const val SCHEMA_V7 = 7
 
         val MIGRATION_1_2 =
             object : Migration(SCHEMA_V1, SCHEMA_V2) {
@@ -112,6 +113,16 @@ abstract class LinguaDatabase : RoomDatabase() {
                     db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyWrongCount` INTEGER")
                     db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyLastReviewedAt` INTEGER")
                     db.execSQL("ALTER TABLE `pending_sync_ops` ADD COLUMN `vocabularyNextReviewAt` INTEGER")
+                }
+            }
+
+        val MIGRATION_6_7 =
+            object : Migration(SCHEMA_V6, SCHEMA_V7) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Nullable: cached turns written before this carry no
+                    // citations, which is the same shape as a reply from a mode
+                    // that does not retrieve.
+                    db.execSQL("ALTER TABLE `ai_message_cache` ADD COLUMN `sourcesJson` TEXT")
                 }
             }
 

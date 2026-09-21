@@ -8,6 +8,7 @@ import com.linguaai.app.data.remote.dto.AiChatRequestDto
 import com.linguaai.app.data.remote.dto.AiChatResponseDto
 import com.linguaai.app.data.remote.dto.AiConversationDto
 import com.linguaai.app.data.remote.dto.AiMessageDto
+import com.linguaai.app.data.remote.dto.AiSourceDto
 import com.linguaai.app.data.remote.dto.CorrectRequestDto
 import com.linguaai.app.data.remote.dto.GenerateQuizRequestDto
 import com.linguaai.app.data.remote.dto.GeneratedQuizDto
@@ -40,11 +41,61 @@ class AiChatViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     /**
+     * The grounding evidence a learner saw live must still be there when they
+     * reopen the conversation offline, otherwise the answer quietly becomes
+     * unsourced and they cannot tell whether it ever was.
+     */
+    @Test
+    fun `cached reply restores its citations on an offline reload`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val source =
+                AiSourceDto(
+                    title = "Reason clauses",
+                    sourceType = "GRAMMAR",
+                    sourceId = 12L,
+                    chunkIndex = 0,
+                    level = "N4",
+                    score = 0.91,
+                )
+            val api = FakeAiApi()
+            api.chatResponses.addLast(
+                Response.success(AiChatResponseDto(11, "grounded answer", "general", listOf(source))),
+            )
+            val cache = FakeAiMessageCacheDao()
+            val writer = viewModel(conversationId = 11, api = api, cache = cache)
+            advanceUntilIdle()
+
+            writer.onInputChanged("why no de")
+            writer.send()
+            advanceUntilIdle()
+            assertTrue(cache.stored.any { it.sourcesJson?.contains("Reason clauses") == true })
+
+            // Reload the same conversation with the network unavailable.
+            val offlineApi = FakeAiApi()
+            offlineApi.messagesResponse = Response.error(404, "".toResponseBody(null))
+            val reader =
+                AiChatViewModel(
+                    SavedStateHandle(mapOf("mode" to "conversation", "conversationId" to 11L)),
+                    offlineApi,
+                    cache,
+                    FakeConnectivityMonitor(false),
+                )
+            advanceUntilIdle()
+
+            val reloaded =
+                reader.uiState.value.messages
+                    .first { it.role == "ASSISTANT" }
+            assertEquals("grounded answer", reloaded.content)
+            assertEquals(listOf("Reason clauses"), reloaded.sources.map { it.title })
+        }
+
+    /**
      * Regression for the tutor-amnesia bug: the grammar, lesson and mistakes
      * entries pass a content id as their route argument, so resuming with that
      * id made the server open a brand new conversation on every turn and the
      * learner's previous message was never sent again.
      */
+
     @Test
     fun `grammar explain resumes the conversation the server handed back`() =
         runTest(mainDispatcherRule.dispatcher) {

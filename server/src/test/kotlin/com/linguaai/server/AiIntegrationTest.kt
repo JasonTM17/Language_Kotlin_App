@@ -19,6 +19,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -488,6 +489,45 @@ class AiIntegrationTest {
      * compliant reply failed to decode and returned an unrecoverable 502, and
      * the mock hid it by emitting the string form instead.
      */
+    /**
+     * Citations used to exist only in the live response, so reopening a
+     * conversation showed the same answer with its grounding silently gone and
+     * the learner could not tell whether it had ever been grounded. This pins
+     * the stored round-trip rather than the retrieval that feeds it.
+     */
+    @Test
+    fun `stored citations survive a transcript reload`() =
+        withApp {
+            // withApp gets a fresh in-memory database per test, so this is the only row.
+            registerAndLogin("citations@example.com")
+            val userId = 1L
+            val repository = com.linguaai.server.repository.AiRepository()
+            val conversation =
+                repository.createConversation(
+                    userId = userId,
+                    title = "citation round trip",
+                    mode = "general",
+                    contextLessonId = null,
+                    contextGrammarId = null,
+                )
+            val stored =
+                """[{"title":"Reason clauses","sourceType":"GRAMMAR","sourceId":12,"chunkIndex":0,"level":"N4","score":0.91}]"""
+
+            repository.addExchange(
+                conversationId = conversation.id,
+                userContent = "why ので",
+                assistantContent = "Because the reason precedes the result.",
+                sourcesJson = stored,
+            )
+
+            val assistant =
+                repository.messages(conversation.id).last { it.role == "ASSISTANT" }
+            assertEquals(stored, assistant.sources)
+            assertNull(
+                repository.messages(conversation.id).first { it.role == "USER" }.sources,
+            )
+        }
+
     @Test
     fun `practice score accepts the object-shaped mistakes the prompt mandates`() =
         withApp(mockScenario = "prompt_shaped_practice_score") {

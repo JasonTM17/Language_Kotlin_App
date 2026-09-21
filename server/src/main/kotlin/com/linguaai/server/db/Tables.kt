@@ -169,6 +169,8 @@ object AiMessages : Table("ai_messages") {
     val role = varchar("role", 10)
     val content = text("content")
     val tokenCount = integer("token_count").nullable()
+    /** Serialized `AiSourceDto` list this reply was grounded in; null when nothing was retrieved. */
+    val sources = text("sources").nullable()
     val createdAt = datetime("created_at")
     override val primaryKey = PrimaryKey(id)
 }
