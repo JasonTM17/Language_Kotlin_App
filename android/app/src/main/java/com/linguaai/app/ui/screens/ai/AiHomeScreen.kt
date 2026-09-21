@@ -41,7 +41,7 @@ import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.Spacing
-import com.linguaai.app.ui.util.messageRes
+import com.linguaai.app.ui.util.asUserMessage
 
 @Composable
 fun AiHomeScreen(
@@ -106,7 +106,7 @@ private fun AiHomeContent(
                 EmptyState(
                     title = stringResource(R.string.ai_home_no_conversations),
                     message =
-                        state.conversationError?.let { stringResource(it.messageRes()) } ?: stringResource(R.string.ai_home_start_chat),
+                        state.conversationError?.asUserMessage() ?: stringResource(R.string.ai_home_start_chat),
                     actionLabel = if (state.conversationError == null) null else stringResource(R.string.common_retry),
                     onAction = if (state.conversationError == null) null else onRetryConversations,
                 )
@@ -233,7 +233,7 @@ private fun QuizErrorCard(
     LinguaCard(containerColor = MaterialTheme.colorScheme.errorContainer) {
         Column(modifier = Modifier.padding(Spacing.md).testTag("ai-quiz-error")) {
             Text(
-                text = stringResource(error.messageRes()),
+                text = error.asUserMessage(),
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 style = MaterialTheme.typography.bodySmall,
             )

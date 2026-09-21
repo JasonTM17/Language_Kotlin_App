@@ -1,6 +1,8 @@
 package com.linguaai.app.ui.util
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.linguaai.app.R
 import com.linguaai.app.domain.model.AppError
 
@@ -28,10 +30,25 @@ fun AppError.messageRes(): Int =
     }
 
 /**
+ * User-facing copy for a domain error, resolved where resources exist.
+ *
+ * `err_validation_reason` takes the server's reason as an argument, so callers
+ * must not resolve the id by themselves — a bare `stringResource(id)` on that
+ * key renders the literal `%1$s`.
+ */
+@Composable
+fun AppError.asUserMessage(): String {
+    val reason = (this as? AppError.Validation)?.reason
+    return if (!reason.isNullOrBlank()) {
+        stringResource(R.string.err_validation_reason, reason)
+    } else {
+        stringResource(messageRes())
+    }
+}
+
+/**
  * Legacy path for the screens that still hold a resolved error String in UI
  * state. New code uses [messageRes] and resolves it in the composable; the
- * remaining callers are listed as follow-up in
- * plans/260921-1020-chatbot-ai-uiux-be/reports/audit-chatbot-ai.md.
  */
 fun AppError.toUserMessage(): String =
     when (this) {

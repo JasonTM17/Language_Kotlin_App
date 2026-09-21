@@ -74,6 +74,14 @@ class AiChatViewModel
         /** The reply currently in flight, so [stop] can abandon it. */
         private var sendJob: Job? = null
 
+        /**
+         * Bumped by every send and by [stop]. Cancellation is cooperative, so a
+         * completion block can already be past its last suspension point when
+         * the learner taps stop; without this check that stale block drops a
+         * message bubble it no longer owns.
+         */
+        private var sendSequence = 0L
+
         init {
             observeConnectivity()
             loadHistory()
@@ -106,11 +114,13 @@ class AiChatViewModel
                     messages = it.messages + ChatMessage("USER", text) + ChatMessage("ASSISTANT", "", isPending = true),
                 )
             }
+            val sequence = ++sendSequence
             sendJob =
                 viewModelScope.launch {
                     val request = buildRequest(text)
                     when (val result = sendRequest(text, request)) {
                         is AppResult.Success -> {
+                            if (sequence != sendSequence) return@launch
                             val conversationId = result.data.conversationId
                             _uiState.update {
                                 it.copy(
@@ -124,7 +134,8 @@ class AiChatViewModel
                             }
                             cacheExchange(conversationId, text, result.data.reply)
                         }
-                        is AppResult.Failure ->
+                        is AppResult.Failure -> {
+                            if (sequence != sendSequence) return@launch
                             _uiState.update { state ->
                                 state.copy(
                                     isSending = false,
@@ -133,6 +144,7 @@ class AiChatViewModel
                                     messages = state.messages.dropLast(1),
                                 )
                             }
+                        }
                     }
                 }
         }
@@ -143,6 +155,7 @@ class AiChatViewModel
          * reaches [send]; only the empty assistant placeholder is withdrawn.
          */
         fun stop() {
+            sendSequence++
             sendJob?.cancel()
             sendJob = null
             _uiState.update { state ->

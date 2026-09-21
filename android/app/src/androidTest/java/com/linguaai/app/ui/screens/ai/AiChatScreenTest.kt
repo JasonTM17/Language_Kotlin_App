@@ -94,6 +94,31 @@ class AiChatScreenTest {
     }
 
     @Test
+    fun pendingReply_offersAStopAction() {
+        var stopCount = 0
+
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        isSending = true,
+                        messages =
+                            listOf(
+                                ChatMessage("USER", "giải thích giúp mình"),
+                                ChatMessage("ASSISTANT", "", isPending = true),
+                            ),
+                    ),
+                onStop = { stopCount++ },
+            )
+        }
+
+        composeRule.onNodeWithTag("ai-chat-stop").assertIsDisplayed().performClick()
+
+        composeRule.runOnIdle { assertEquals(1, stopCount) }
+    }
+
+    @Test
     fun lessonCitation_opensTheCitedLessonWhenTapped() {
         var opened: AiSourceDto? = null
 
@@ -242,6 +267,7 @@ class AiChatScreenTest {
         onRetry: () -> Unit = {},
         onScorePractice: () -> Unit = {},
         onOpenSource: (AiSourceDto) -> Unit = {},
+        onStop: () -> Unit = {},
     ) {
         LinguaAiTheme(darkTheme = false) {
             AiChatContent(
@@ -250,7 +276,7 @@ class AiChatScreenTest {
                 onSend = onSend,
                 onRetry = onRetry,
                 onScorePractice = onScorePractice,
-                onStop = {},
+                onStop = onStop,
                 onOpenSource = onOpenSource,
                 onBack = {},
             )

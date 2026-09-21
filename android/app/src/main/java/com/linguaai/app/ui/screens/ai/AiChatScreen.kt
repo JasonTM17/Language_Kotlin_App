@@ -80,7 +80,7 @@ import com.linguaai.app.ui.components.OfflineBanner
 import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.TutorRichText
-import com.linguaai.app.ui.util.messageRes
+import com.linguaai.app.ui.util.asUserMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -142,9 +142,15 @@ fun AiChatContent(
 ) {
     val listState = rememberLazyListState()
 
+    // Only follow the transcript when the learner was already at the bottom;
+    // otherwise a reply, a stop or a retry yanks them away from what they were
+    // re-reading.
     LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.size - 1)
+        val info = listState.layoutInfo
+        val lastVisible = info.visibleItemsInfo.lastOrNull()?.index
+        val atBottom = lastVisible == null || lastVisible >= info.totalItemsCount - 2
+        if (info.totalItemsCount > 0 && atBottom) {
+            listState.animateScrollToItem(info.totalItemsCount - 1)
         }
     }
 
@@ -242,7 +248,7 @@ private fun ChatTranscript(
             state.isLoading -> LoadingIndicator()
             state.messages.isEmpty() && state.error != null ->
                 ErrorState(
-                    message = errorMessage(state.error),
+                    message = state.error.asUserMessage(),
                     retryLabel = stringResource(R.string.common_retry),
                     retryModifier = Modifier.testTag("ai-chat-retry"),
                     onRetry = onRetry,
@@ -280,17 +286,6 @@ private fun ChatTranscript(
     }
 }
 
-/** Resolve an [AppError] into user-facing copy; only the view has resources. */
-@Composable
-private fun errorMessage(error: AppError?): String {
-    if (error == null) return ""
-    return when {
-        error is AppError.Validation && !error.reason.isNullOrBlank() ->
-            stringResource(R.string.err_validation_reason, error.reason.orEmpty())
-        else -> stringResource(error.messageRes())
-    }
-}
-
 @Composable
 private fun ErrorNotice(
     error: AppError,
@@ -320,7 +315,7 @@ private fun ErrorNotice(
             )
         } else {
             Text(
-                text = errorMessage(error),
+                text = error.asUserMessage(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -576,7 +571,7 @@ internal fun chatModeTitleRes(mode: String): Int =
         "sentence-correction" -> R.string.chat_title_correction
         "grammar-explain" -> R.string.chat_title_grammar
         "lesson-context" -> R.string.chat_title_lesson
-        "mistakes" -> R.string.chat_title_mistakes
+        "mistakes", "mistakes-review" -> R.string.chat_title_mistakes
         else -> R.string.chat_title_tutor
     }
 
