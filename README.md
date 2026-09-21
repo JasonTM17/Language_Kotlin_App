@@ -1,5 +1,7 @@
 # LinguaAI — AI-Powered Language Learning Platform
 
+[![Android CI](https://github.com/JasonTM17/Language_Kotlin_App/actions/workflows/android-ci.yml/badge.svg)](https://github.com/JasonTM17/Language_Kotlin_App/actions/workflows/android-ci.yml)
+
 > **Learn smarter with your personal AI language tutor.**
 
 A full-stack language-learning platform: a native **Android app** (Kotlin, Jetpack Compose)
@@ -13,7 +15,7 @@ key inside the app.
 | Backend | Kotlin, Ktor 3, Exposed, Flyway, JWT (access + refresh rotation), bcrypt |
 | Database | MySQL 8 in Docker; H2 in-memory (MySQL mode) for integration tests |
 | AI | Provider-agnostic gateway (OpenAI-compatible / Mock), server-built prompts, retrieval-grounded answers over a Qdrant/SQL vector store, bounded conversation memory, per-user rate limiting |
-| Quality | 81 server tests plus 68 Android JVM tests and 22 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt and ktlint are blocking on both builds, with every exception justified in its config; GitHub Actions CI |
+| Quality | 81 server tests plus 88 Android JVM tests and 29 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt and ktlint are blocking on both builds, with every exception justified in its config; GitHub Actions CI |
 | Delivery | Docker Compose, multi-stage backend image, Conventional Commits, Mermaid documentation |
 
 ## Features
@@ -24,11 +26,15 @@ key inside the app.
   dictionary entries and 900 curated seed records, plus bounded search, level
   filters and favourites — see the [catalogue import guide](docs/data/multilingual-vocabulary.md)
 - Lesson catalogue, grammar reference and review flows
-- Flashcards with a pluggable spaced-repetition scheduler (`ReviewScheduler`, SM-2 derivative)
+- Progress screen with a 14-day activity heatmap and six achievement badges
+  derived on the fly from the cached study summary — never persisted
+- Flashcards with a pluggable spaced-repetition scheduler (`ReviewScheduler`, SM-2 derivative),
+  graded by horizontal swipe (right for GOOD, left for AGAIN) with a flip-in answer reveal
 - Quiz engine with attempt tracking and grading
 
 **AI Tutor**
 - Chat, grammar explanation, sentence correction, conversation practice with scoring
+- Mode-aware starter chips: each tutor mode opens with suggested prompts for that mode
 - **Retrieval-grounded answers**: chat and grammar turns retrieve the most relevant
   course-corpus chunks (vocabulary, grammar, lessons), cite them in the reply
   (`sources[]`), and the Android client renders the citations as chips that open
@@ -52,6 +58,16 @@ key inside the app.
 - Progress and streaks derived server-side; the device never computes them
 - Study reminders via WorkManager
 - Sign-out clears the session, cancels scheduled work and wipes cached user data
+
+## Screenshots
+
+Captured from a `vi-VN` locale emulator (1080x2400).
+
+| Splash | Home | Progress |
+| --- | --- | --- |
+| <img src="docs/img/splash.png" width="270"> | <img src="docs/img/home.png" width="270"> | <img src="docs/img/progress.png" width="270"> |
+| Swipe-to-grade flashcards | AI tutor chat | Vocabulary catalogue |
+| <img src="docs/img/flashcard.png" width="270"> | <img src="docs/img/ai-chat.png" width="270"> | <img src="docs/img/vocabulary.png" width="270"> |
 
 ## Architecture in one picture
 
@@ -114,7 +130,7 @@ The override is debug-only; release builds keep their configured production endp
 
 ```bash
 cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 81 tests
-cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 68 tests
+cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 88 tests
 ```
 
 Both suites run offline — no network, no database, no AI key. The AI paths are exercised through
@@ -129,8 +145,8 @@ latency percentiles and post-seed relevance — is kept in the repository's plan
 rather than asserted by CI; environments without Docker-enabled Bash can follow the
 same manual-equivalent checkpoints.
 
-Twenty-two instrumented tests (six Room migration, six chatbot, four auth, two
-onboarding Compose cases, one language-scoped Review regression, one
+Twenty-nine instrumented tests (seven Room migration, twelve chatbot, four
+auth, two onboarding Compose cases, one language-scoped Review regression, one
 account-scoped language-cache regression and two vocabulary progress/outbox
 regressions) are defined for a device or emulator with
 `connectedDebugAndroidTest`. The current device evidence is recorded in
@@ -189,8 +205,8 @@ Stated rather than glossed over:
   third-party dictionary glosses and POS categories; frequency/rank-based pedagogy remains a
   separate product phase. See the [catalogue guide](docs/data/multilingual-vocabulary.md) for
   licenses, checksums and the bounded reindex workflow.
-- **The current Room migration chain through version 6 has executed on the
-  `linguaai-api35` emulator with 22/22 instrumented tests passing.** A fresh
+- **The current Room migration chain through version 7 has executed on the
+  `linguaai-api35` emulator with 29/29 instrumented tests passing.** A fresh
   authenticated route walk also exercised Home, Learn, Vocabulary, Grammar,
   Review and Daily Quiz against the local backend; hosted CI and production
   verification remain separate gates.

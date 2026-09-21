@@ -46,10 +46,43 @@ The debug build targets `http://10.0.2.2:8080/api/v1/` — the host loopback as
 seen from the Android emulator. On a physical device, point `BASE_URL` at your
 machine's LAN address instead.
 
+### Lint like CI does
+
+GitHub CI runs `:app:ktlintMainSourceSetCheck`, which applies rules the
+locally-typical `:app:ktlintDebugSourceSetCheck` does not — chained-call
+newline placement, expression bodies on signatures, `SCREAMING_SNAKE_CASE`
+for constants. A run that passes locally can still fail CI for that reason.
+Run the main-source-set task before pushing:
+
+```bash
+cd android && ./gradlew :app:ktlintMainSourceSetCheck
+```
+
+### Debug against the compose backend through adb reverse
+
+To point the app at the Docker Compose backend through the host loopback
+instead of `10.0.2.2`, forward the port and build with the matching base URL:
+
+```bash
+adb reverse tcp:8081 tcp:8081
+cd android && ./gradlew assembleDebug \
+  -Plinguaai.debugBaseUrl=http://127.0.0.1:8081/api/v1/
+```
+
+The device's own `127.0.0.1:8081` then reaches the host, and `127.0.0.1` is
+cleartext-allowlisted in `network_security_config.xml` for exactly this
+debugging case; production traffic still must use HTTPS. 8081 is the host port
+the Compose stack publishes when `SERVER_PORT=8081` is set in `.env` — adjust
+both sides if the backend listens elsewhere.
+
+Note that Gradle's configuration cache can serve stale compile results for
+flags like this one, so add `--no-configuration-cache` whenever a
+BuildConfig-changing flag must take effect.
+
 ## Tests
 
 ```bash
-cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test   # 81 tests, no network needed
+cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test   # 84 tests, no network needed
 cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest
 ```
 
