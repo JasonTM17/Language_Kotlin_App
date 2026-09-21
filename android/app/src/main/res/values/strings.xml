@@ -11,7 +11,7 @@
     <string name="common_back">Back</string>
     <string name="common_retry">Retry</string>
     <string name="review_title">Review</string>
-    <string name="learn_error_title">Couldn't load lessons</string>
+    <string name="learn_error_title">Couldn\'t load lessons</string>
     <string name="learn_ready_title">Your lesson path is ready</string>
     <string name="learn_ready_hint">Lessons for your level will appear here. Explore vocabulary while you wait.</string>
     <string name="learn_explore_vocab">Explore vocabulary</string>
