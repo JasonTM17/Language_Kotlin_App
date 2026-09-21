@@ -34,9 +34,11 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       # The Android SDK is not present on a bare runner, so the debug build would
-      # fail before compiling anything.
+      # fail before compiling anything. v3 is pinned to the legacy `tools` package,
+      # which the SDK repository no longer serves, so it fails at setup on every
+      # run; v4 dropped that from its default package list.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       # Static analysis is a blocking gate here, not a report. detekt and ktlint
       # both fail the build on a finding, and neither has a suppressed baseline:
