@@ -302,9 +302,10 @@ private fun ErrorNotice(
 
     Column {
         if (error is AppError.RateLimited) {
+            val waiting = secondsLeft > 0L
             NoticeBanner(
                 text =
-                    if (secondsLeft > 0L) {
+                    if (waiting) {
                         stringResource(R.string.err_rate_limited) + " " +
                             stringResource(R.string.chat_retry_in, secondsLeft)
                     } else {
@@ -312,6 +313,8 @@ private fun ErrorNotice(
                     },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                actionLabel = stringResource(if (waiting) R.string.chat_retry_now else R.string.common_retry),
+                onAction = onRetry,
             )
         } else {
             Text(
@@ -319,18 +322,12 @@ private fun ErrorNotice(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
-        }
-        TextButton(
-            onClick = onRetry,
-            modifier = Modifier.testTag("ai-chat-retry"),
-        ) {
-            Text(
-                if (error is AppError.RateLimited && secondsLeft > 0L) {
-                    stringResource(R.string.chat_retry_now)
-                } else {
-                    stringResource(R.string.common_retry)
-                },
-            )
+            TextButton(
+                onClick = onRetry,
+                modifier = Modifier.testTag("ai-chat-retry"),
+            ) {
+                Text(stringResource(R.string.common_retry))
+            }
         }
     }
 }
@@ -341,6 +338,8 @@ private fun NoticeBanner(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
     contentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     Surface(
         color = containerColor,
@@ -348,11 +347,26 @@ private fun NoticeBanner(
         shape = MaterialTheme.shapes.small,
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
-        )
+        // The action belongs inside the notice: a bare button underneath read as
+        // a separate, unrelated control.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = Spacing.md, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            if (actionLabel != null && onAction != null) {
+                TextButton(
+                    onClick = onAction,
+                    modifier = Modifier.testTag("ai-chat-retry"),
+                ) {
+                    Text(text = actionLabel)
+                }
+            }
+        }
     }
 }
 

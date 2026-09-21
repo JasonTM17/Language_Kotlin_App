@@ -31,6 +31,13 @@ sealed interface TutorBlock {
     data class Code(
         val text: String,
     ) : TutorBlock
+
+    /**
+     * A blank line in the source. Dropped paragraphs made a reply shaped like
+     * "**Corrected:** … **What changed:** …" read as one cramped wall of text,
+     * because the emphasis already removes the visual cue the author used.
+     */
+    data object Blank : TutorBlock
 }
 
 private val BULLET_MARKERS = listOf("- ", "* ", "• ")
@@ -51,7 +58,11 @@ fun parseTutorMarkdown(source: String): List<TutorBlock> {
         } else if (inFence) {
             if (fence.isNotEmpty()) fence.append('\n')
             fence.append(rawLine)
-        } else if (rawLine.isNotBlank()) {
+        } else if (rawLine.isBlank()) {
+            if (blocks.isNotEmpty() && blocks.last() != TutorBlock.Blank) {
+                blocks += TutorBlock.Blank
+            }
+        } else {
             val marker = BULLET_MARKERS.firstOrNull { trimmed.startsWith(it) }
             if (marker != null) {
                 blocks += TutorBlock.Bullet(parseInline(trimmed.removePrefix(marker).trim()))
@@ -61,6 +72,9 @@ fun parseTutorMarkdown(source: String): List<TutorBlock> {
         }
     }
 
+    while (blocks.isNotEmpty() && blocks.last() == TutorBlock.Blank) {
+        blocks.removeAt(blocks.size - 1)
+    }
     // An unbalanced fence is treated as code rather than swallowing the rest of
     // the reply, which is what a truncated model response looks like.
     if (inFence && fence.isNotEmpty()) {

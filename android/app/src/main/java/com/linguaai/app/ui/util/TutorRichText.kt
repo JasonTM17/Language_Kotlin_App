@@ -1,10 +1,12 @@
 package com.linguaai.app.ui.util
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +28,7 @@ fun TutorRichText(
     maxLines: Int = Int.MAX_VALUE,
 ) {
     val blocks = remember(content) { parseTutorMarkdown(content) }
-    Column(modifier = modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(BLOCK_GAP_DP.dp)) {
         for (block in blocks) {
             when (block) {
                 is TutorBlock.Line ->
@@ -54,6 +56,8 @@ fun TutorRichText(
                         )
                     }
 
+                is TutorBlock.Blank -> Spacer(modifier = Modifier.height(PARAGRAPH_GAP_DP.dp))
+
                 is TutorBlock.Code ->
                     Text(
                         text = block.text,
@@ -75,3 +79,5 @@ fun TutorRichText(
 }
 
 private const val CODE_BLOCK_RADIUS_DP = 10
+private const val BLOCK_GAP_DP = 6
+private const val PARAGRAPH_GAP_DP = 8

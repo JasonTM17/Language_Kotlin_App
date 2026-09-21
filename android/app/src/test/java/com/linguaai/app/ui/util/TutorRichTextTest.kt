@@ -41,6 +41,39 @@ class TutorRichTextTest {
         assertTrue(blocks[2] is TutorBlock.Line)
     }
 
+    /**
+     * The correction reply is shaped as "**Corrected:** …" then a blank line
+     * then "**What changed:** …". Dropping the blank line collapsed that into
+     * one unreadable block.
+     */
+    @Test
+    fun `a blank line becomes a paragraph break instead of vanishing`() {
+        val blocks =
+            parseTutorMarkdown(
+                """
+                |First paragraph.
+                |
+                |Second paragraph.
+                """.trimMargin(),
+            )
+
+        assertEquals(3, blocks.size)
+        assertEquals(TutorBlock.Blank, blocks[1])
+    }
+
+    @Test
+    fun `trailing blank lines do not add empty spacing blocks`() {
+        val blocks =
+            parseTutorMarkdown(
+                """
+                |Only text.
+                |
+                """.trimMargin(),
+            )
+
+        assertEquals(1, blocks.size)
+    }
+
     @Test
     fun `fenced code becomes a code block and keeps its contents verbatim`() {
         val blocks = parseTutorMarkdown("Try this:\n```\n私はパンを食べます\n```")
