@@ -44,9 +44,10 @@ fun LessonDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val completedMessage = stringResource(R.string.lesson_completed_snackbar)
 
     LaunchedEffect(state.completed) {
-        if (state.completed) snackbar.showSnackbar(context.getString(R.string.lesson_completed_snackbar))
+        if (state.completed) snackbar.showSnackbar(completedMessage)
     }
 
     Scaffold(
