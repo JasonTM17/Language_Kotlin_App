@@ -90,6 +90,9 @@
     <string name="chat_prompt_questions">Cho tôi năm câu hỏi luyện tập</string>
     <string name="chat_prompt_food">Làm sao để gọi món một cách lịch sự?</string>
     <string name="chat_prompt_travel">Dạy tôi ba câu tiếng Anh hữu ích khi du lịch</string>
+    <string name="chat_starter_correction">Sửa câu này giúp tôi</string>
+    <string name="chat_starter_mistakes">Những lỗi nào tôi nên tránh?</string>
+    <string name="chat_starter_practice">Cùng nhập vai gọi cà phê nhé</string>
     <string name="chat_input_placeholder">Hỏi bất cứ điều gì về bài học…</string>
     <string name="chat_grounded">Dựa trên kho học liệu của bạn</string>
     <string name="chat_score_action">Kết thúc &amp; chấm điểm</string>
@@ -162,6 +165,15 @@
     <string name="flashcard_title">Ôn tập từ vựng</string>
     <string name="flashcard_card_position">Thẻ %1$d trên %2$d</string>
     <string name="flashcard_show_answer">Lật đáp án</string>
+    <string name="flashcard_session_complete">Hoàn thành phiên ôn</string>
+    <string name="flashcard_nothing_due">Chưa có từ nào đến hạn</string>
+    <string name="flashcard_session_summary">Bạn đã ôn %1$d từ. Hãy quay lại sau cho lô tiếp theo nhé.</string>
+    <string name="flashcard_all_caught_up">Bạn đã ôn hết. Từ mới sẽ mở dần theo lịch ôn tập.</string>
+    <string name="flashcard_grade_again">Quên</string>
+    <string name="flashcard_grade_hard">Khó</string>
+    <string name="flashcard_grade_good">Được</string>
+    <string name="flashcard_grade_easy">Dễ</string>
+    <string name="flashcard_swipe_hint">Quẹt phải nếu bạn nhớ, trái nếu chưa.</string>
 
     <!-- Quiz -->
     <string name="quiz_title_fallback">Bài kiểm tra</string>

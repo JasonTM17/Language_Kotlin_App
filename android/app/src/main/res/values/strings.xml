@@ -90,6 +90,9 @@
     <string name="chat_prompt_questions">Give me five practice questions</string>
     <string name="chat_prompt_food">How do I order food politely?</string>
     <string name="chat_prompt_travel">Teach me three useful travel phrases</string>
+    <string name="chat_starter_correction">Correct this sentence for me</string>
+    <string name="chat_starter_mistakes">Which mistakes should I watch out for?</string>
+    <string name="chat_starter_practice">Let’s role-play ordering coffee</string>
     <string name="chat_input_placeholder">Ask anything about your lesson…</string>
     <string name="chat_grounded">Grounded in your course</string>
     <string name="chat_score_action">Finish &amp; score</string>
@@ -166,6 +169,15 @@
     <string name="flashcard_title">Review words</string>
     <string name="flashcard_card_position">Card %1$d of %2$d</string>
     <string name="flashcard_show_answer">Show answer</string>
+    <string name="flashcard_session_complete">Session complete</string>
+    <string name="flashcard_nothing_due">Nothing due right now</string>
+    <string name="flashcard_session_summary">You reviewed %1$d words. Come back later for the next batch.</string>
+    <string name="flashcard_all_caught_up">All caught up. New words unlock as review times arrive.</string>
+    <string name="flashcard_grade_again">Again</string>
+    <string name="flashcard_grade_hard">Hard</string>
+    <string name="flashcard_grade_good">Good</string>
+    <string name="flashcard_grade_easy">Easy</string>
+    <string name="flashcard_swipe_hint">Swipe right if you knew it, left if you didn’t.</string>
 
     <!-- Quiz -->
     <string name="quiz_title_fallback">Quiz</string>

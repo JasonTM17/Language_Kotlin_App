@@ -97,13 +97,48 @@ import kotlinx.coroutines.launch
 private const val CONVERSATION_PRACTICE_MODE = "conversation-practice"
 
 /** Shown on an empty transcript so the tutor never starts from a dead screen. */
-private val SUGGESTED_PROMPTS =
+private val GENERAL_PROMPTS =
     listOf(
         R.string.chat_prompt_grammar,
         R.string.chat_prompt_questions,
         R.string.chat_prompt_food,
         R.string.chat_prompt_travel,
     )
+
+private val GRAMMAR_PROMPTS =
+    listOf(
+        R.string.chat_prompt_grammar,
+        R.string.chat_prompt_questions,
+        R.string.chat_starter_mistakes,
+    )
+
+private val CORRECTION_PROMPTS =
+    listOf(
+        R.string.chat_starter_correction,
+        R.string.chat_prompt_food,
+    )
+
+private val MISTAKES_PROMPTS =
+    listOf(
+        R.string.chat_starter_mistakes,
+        R.string.chat_prompt_grammar,
+    )
+
+private val PRACTICE_PROMPTS =
+    listOf(
+        R.string.chat_starter_practice,
+        R.string.chat_prompt_travel,
+    )
+
+/** Mode-aware starter prompts shown before the first exchange. */
+private fun starterPromptsFor(mode: String): List<Int> =
+    when (mode) {
+        "grammar-explain" -> GRAMMAR_PROMPTS
+        "sentence-correction" -> CORRECTION_PROMPTS
+        "mistakes" -> MISTAKES_PROMPTS
+        CONVERSATION_PRACTICE_MODE -> PRACTICE_PROMPTS
+        else -> GENERAL_PROMPTS
+    }
 
 /** Sources display per assistant bubble; more than this hurts readability. */
 private const val MAX_VISIBLE_SOURCES = 4
@@ -270,7 +305,7 @@ private fun ChatTranscript(
                 )
             // A scored role-play must stay visible even with an empty
             // transcript: the score card lives in the list below.
-            state.messages.isEmpty() && state.practiceScore == null -> EmptyTranscript(onUsePrompt = onUsePrompt)
+            state.messages.isEmpty() && state.practiceScore == null -> EmptyTranscript(state.mode, onUsePrompt)
             else ->
                 LazyColumn(
                     state = listState,
@@ -427,7 +462,10 @@ private fun ScrollToBottomButton(
 
 /** Brand lockup and starter prompts shown before the first exchange. */
 @Composable
-private fun EmptyTranscript(onUsePrompt: (String) -> Unit) {
+private fun EmptyTranscript(
+    mode: String,
+    onUsePrompt: (String) -> Unit,
+) {
     Column(
         modifier =
             Modifier
@@ -453,7 +491,7 @@ private fun EmptyTranscript(onUsePrompt: (String) -> Unit) {
             modifier = Modifier.padding(top = Spacing.xs),
         )
         Spacer(modifier = Modifier.weight(1f))
-        SUGGESTED_PROMPTS.forEach { promptRes ->
+        starterPromptsFor(mode).forEach { promptRes ->
             val prompt = stringResource(promptRes)
             SuggestionChip(
                 onClick = { onUsePrompt(prompt) },
