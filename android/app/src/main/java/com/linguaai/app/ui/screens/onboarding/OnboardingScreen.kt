@@ -205,7 +205,10 @@ private fun LanguageStep(
     onSelect: (Long) -> Unit,
 ) {
     if (state.languages.isEmpty()) {
-        EmptyState(title = stringResource(R.string.onboarding_no_languages), message = stringResource(R.string.onboarding_catalogue_unavailable),)
+        EmptyState(
+            title = stringResource(R.string.onboarding_no_languages),
+            message = stringResource(R.string.onboarding_catalogue_unavailable),
+        )
         return
     }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
