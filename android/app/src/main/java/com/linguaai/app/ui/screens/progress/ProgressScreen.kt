@@ -391,8 +391,7 @@ private fun ActivityHeatmapCard(days: List<ActivityDayDto>) {
 }
 
 /** Splits the window into grid rows of [HEATMAP_COLUMNS] days, date order preserved. */
-private fun rows(days: List<ActivityDayDto>): List<List<ActivityDayDto>> =
-    days.chunked(HEATMAP_COLUMNS)
+private fun rows(days: List<ActivityDayDto>): List<List<ActivityDayDto>> = days.chunked(HEATMAP_COLUMNS)
 
 @Composable
 private fun HeatmapLegend(

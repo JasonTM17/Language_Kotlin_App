@@ -12,18 +12,18 @@ import androidx.compose.animation.core.tween
  * and springs from here so interaction timing feels like one product.
  */
 object LinguaMotion {
-    const val DurationFast = 120
-    const val DurationMedium = 240
-    const val DurationSlow = 400
+    const val DURATION_FAST = 120
+    const val DURATION_MEDIUM = 240
+    const val DURATION_SLOW = 400
 
     val EmphasizedEasing: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
     val StandardEasing: Easing = FastOutSlowInEasing
 
-    fun <T> fast() = tween<T>(DurationFast, easing = StandardEasing)
+    fun <T> fast() = tween<T>(DURATION_FAST, easing = StandardEasing)
 
-    fun <T> medium() = tween<T>(DurationMedium, easing = EmphasizedEasing)
+    fun <T> medium() = tween<T>(DURATION_MEDIUM, easing = EmphasizedEasing)
 
-    fun <T> slow() = tween<T>(DurationSlow, easing = EmphasizedEasing)
+    fun <T> slow() = tween<T>(DURATION_SLOW, easing = EmphasizedEasing)
 
     fun <T> pop() =
         spring<T>(

@@ -152,8 +152,7 @@ private fun FlashcardContent(
                     .graphicsLayer {
                         translationX = dragX.value
                         rotationZ = dragX.value * SWIPE_TILT_PER_DP
-                    }
-                    .swipeToGrade(state, dragX, swipeThresholdPx, scope, onEvent),
+                    }.swipeToGrade(state, dragX, swipeThresholdPx, scope, onEvent),
             containerColor =
                 if (state.isRevealed) {
                     MaterialTheme.colorScheme.secondaryContainer

@@ -37,8 +37,7 @@ object BrandGradients {
         Brush.linearGradient(colors = listOf(Color(0xFFF3CE63), Color(0xFFD99B23)))
 
     /** Soft radial glow behind mascots and celebration moments. */
-    fun mascotGlow(color: Color): Brush =
-        Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent))
+    fun mascotGlow(color: Color): Brush = Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent))
 
     /** Theme-aware hero gradient. */
     @Composable
