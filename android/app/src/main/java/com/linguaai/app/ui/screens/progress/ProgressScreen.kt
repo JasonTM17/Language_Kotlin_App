@@ -261,7 +261,11 @@ private fun StreakHero(summary: ProgressSummaryDto) {
                         color = BrandGradients.OnHero,
                     )
                     Text(
-                        text = stringResource(R.string.progress_days_unit),
+                        text =
+                            stringResource(
+                                R.plurals.progress_days_unit,
+                                summary.streak.current,
+                            ),
                         style = MaterialTheme.typography.titleMedium,
                         color = BrandGradients.OnHeroMuted,
                         modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.sm),

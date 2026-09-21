@@ -1,5 +1,6 @@
 package com.linguaai.app.ui.screens.splash
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,7 @@ import kotlinx.coroutines.launch
 /** Keeps the brand mark on screen long enough to register as intentional. */
 private const val SPLASH_DELAY_MILLIS = 600L
 
-/** Pop-in start scale for the mascot; ends at full size via [LinguaMotion.pop]. */
+/** Pop-in start scale for the mascot; springs to full size once visible. */
 private const val SPLASH_START_SCALE = 0.6f
 
 /**
@@ -66,6 +67,16 @@ fun SplashScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         var appeared by remember { mutableStateOf(false) }
+        val scale by animateFloatAsState(
+            targetValue = if (appeared) 1f else SPLASH_START_SCALE,
+            animationSpec = LinguaMotion.pop(),
+            label = "splashScale",
+        )
+        val alpha by animateFloatAsState(
+            targetValue = if (appeared) 1f else 0f,
+            animationSpec = LinguaMotion.medium(),
+            label = "splashAlpha",
+        )
         LaunchedEffect(Unit) {
             launch { appeared = true }
         }
@@ -74,11 +85,9 @@ fun SplashScreen(
             mascotSize = 132.dp,
             modifier =
                 Modifier.graphicsLayer {
-                    val scale =
-                        if (appeared) 1f else SPLASH_START_SCALE
                     scaleX = scale
                     scaleY = scale
-                    alpha = if (appeared) 1f else 0f
+                    this.alpha = alpha
                 },
         )
         Text(

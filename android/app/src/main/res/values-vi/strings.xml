@@ -206,7 +206,6 @@
     <!-- Progress -->
     <string name="progress_title">Tiến trình của bạn</string>
     <string name="progress_streak_current">Chuỗi hiện tại</string>
-    <string name="progress_days_unit">ngày</string>
     <string name="progress_longest">Chuỗi dài nhất: %1$d</string>
     <string name="progress_last_active">Hoạt động gần nhất %1$s</string>
     <string name="progress_not_yet">Chưa có</string>
@@ -225,7 +224,7 @@
     <string name="badge_vocab_name">Sưu tầm từ ngữ</string>
     <string name="badge_vocab_desc">50 từ đã thành thạo</string>
     <string name="badge_quiz_name">Xạ thủ tỉ mỉ</string>
-    <string name="badge_quiz_desc">Điểm kiểm tra TB 80%%</string>
+    <string name="badge_quiz_desc">Điểm kiểm tra TB 80%</string>
     <string name="badge_time_name">Lặn sâu</string>
     <string name="badge_time_desc">60 phút học tập</string>
     <string name="badge_ai_name">Bạn của gia sư</string>
@@ -258,4 +257,8 @@
     <string name="state_offline_banner">Bạn đang ngoại tuyến — hiển thị nội dung đã lưu.</string>
     <string name="state_stale_banner">Lỗi kết nối — hiển thị dữ liệu đồng bộ gần nhất.</string>
     <string name="state_something_wrong">Đã xảy ra lỗi</string>
+    <plurals name="progress_days_unit">
+        <item quantity="one">ngày</item>
+        <item quantity="other">ngày</item>
+    </plurals>
 </resources>
