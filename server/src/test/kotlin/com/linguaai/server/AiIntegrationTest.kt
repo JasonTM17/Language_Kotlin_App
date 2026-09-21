@@ -482,6 +482,48 @@ class AiIntegrationTest {
             assertEquals(HttpStatusCode.BadRequest, score.status)
         }
 
+    /**
+     * The practice-score prompt asks the model for mistakes as objects, while
+     * the wire DTO declares plain strings. Before normalization a fully
+     * compliant reply failed to decode and returned an unrecoverable 502, and
+     * the mock hid it by emitting the string form instead.
+     */
+    @Test
+    fun `practice score accepts the object-shaped mistakes the prompt mandates`() =
+        withApp(mockScenario = "prompt_shaped_practice_score") {
+            val token = registerAndLogin("prompt-shaped@example.com")
+            val auth = { r: io.ktor.client.request.HttpRequestBuilder ->
+                r.header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            val started =
+                client.post("/api/v1/ai/conversation-practice") {
+                    auth(this)
+                    header(HttpHeaders.ContentType, "application/json")
+                    setBody("""{"scenario":"ordering food politely"}""")
+                }
+            val conversationId =
+                json.parseToJsonElement(started.bodyAsText()).jsonObject["conversationId"]!!
+                    .jsonPrimitive.content
+            client.post("/api/v1/ai/conversation-practice/$conversationId/reply") {
+                auth(this)
+                header(HttpHeaders.ContentType, "application/json")
+                setBody("""{"message":"ビールをください"}""")
+            }
+
+            val score =
+                client.post("/api/v1/ai/conversation-practice/$conversationId/score") { auth(this) }
+
+            assertEquals(HttpStatusCode.OK, score.status)
+            val mistakes =
+                json.parseToJsonElement(score.bodyAsText())
+                    .jsonObject["mistakes"]!!
+                    .jsonArray
+                    .map { it.jsonPrimitive.content }
+            assertEquals(1, mistakes.size)
+            assertTrue(mistakes.single().contains("ビールをください"))
+            assertTrue(mistakes.single().contains("いただけますか"))
+        }
+
     @Test
     fun `practice score rejects provider values outside the accepted range`() =
         withApp(mockScenario = "invalid_practice_score") {

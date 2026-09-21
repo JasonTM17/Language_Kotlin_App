@@ -90,6 +90,7 @@ class MockAiProvider(
                             .orEmpty(),
                 )
             "practice-score" -> practiceScoreResponse(valid = true)
+            "prompt_shaped_practice_score" -> practiceScoreResponse(valid = true, mistakesAsObjects = true)
             "invalid_practice_score" -> practiceScoreResponse(valid = false)
             "echo_quiz_prompt" -> {
                 val prompt =
@@ -114,7 +115,25 @@ class MockAiProvider(
             else -> null
         }
 
-    private fun practiceScoreResponse(valid: Boolean): AiChatResponse {
+    /**
+     * [mistakesAsObjects] reproduces the shape `PromptBuilder`'s practice-score
+     * instruction actually demands (`{"said":…,"better":…,"why":…}`). The plain
+     * string form matched the DTO but not the prompt, which is why every
+     * mock-based test stayed green while a compliant model reply failed to
+     * decode.
+     */
+    private fun practiceScoreResponse(
+        valid: Boolean,
+        mistakesAsObjects: Boolean = false,
+    ): AiChatResponse {
+        val mistakes =
+            if (mistakesAsObjects) {
+                """
+                [{"said":"ビールをください","better":"ビールをいただけますか","why":"A plain imperative reads bluntly to staff"}]
+                """.trimIndent()
+            } else {
+                """["Use a softer request ending in formal situations."]"""
+            }
         val content =
             if (valid) {
                 """
@@ -123,7 +142,7 @@ class MockAiProvider(
                   "grammarScore":82,
                   "vocabularyScore":86,
                   "naturalness":83,
-                  "mistakes":["Use a softer request ending in formal situations."],
+                  "mistakes":$mistakes,
                   "recommendations":["Practice one more restaurant role-play."]
                 }
                 """.trimIndent()

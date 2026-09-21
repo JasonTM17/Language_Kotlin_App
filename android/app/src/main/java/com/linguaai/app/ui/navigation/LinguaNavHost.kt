@@ -198,13 +198,7 @@ private fun NavGraphBuilder.aiGraph(navController: NavHostController) {
             .AiChatScreen(
                 onBack = { navController.popBackStack() },
                 onOpenSource = { source ->
-                    // A citation is only actionable where a detail route exists;
-                    // vocabulary hits carry an id the app has no screen for.
-                    when (source.sourceType) {
-                        "LESSON" -> navController.navigate(LessonDetailRoute(source.sourceId))
-                        "GRAMMAR" -> navController.navigate(GrammarDetailRoute(source.sourceId))
-                        else -> Unit
-                    }
+                    sourceRouteFor(source)?.let { navController.navigate(it) }
                 },
             )
     }
@@ -248,6 +242,20 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
         )
     }
 }
+
+/**
+ * Where a tutor citation leads. Retrieval tags each hit with the id from its
+ * own content table, so a LESSON hit carries a `Lessons.id` and a GRAMMAR hit a
+ * `GrammarLessons.id` — the same namespaces the detail routes take. Vocabulary
+ * has no id-carrying destination, so its citations stay inert rather than
+ * navigating somewhere wrong.
+ */
+internal fun sourceRouteFor(source: com.linguaai.app.data.remote.dto.AiSourceDto): Any? =
+    when (source.sourceType) {
+        "LESSON" -> LessonDetailRoute(source.sourceId)
+        "GRAMMAR" -> GrammarDetailRoute(source.sourceId)
+        else -> null
+    }
 
 internal fun chatRouteMode(
     conversationId: Long?,
