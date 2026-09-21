@@ -65,6 +65,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -269,7 +272,14 @@ private fun ChatTranscript(
             else ->
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
+                    // A reply lands while the learner is reading or typing, so
+                    // the transcript has to announce itself instead of sitting
+                    // silently at the bottom of the screen.
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .testTag("ai-chat-transcript")
+                            .semantics { liveRegion = LiveRegionMode.Polite },
                     contentPadding = PaddingValues(Spacing.md),
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
@@ -668,7 +678,13 @@ private fun MessageBubble(
                 } else {
                     TutorRichText(
                         content = message.content,
-                        modifier = Modifier.fillMaxWidth(),
+                        // One reply renders as several markdown blocks; merged,
+                        // a screen reader speaks it once instead of one
+                        // announcement per line.
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics(mergeDescendants = true) {},
                     )
                 }
                 if (!isUser && message.sources.isNotEmpty()) {

@@ -4,12 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -23,6 +26,7 @@ import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.ui.theme.LinguaAiTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -165,6 +169,47 @@ class AiChatScreenTest {
                 .assertWidthIsAtLeast(minDp.dp)
                 .assertHeightIsAtLeast(minDp.dp)
         }
+    }
+
+    /**
+     * A reply is rendered as several markdown blocks, and a new reply lands
+     * while the learner is doing something else. Both need the semantics tree
+     * to say so: one spoken unit per reply, and a transcript that announces
+     * arrivals instead of sitting silently off-screen.
+     */
+    @Test
+    fun tutorReply_isASingleAnnouncementInALiveTranscript() {
+        composeRule.setContent {
+            TestChatContent(
+                state =
+                    AiChatUiState(
+                        isLoading = false,
+                        messages =
+                            listOf(
+                                ChatMessage(
+                                    "ASSISTANT",
+                                    "**Corrected:** 学校に行きませんでした。\n\n" +
+                                        "marked the topic with は\n\n" +
+                                        "**Try this:** write one sentence.",
+                                ),
+                            ),
+                    ),
+            )
+        }
+
+        val transcript = composeRule.onNodeWithTag("ai-chat-transcript").fetchSemanticsNode()
+        assertTrue("the transcript must be a live region", transcript.config.contains(SemanticsProperties.LiveRegion))
+        assertEquals(LiveRegionMode.Polite, transcript.config[SemanticsProperties.LiveRegion])
+
+        val head = composeRule.onNode(hasText("Corrected:", substring = true)).fetchSemanticsNode()
+        val body = composeRule.onNode(hasText("marked the topic", substring = true)).fetchSemanticsNode()
+        assertTrue("the reply must expose text", head.config.contains(SemanticsProperties.Text))
+        val spoken = head.config[SemanticsProperties.Text].joinToString(" ")
+        assertEquals(
+            "the reply's blocks must merge into one announcement",
+            true,
+            spoken.contains("Corrected") && spoken.contains("marked the topic") && head.id == body.id,
+        )
     }
 
     @Test
