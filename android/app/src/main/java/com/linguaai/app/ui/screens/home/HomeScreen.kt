@@ -62,7 +62,7 @@ fun HomeScreen(
         state.profile == null && state.error != null ->
             ErrorState(
                 message = state.error?.render().orEmpty(),
-                retryLabel = "Retry",
+                retryLabel = stringResource(R.string.common_retry),
                 onRetry = viewModel::refresh,
             )
         else -> HomeContent(state, onContinueLesson, onStartReview, onOpenAiTutor)
@@ -238,7 +238,7 @@ private fun DailyGoalCard(state: HomeUiState) {
     }
 }
 
-/** The lesson the learner left off on, or a calm preview of the catalogue ahead. */
+/** The lesson the learner left off on, rendered as the screen's hero card. */
 @Composable
 private fun ContinueLearningCard(
     lesson: LessonSummaryDto?,
@@ -246,42 +246,65 @@ private fun ContinueLearningCard(
 ) {
     SectionHeader(title = stringResource(R.string.home_continue_learning), modifier = Modifier.padding(top = Spacing.lg))
     if (lesson != null) {
-        LinguaCard(onClick = { onContinueLesson(lesson.id) }) {
-            Row(
-                modifier = Modifier.padding(Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                IconTile(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(lesson.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.home_lesson_type_minutes,
-                                lesson.type.lowercase().replaceFirstChar { it.uppercase() },
-                                lesson.estimatedMinutes,
-                            ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Spacing.xs),
-                    )
-                    Text(
-                        text = stringResource(R.string.home_continue_lesson),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = Spacing.sm),
+        Surface(
+            onClick = { onContinueLesson(lesson.id) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            shadowElevation = 2.dp,
+        ) {
+            Box(modifier = Modifier.background(BrandGradients.hero())) {
+                Row(
+                    modifier = Modifier.padding(Spacing.lg),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(BrandGradients.OnHero.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = BrandGradients.OnHero,
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            lesson.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = BrandGradients.OnHero,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.home_lesson_type_minutes,
+                                    lesson.type.lowercase().replaceFirstChar { it.uppercase() },
+                                    lesson.estimatedMinutes,
+                                ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BrandGradients.OnHeroMuted,
+                            modifier = Modifier.padding(top = Spacing.xs),
+                        )
+                        Text(
+                            text = stringResource(R.string.home_continue_lesson),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = BrandGradients.OnHeroAmber,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = Spacing.sm),
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = BrandGradients.OnHero,
                     )
                 }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
             }
         }
     } else {

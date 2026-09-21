@@ -35,6 +35,7 @@ import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
+import com.linguaai.app.ui.components.LinguaMascot
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.render
@@ -137,6 +138,12 @@ internal fun OnboardingContent(
             text = stringResource(stepTitleRes(state.step)),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
+        )
+        // Decoration only: decorative mascot keeps every semantics node of this
+        // screen byte-identical for the instrumented tests.
+        LinguaMascot(
+            mascotSize = 84.dp,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
 
         Box(modifier = Modifier.weight(1f)) {

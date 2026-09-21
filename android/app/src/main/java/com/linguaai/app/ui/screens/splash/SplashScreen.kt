@@ -1,5 +1,6 @@
 package com.linguaai.app.ui.screens.splash
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,21 +15,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
 import com.linguaai.app.ui.components.LinguaMascot
+import com.linguaai.app.ui.theme.BrandGradients
+import com.linguaai.app.ui.theme.LinguaMotion
 import com.linguaai.app.ui.theme.Spacing
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /** Keeps the brand mark on screen long enough to register as intentional. */
 private const val SPLASH_DELAY_MILLIS = 600L
 
+/** Pop-in start scale for the mascot; ends at full size via [LinguaMotion.pop]. */
+private const val SPLASH_START_SCALE = 0.6f
+
 /**
  * Brand splash that resolves where the app should land: an active session goes
- * Home (or Onboarding), otherwise the login entry point.
+ * Home (or Onboarding), otherwise the login entry point. The full-bleed hero
+ * gradient with a spring pop-in gives the wordmark a single confident moment.
  */
 @Composable
 fun SplashScreen(
@@ -49,23 +58,39 @@ fun SplashScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(BrandGradients.hero()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        var appeared by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            launch { appeared = true }
+        }
         LinguaMascot(
             contentDescription = stringResource(R.string.mascot_content_description),
-            mascotSize = 128.dp,
+            mascotSize = 132.dp,
+            modifier =
+                Modifier.graphicsLayer {
+                    val scale =
+                        if (appeared) 1f else SPLASH_START_SCALE
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = if (appeared) 1f else 0f
+                },
         )
         Text(
             text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
+            color = BrandGradients.OnHero,
             modifier = Modifier.padding(top = Spacing.md),
         )
         Text(
             text = stringResource(R.string.splash_tagline),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = BrandGradients.OnHeroMuted,
             modifier = Modifier.padding(top = Spacing.sm),
         )
     }
