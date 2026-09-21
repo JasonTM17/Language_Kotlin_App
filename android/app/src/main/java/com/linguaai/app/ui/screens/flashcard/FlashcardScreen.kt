@@ -1,6 +1,8 @@
 package com.linguaai.app.ui.screens.flashcard
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,10 +26,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,8 +46,19 @@ import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
 import com.linguaai.app.ui.components.LoadingIndicator
+import com.linguaai.app.ui.theme.LinguaMotion
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.render
+import kotlinx.coroutines.launch
+
+/** Horizontal drag (in dp) past which a swipe becomes a grade. */
+private const val SWIPE_GRADE_THRESHOLD_DP = 110
+
+/** Rotation degrees applied per dragged dp for the playful tilt. */
+private const val SWIPE_TILT_PER_DP = 0.06f
+
+/** Start angle of the answer side's flip-in reveal. */
+private const val FLIP_START_DEGREES = -90f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,15 +90,15 @@ fun FlashcardScreen(
                     title =
                         when {
                             state.error != null -> stringResource(R.string.flashcard_review_paused)
-                            state.reviewedCount > 0 -> "Session complete"
-                            else -> "Nothing due right now"
+                            state.reviewedCount > 0 -> stringResource(R.string.flashcard_session_complete)
+                            else -> stringResource(R.string.flashcard_nothing_due)
                         },
                     message =
                         state.error?.render()
                             ?: if (state.reviewedCount > 0) {
-                                "You reviewed ${state.reviewedCount} words. Come back later for the next batch."
+                                stringResource(R.string.flashcard_session_summary, state.reviewedCount)
                             } else {
-                                "All caught up. New words unlock as review times arrive."
+                                stringResource(R.string.flashcard_all_caught_up)
                             },
                     actionLabel = if (state.error != null) stringResource(R.string.common_back) else stringResource(R.string.common_done),
                     onAction = onBack,
@@ -96,6 +116,22 @@ private fun FlashcardContent(
     modifier: Modifier = Modifier,
 ) {
     val card = state.current ?: return
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { SWIPE_GRADE_THRESHOLD_DP.dp.toPx() }
+    val dragX = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    // The answer side flips in from the spine instead of popping.
+    val flip = remember { Animatable(0f) }
+    LaunchedEffect(state.isRevealed) {
+        if (state.isRevealed) {
+            flip.snapTo(FLIP_START_DEGREES)
+            flip.animateTo(0f, LinguaMotion.smooth())
+        } else {
+            flip.snapTo(0f)
+        }
+    }
+
     Column(
         modifier =
             modifier
@@ -110,7 +146,14 @@ private fun FlashcardContent(
         )
 
         LinguaCard(
-            modifier = Modifier.padding(top = Spacing.md),
+            modifier =
+                Modifier
+                    .padding(top = Spacing.md)
+                    .graphicsLayer {
+                        translationX = dragX.value
+                        rotationZ = dragX.value * SWIPE_TILT_PER_DP
+                    }
+                    .swipeToGrade(state, dragX, swipeThresholdPx, scope, onEvent),
             containerColor =
                 if (state.isRevealed) {
                     MaterialTheme.colorScheme.secondaryContainer
@@ -119,72 +162,137 @@ private fun FlashcardContent(
                 },
         ) {
             AnimatedContent(targetState = state.isRevealed, label = "flashcard") { revealed ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(Spacing.xl),
-                ) {
-                    Text(
-                        text = card.word,
-                        style = MaterialTheme.typography.displaySmall,
-                        color =
-                            if (revealed) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            },
-                    )
-                    card.reading?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.titleMedium,
-                            color =
-                                if (revealed) {
-                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                },
-                            modifier = Modifier.padding(top = Spacing.sm),
-                        )
-                    }
-                    if (revealed) {
-                        Text(
-                            text = card.meaning,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(top = Spacing.lg),
-                        )
-                        card.example?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(top = Spacing.md),
-                            )
-                        }
-                        card.exampleTranslation?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(top = Spacing.xs),
-                            )
-                        }
-                    } else {
-                        LinguaButton(
-                            text = stringResource(R.string.flashcard_show_answer),
-                            onClick = { onEvent(FlashcardEvent.Reveal) },
-                            modifier = Modifier.padding(top = Spacing.xl),
-                        )
-                    }
-                }
+                FlashcardFace(
+                    card = card,
+                    revealed = revealed,
+                    flipDegrees = { flip.value },
+                    onEvent = onEvent,
+                )
             }
         }
 
-        if (state.isRevealed) GradeActions(state, onEvent)
+        if (state.isRevealed) {
+            Text(
+                text = stringResource(R.string.flashcard_swipe_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.sm),
+            )
+            GradeActions(state, onEvent)
+        }
         Spacer(modifier = Modifier.height(Spacing.lg))
+    }
+}
+
+/**
+ * Horizontal swipe grading: drag right for GOOD, left for AGAIN, past
+ * [swipeThresholdPx]. The card always springs back centred — grading advances
+ * the queue, so the next card starts at rest.
+ */
+private fun Modifier.swipeToGrade(
+    state: FlashcardUiState,
+    dragX: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
+    swipeThresholdPx: Float,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onEvent: (FlashcardEvent) -> Unit,
+): Modifier =
+    pointerInput(state.isRevealed, state.isSubmittingGrade) {
+        if (!state.isRevealed || state.isSubmittingGrade) return@pointerInput
+        var accumulated = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { accumulated = 0f },
+            onDragEnd = {
+                if (accumulated > swipeThresholdPx) onEvent(FlashcardEvent.Grade(ReviewGrade.GOOD))
+                if (accumulated < -swipeThresholdPx) onEvent(FlashcardEvent.Grade(ReviewGrade.AGAIN))
+                scope.launch { dragX.animateTo(0f, LinguaMotion.smooth()) }
+            },
+            onDragCancel = {
+                scope.launch { dragX.animateTo(0f, LinguaMotion.smooth()) }
+            },
+        ) { change, dragAmount ->
+            change.consume()
+            accumulated += dragAmount
+            scope.launch { dragX.snapTo(dragX.value + dragAmount) }
+        }
+    }
+
+/** One card face: prompt side, or the flip-in answer side once revealed. */
+@Composable
+private fun FlashcardFace(
+    card: com.linguaai.app.domain.model.VocabularyCard,
+    revealed: Boolean,
+    flipDegrees: () -> Float,
+    onEvent: (FlashcardEvent) -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xl)
+                .graphicsLayer {
+                    if (revealed) {
+                        rotationY = flipDegrees()
+                    }
+                },
+    ) {
+        Text(
+            text = card.word,
+            style = MaterialTheme.typography.displaySmall,
+            color =
+                if (revealed) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
+        )
+        card.reading?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.titleMedium,
+                color =
+                    if (revealed) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+                modifier = Modifier.padding(top = Spacing.sm),
+            )
+        }
+        if (revealed) {
+            Text(
+                text = card.meaning,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(top = Spacing.lg),
+            )
+            card.example?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(top = Spacing.md),
+                )
+            }
+            card.exampleTranslation?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+        } else {
+            LinguaButton(
+                text = stringResource(R.string.flashcard_show_answer),
+                onClick = { onEvent(FlashcardEvent.Reveal) },
+                modifier = Modifier.padding(top = Spacing.xl),
+            )
+        }
     }
 }
 
@@ -198,15 +306,43 @@ private fun GradeActions(
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = Modifier.padding(top = Spacing.md),
     ) {
-        GradeButton("Again", ReviewGrade.AGAIN, MaterialTheme.colorScheme.error, onEvent, enabled, Modifier.weight(1f))
-        GradeButton("Hard", ReviewGrade.HARD, MaterialTheme.colorScheme.tertiary, onEvent, enabled, Modifier.weight(1f))
+        GradeButton(
+            label = stringResource(R.string.flashcard_grade_again),
+            grade = ReviewGrade.AGAIN,
+            color = MaterialTheme.colorScheme.error,
+            onEvent = onEvent,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        )
+        GradeButton(
+            label = stringResource(R.string.flashcard_grade_hard),
+            grade = ReviewGrade.HARD,
+            color = MaterialTheme.colorScheme.tertiary,
+            onEvent = onEvent,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        )
     }
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = Modifier.padding(top = Spacing.sm),
     ) {
-        GradeButton("Good", ReviewGrade.GOOD, MaterialTheme.colorScheme.primary, onEvent, enabled, Modifier.weight(1f))
-        GradeButton("Easy", ReviewGrade.EASY, MaterialTheme.colorScheme.secondary, onEvent, enabled, Modifier.weight(1f))
+        GradeButton(
+            label = stringResource(R.string.flashcard_grade_good),
+            grade = ReviewGrade.GOOD,
+            color = MaterialTheme.colorScheme.primary,
+            onEvent = onEvent,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        )
+        GradeButton(
+            label = stringResource(R.string.flashcard_grade_easy),
+            grade = ReviewGrade.EASY,
+            color = MaterialTheme.colorScheme.secondary,
+            onEvent = onEvent,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
