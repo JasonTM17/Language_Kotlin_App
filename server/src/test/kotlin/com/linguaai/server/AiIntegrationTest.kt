@@ -18,6 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -117,6 +118,11 @@ class AiIntegrationTest {
                 }
             assertEquals(HttpStatusCode.TooManyRequests, third.status)
             assertTrue(third.bodyAsText().contains("RATE_LIMITED"))
+            // The client's countdown is only as good as this header; without it a
+            // learner five seconds from recovery and one a full minute from it see
+            // the same open-ended "wait a moment".
+            assertNotNull(third.headers[HttpHeaders.RetryAfter])
+            assertTrue(third.headers[HttpHeaders.RetryAfter].orEmpty().toLong() > 0L)
         }
 
     @Test
