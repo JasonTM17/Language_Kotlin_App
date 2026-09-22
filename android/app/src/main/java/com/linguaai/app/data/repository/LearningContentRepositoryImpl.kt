@@ -145,6 +145,28 @@ class LearningContentRepositoryImpl
                 }
             }
 
+        override fun observeFavorites(languageId: Long): Flow<List<com.linguaai.app.domain.model.VocabularyCard>> =
+            vocabularyDao.observeFavorites(languageId).map { list ->
+                list.map { entity ->
+                    entity.toDto().let { dto ->
+                        com.linguaai.app.domain.model.VocabularyCard(
+                            id = entity.id,
+                            languageId = entity.languageId,
+                            level = entity.level,
+                            word = entity.word,
+                            reading = entity.reading,
+                            pronunciation = entity.pronunciation,
+                            meaning = entity.meaning,
+                            example = entity.example,
+                            exampleTranslation = entity.exampleTranslation,
+                            category = entity.category,
+                            favorite = entity.favorite,
+                            masteryLevel = entity.masteryLevel,
+                        )
+                    }
+                }
+            }
+
         override suspend fun toggleFavorite(id: Long) {
             val current = vocabularyDao.findById(id) ?: return
             val updated =

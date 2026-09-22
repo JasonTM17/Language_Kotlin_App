@@ -43,6 +43,8 @@ interface LearningContentRepository {
         query: String?,
     ): Flow<List<com.linguaai.app.domain.model.VocabularyCard>>
 
+    fun observeFavorites(languageId: Long): Flow<List<com.linguaai.app.domain.model.VocabularyCard>>
+
     suspend fun toggleFavorite(id: Long)
 
     suspend fun refreshGrammar(

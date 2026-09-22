@@ -42,6 +42,9 @@ data class LessonDetailRoute(
 data object VocabularyRoute
 
 @Serializable
+data object SavedWordsRoute
+
+@Serializable
 data object FlashcardRoute
 
 @Serializable

@@ -45,6 +45,7 @@ import com.linguaai.app.ui.util.render
 @Composable
 fun VocabularyScreen(
     onBack: () -> Unit = {},
+    onOpenSavedWords: () -> Unit = {},
     viewModel: VocabularyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,13 +61,20 @@ fun VocabularyScreen(
                     contentDescription = stringResource(R.string.common_back),
                 )
             }
-            Column(modifier = Modifier.padding(start = Spacing.xs)) {
+            Column(modifier = Modifier.padding(start = Spacing.xs).weight(1f)) {
                 Text(text = stringResource(R.string.vocab_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
                     text = stringResource(R.string.vocab_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+            IconButton(onClick = onOpenSavedWords) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = stringResource(R.string.saved_words_title),
+                    tint = MaterialTheme.colorScheme.tertiary,
                 )
             }
         }

@@ -218,7 +218,13 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
         )
     }
     composable<VocabularyRoute> {
-        VocabularyScreen(onBack = { navController.popBackStack() })
+        VocabularyScreen(
+            onBack = { navController.popBackStack() },
+            onOpenSavedWords = { navController.navigate(SavedWordsRoute) },
+        )
+    }
+    composable<SavedWordsRoute> {
+        com.linguaai.app.ui.screens.vocabulary.saved.SavedWordsScreen(onBack = { navController.popBackStack() })
     }
     composable<FlashcardRoute> {
         FlashcardScreen(onBack = { navController.popBackStack() })

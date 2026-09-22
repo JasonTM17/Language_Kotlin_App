@@ -55,6 +55,11 @@ interface VocabularyDao {
         query: String?,
     ): Flow<List<VocabularyEntity>>
 
+    @Query(
+        "SELECT * FROM vocabulary WHERE languageId = :languageId AND favorite = 1 ORDER BY id",
+    )
+    fun observeFavorites(languageId: Long): Flow<List<VocabularyEntity>>
+
     @Query("SELECT * FROM vocabulary WHERE id = :id")
     suspend fun findById(id: Long): VocabularyEntity?
 
