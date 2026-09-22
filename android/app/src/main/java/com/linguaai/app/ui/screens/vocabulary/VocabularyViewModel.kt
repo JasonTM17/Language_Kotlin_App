@@ -15,6 +15,7 @@ import com.linguaai.app.ui.util.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +55,8 @@ sealed interface VocabularyEvent {
     ) : VocabularyEvent
 
     data object Retry : VocabularyEvent
+
+    data object SearchCommitted : VocabularyEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -67,6 +70,9 @@ class VocabularyViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(VocabularyUiState())
         val uiState: StateFlow<VocabularyUiState> = _uiState.asStateFlow()
+
+        /** Recent catalogue searches, newest first, for the chip row. */
+        val recentQueries: Flow<List<String>> = settingsDataStore.recentVocabQueries
 
         private val languageIdState = MutableStateFlow<Long?>(null)
         private val queryState = MutableStateFlow("")
@@ -122,6 +128,8 @@ class VocabularyViewModel
                         refreshTick.value += 1
                     }
                 VocabularyEvent.Retry -> viewModelScope.launch { refresh() }
+                VocabularyEvent.SearchCommitted ->
+                    viewModelScope.launch { settingsDataStore.rememberVocabQuery(_uiState.value.query) }
             }
         }
 

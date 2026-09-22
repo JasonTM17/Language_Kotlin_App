@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -27,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,11 +91,24 @@ fun VocabularyScreen(
             placeholder = { Text(stringResource(R.string.vocab_search_placeholder)) },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = { viewModel.onEvent(VocabularyEvent.SearchCommitted) },
+                ),
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.md, vertical = Spacing.md),
         )
+
+        val recentQueries by viewModel.recentQueries.collectAsStateWithLifecycle(initialValue = emptyList())
+        if (recentQueries.isNotEmpty() && state.query.isBlank()) {
+            RecentSearchChips(
+                queries = recentQueries,
+                onSearch = { term -> viewModel.onEvent(VocabularyEvent.SearchChanged(term)) },
+            )
+        }
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -190,6 +206,34 @@ private fun VocabularyRow(
                     tint = MaterialTheme.colorScheme.tertiary,
                 )
             }
+        }
+    }
+}
+
+/** Recent catalogue searches, newest first; tapping one reruns the search. */
+@Composable
+private fun RecentSearchChips(
+    queries: List<String>,
+    onSearch: (String) -> Unit,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        contentPadding = PaddingValues(horizontal = Spacing.md),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.vocab_recent_searches),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = Spacing.sm),
+            )
+        }
+        items(queries) { term ->
+            FilterChip(
+                selected = false,
+                onClick = { onSearch(term) },
+                label = { Text(term) },
+            )
         }
     }
 }

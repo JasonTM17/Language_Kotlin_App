@@ -44,6 +44,28 @@ class SettingsDataStore
         }
 
         val learningLanguageId: Flow<Long?> = context.settingsDataStore.data.map { it[LEARNING_LANGUAGE_ID] }
+
+        /** The last few distinct vocabulary searches, newest first. */
+        val recentVocabQueries: Flow<List<String>> =
+            context.settingsDataStore.data.map { prefs ->
+                parseRecentQueries(prefs[RECENT_QUERIES])
+            }
+
+        private fun parseRecentQueries(raw: String?): List<String> = raw.orEmpty().split(SEPARATOR_NEWLINE).filter { it.isNotBlank() }
+
+        /** Remembers one search term, deduplicated, newest first, capped at five. */
+        suspend fun rememberVocabQuery(query: String) {
+            val term = query.trim()
+            if (term.length < MIN_QUERY_LENGTH) return
+            context.settingsDataStore.edit { prefs ->
+                val updated =
+                    (listOf(term) + parseRecentQueries(prefs[RECENT_QUERIES]))
+                        .distinctBy { it.lowercase() }
+                        .take(RECENT_QUERY_LIMIT)
+                prefs[RECENT_QUERIES] = updated.joinToString(SEPARATOR_NEWLINE)
+            }
+        }
+
         val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[NOTIFICATIONS] ?: true }
         val reminderHour: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_HOUR] ?: DEFAULT_REMINDER_HOUR }
         val reminderMinute: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_MINUTE] ?: 0 }
@@ -111,6 +133,10 @@ class SettingsDataStore
             private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
             private val QUIZ_SCORES = stringPreferencesKey("quiz_score_history")
             private const val QUIZ_HISTORY_LIMIT = 5
+            private val RECENT_QUERIES = stringPreferencesKey("recent_vocab_queries")
+            private const val RECENT_QUERY_LIMIT = 5
+            private const val MIN_QUERY_LENGTH = 2
+            private const val SEPARATOR_NEWLINE: String = "\n"
         }
     }
 
