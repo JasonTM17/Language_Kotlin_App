@@ -10,6 +10,14 @@
     <string name="common_continue">Tiếp tục</string>
     <string name="common_back">Quay lại</string>
     <string name="common_retry">Thử lại</string>
+    <string name="home_word_of_day">Từ của hôm nay</string>
+    <string name="saved_words_title">Từ đã lưu</string>
+    <string name="saved_words_empty_hint">Bấm sao một từ trong danh mục để giữ nó tại đây.</string>
+    <string name="quiz_history_title">Điểm kiểm tra gần đây</string>
+    <string name="quiz_history_empty">Làm một bài kiểm tra để bắt đầu lịch sử điểm.</string>
+    <string name="quiz_history_entry">%1$d%% · %2$s</string>
+    <string name="vocab_recent_searches">Tìm kiếm gần đây</string>
+    <string name="progress_open_tutor">Hỏi gia sư</string>
     <string name="review_title">Ôn tập</string>
     <string name="learn_error_title">Không tải được bài học</string>
     <string name="learn_ready_title">Lộ trình bài học đã sẵn sàng</string>

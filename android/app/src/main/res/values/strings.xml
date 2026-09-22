@@ -10,6 +10,14 @@
     <string name="common_continue">Continue</string>
     <string name="common_back">Back</string>
     <string name="common_retry">Retry</string>
+    <string name="home_word_of_day">Word of the day</string>
+    <string name="saved_words_title">Saved words</string>
+    <string name="saved_words_empty_hint">Star a word in the catalogue to keep it here.</string>
+    <string name="quiz_history_title">Recent quiz scores</string>
+    <string name="quiz_history_empty">Take a quiz to start your score history.</string>
+    <string name="quiz_history_entry">%1$d%% · %2$s</string>
+    <string name="vocab_recent_searches">Recent searches</string>
+    <string name="progress_open_tutor">Ask the tutor</string>
     <string name="review_title">Review</string>
     <string name="learn_error_title">Couldn\'t load lessons</string>
     <string name="learn_ready_title">Your lesson path is ready</string>

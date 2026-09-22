@@ -148,6 +148,9 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
                     restoreState = true
                 }
             },
+            onOpenVocabulary = {
+                navController.navigate(VocabularyRoute) { launchSingleTop = true }
+            },
         )
     }
     composable<LearnRoute> {

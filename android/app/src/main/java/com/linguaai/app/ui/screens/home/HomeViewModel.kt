@@ -8,6 +8,7 @@ import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.data.repository.ProfileData
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
+import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.domain.repository.LearningContentRepository
 import com.linguaai.app.ui.util.UiMessage
 import com.linguaai.app.ui.util.toUiMessage
@@ -29,6 +30,7 @@ data class HomeUiState(
     val streakDays: Int = 0,
     val dueVocabularyCount: Int = 0,
     val continueLesson: LessonSummaryDto? = null,
+    val wordOfDay: VocabularyCard? = null,
     val error: UiMessage? = null,
     val isOffline: Boolean = false,
 )
@@ -115,6 +117,11 @@ class HomeViewModel
                     }
                     val lessons = learningContentRepository.observeLessons(languageId, null).first()
                     _uiState.update { it.copy(continueLesson = lessons.firstOrNull()) }
+
+                    // Word of the day: deterministic per-date pick from the words the
+                    // learner already tracks, so it is stable offline all day long.
+                    val tracked = learningContentRepository.observeVocabulary(languageId, null, null, null).first()
+                    _uiState.update { it.copy(wordOfDay = wordOfTheDay(tracked, today())) }
                 }
 
                 _uiState.update { it.copy(isLoading = false) }
@@ -127,3 +134,14 @@ class HomeViewModel
                 is AppResult.Failure -> progressRepository.observeCached().first()
             }
     }
+
+/** Stable per-date pick so the word does not change on every refresh. */
+internal fun wordOfTheDay(
+    words: List<VocabularyCard>,
+    date: java.time.LocalDate,
+): VocabularyCard? {
+    if (words.isEmpty()) return null
+    return words[(date.dayOfYear - 1).mod(words.size)]
+}
+
+private fun today(): java.time.LocalDate = java.time.LocalDate.now()

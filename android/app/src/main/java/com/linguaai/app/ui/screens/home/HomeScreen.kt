@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.repository.ProfileData
+import com.linguaai.app.domain.model.VocabularyCard
 import com.linguaai.app.ui.components.ErrorState
 import com.linguaai.app.ui.components.IconTile
 import com.linguaai.app.ui.components.LinguaCard
@@ -53,6 +55,7 @@ fun HomeScreen(
     onContinueLesson: (Long) -> Unit,
     onStartReview: () -> Unit,
     onOpenAiTutor: () -> Unit,
+    onOpenVocabulary: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,7 +68,7 @@ fun HomeScreen(
                 retryLabel = stringResource(R.string.common_retry),
                 onRetry = viewModel::refresh,
             )
-        else -> HomeContent(state, onContinueLesson, onStartReview, onOpenAiTutor)
+        else -> HomeContent(state, onContinueLesson, onStartReview, onOpenAiTutor, onOpenVocabulary)
     }
 }
 
@@ -75,6 +78,7 @@ private fun HomeContent(
     onContinueLesson: (Long) -> Unit,
     onStartReview: () -> Unit,
     onOpenAiTutor: () -> Unit,
+    onOpenVocabulary: () -> Unit,
 ) {
     Column(
         modifier =
@@ -87,6 +91,7 @@ private fun HomeContent(
         HomeHeader(state.profile, state.languageName)
         DailyGoalCard(state)
         ContinueLearningCard(state.continueLesson, onContinueLesson)
+        WordOfDayCard(state.wordOfDay, onOpenVocabulary)
         ReviewCard(state.dueVocabularyCount, onStartReview)
         AiTutorCard(onOpenAiTutor)
 
@@ -329,6 +334,52 @@ private fun ContinueLearningCard(
                     )
                 }
             }
+        }
+    }
+}
+
+/** Today's word from the learner's tracked vocabulary; tap opens the catalogue. */
+@Composable
+private fun WordOfDayCard(
+    word: VocabularyCard?,
+    onOpenVocabulary: () -> Unit,
+) {
+    if (word == null) return
+    SectionHeader(title = stringResource(R.string.home_word_of_day), modifier = Modifier.padding(top = Spacing.lg))
+    LinguaCard(onClick = onOpenVocabulary) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            IconTile(
+                imageVector = Icons.Filled.WbSunny,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(word.word, style = MaterialTheme.typography.titleMedium)
+                word.reading?.let { reading ->
+                    Text(
+                        text = reading,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = word.meaning,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
