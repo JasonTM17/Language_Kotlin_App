@@ -7,20 +7,21 @@ import org.junit.Test
 import java.time.LocalDate
 
 class WordOfTheDayTest {
-    private fun word(id: Long) = VocabularyCard(
-        id = id,
-        languageId = 1,
-        level = "N3",
-        word = "w$id",
-        reading = null,
-        pronunciation = null,
-        meaning = "meaning $id",
-        example = null,
-        exampleTranslation = null,
-        category = null,
-        favorite = false,
-        masteryLevel = 0,
-    )
+    private fun word(id: Long): VocabularyCard =
+        VocabularyCard(
+            id = id,
+            languageId = 1,
+            level = "N3",
+            word = "w$id",
+            reading = null,
+            pronunciation = null,
+            meaning = "meaning $id",
+            example = null,
+            exampleTranslation = null,
+            category = null,
+            favorite = false,
+            masteryLevel = 0,
+        )
 
     @Test
     fun `empty tracked list yields no word`() {
