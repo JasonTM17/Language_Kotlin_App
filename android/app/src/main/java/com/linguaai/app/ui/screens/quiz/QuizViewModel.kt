@@ -3,6 +3,7 @@ package com.linguaai.app.ui.screens.quiz
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.linguaai.app.data.datastore.SettingsDataStore
 import com.linguaai.app.data.local.dao.SyncDao
 import com.linguaai.app.data.local.entity.PendingSyncOpEntity
 import com.linguaai.app.data.remote.dto.QuizDto
@@ -50,9 +51,11 @@ class QuizViewModel
     constructor(
         savedStateHandle: SavedStateHandle,
         private val learningContentRepository: LearningContentRepository,
+        private val settingsDataStore: SettingsDataStore,
         private val syncDao: SyncDao,
     ) : ViewModel() {
         private val quizId: Long = checkNotNull(savedStateHandle["quizId"])
+        val scoreHistory = settingsDataStore.quizScoreHistory
         private val startedAt = System.currentTimeMillis()
 
         private val _uiState = MutableStateFlow(QuizUiState())
@@ -101,6 +104,10 @@ class QuizViewModel
                     )
                 when (val result = learningContentRepository.submitQuiz(quizId, submission)) {
                     is AppResult.Success -> {
+                        val total = result.data.total
+                        if (total > 0) {
+                            settingsDataStore.recordQuizScore(result.data.score * 100 / total)
+                        }
                         syncDao.enqueue(
                             PendingSyncOpEntity(
                                 operationId =

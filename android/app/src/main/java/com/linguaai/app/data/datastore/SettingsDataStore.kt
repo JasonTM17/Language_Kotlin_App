@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +29,20 @@ class SettingsDataStore
         val dailyGoalMinutes: Flow<Int> =
             context.settingsDataStore.data.map { it[DAILY_GOAL] ?: DEFAULT_DAILY_GOAL_MINUTES }
         val onboardingCompleted: Flow<Boolean> = context.settingsDataStore.data.map { it[ONBOARDING_DONE] ?: false }
+
+        /** The last five quiz percentages, newest first. */
+        val quizScoreHistory: Flow<List<QuizScoreEntry>> =
+            context.settingsDataStore.data.map { prefs -> parseQuizScoreHistory(prefs[QUIZ_SCORES]) }
+
+        /** Appends one percentage to the history, newest first, capped at five entries. */
+        suspend fun recordQuizScore(percent: Int) {
+            context.settingsDataStore.edit { prefs ->
+                val history = parseQuizScoreHistory(prefs[QUIZ_SCORES])
+                val updated = (listOf(QuizScoreEntry(percent, epochDay())) + history).take(QUIZ_HISTORY_LIMIT)
+                prefs[QUIZ_SCORES] = updated.joinToString(",") { "${it.percent}|${it.epochDay}" }
+            }
+        }
+
         val learningLanguageId: Flow<Long?> = context.settingsDataStore.data.map { it[LEARNING_LANGUAGE_ID] }
         val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[NOTIFICATIONS] ?: true }
         val reminderHour: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_HOUR] ?: DEFAULT_REMINDER_HOUR }
@@ -94,5 +109,30 @@ class SettingsDataStore
             private val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
             private val REMINDER_HOUR = intPreferencesKey("reminder_hour")
             private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
+            private val QUIZ_SCORES = stringPreferencesKey("quiz_score_history")
+            private const val QUIZ_HISTORY_LIMIT = 5
         }
     }
+
+/** One stored quiz outcome. */
+data class QuizScoreEntry(
+    val percent: Int,
+    val epochDay: Long,
+)
+
+private fun epochDay(): Long {
+    val today = LocalDate.now()
+    return today.toEpochDay()
+}
+
+private fun parseQuizScoreHistory(raw: String?): List<QuizScoreEntry> {
+    val entries = raw.orEmpty().split(',')
+    return entries.mapNotNull(::parseQuizScoreEntry)
+}
+
+private fun parseQuizScoreEntry(raw: String): QuizScoreEntry? {
+    val parts = raw.split("|")
+    val percent = parts.getOrNull(0)?.toIntOrNull() ?: return null
+    val day = parts.getOrNull(1)?.toLongOrNull() ?: return null
+    return QuizScoreEntry(percent, day)
+}

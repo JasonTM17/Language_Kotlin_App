@@ -3,12 +3,14 @@ package com.linguaai.app.ui.screens.quiz
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linguaai.app.R
+import com.linguaai.app.data.datastore.QuizScoreEntry
 import com.linguaai.app.ui.components.EmptyState
 import com.linguaai.app.ui.components.LinguaButton
 import com.linguaai.app.ui.components.LinguaCard
@@ -40,6 +43,9 @@ import com.linguaai.app.ui.components.LinguaOutlinedButton
 import com.linguaai.app.ui.components.LoadingIndicator
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.render
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** A result reads as strong work once this fraction of answers is correct. */
 private const val STRONG_WORK_FRACTION = 0.8f
@@ -52,6 +58,7 @@ fun QuizScreen(
     viewModel: QuizViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scoreHistory by viewModel.scoreHistory.collectAsStateWithLifecycle(initialValue = emptyList())
 
     Scaffold(
         topBar = {
@@ -74,6 +81,7 @@ fun QuizScreen(
                     score = state.result!!.score,
                     total = state.result!!.total,
                     weakTopics = state.result!!.weakTopics,
+                    scoreHistory = scoreHistory,
                     onAskAi = { onAskAiAboutMistakes(state.result!!.quizId) },
                     onDone = onBack,
                     modifier = Modifier.padding(padding),
@@ -163,6 +171,7 @@ private fun QuizResultContent(
     score: Int,
     total: Int,
     weakTopics: List<String>,
+    scoreHistory: List<QuizScoreEntry>,
     onAskAi: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
@@ -204,6 +213,36 @@ private fun QuizResultContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs),
         )
+        if (scoreHistory.isNotEmpty()) {
+            LinguaCard(modifier = Modifier.padding(top = Spacing.lg)) {
+                Column(modifier = Modifier.padding(Spacing.md)) {
+                    Text(stringResource(R.string.quiz_history_title), style = MaterialTheme.typography.titleSmall)
+                    scoreHistory.forEach { entry ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = Spacing.sm),
+                        ) {
+                            Text(
+                                text = "${entry.percent}%",
+                                style = MaterialTheme.typography.labelLarge,
+                                color =
+                                    if (entry.percent >= STRONG_WORK_FRACTION * 100) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                modifier = Modifier.widthIn(min = 48.dp),
+                            )
+                            Text(
+                                text = epochDayLabel(entry.epochDay),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         if (weakTopics.isNotEmpty()) {
             LinguaCard(modifier = Modifier.padding(top = Spacing.lg)) {
                 Column(modifier = Modifier.padding(Spacing.md)) {
@@ -230,4 +269,11 @@ private fun QuizResultContent(
         )
         Spacer(modifier = Modifier.height(Spacing.xl))
     }
+}
+
+/** Renders the stored epoch day as a short localized date for the history strip. */
+private fun epochDayLabel(epochDay: Long): String {
+    val date = LocalDate.ofEpochDay(epochDay)
+    val format = DateTimeFormatter.ofPattern("d MMM").withLocale(Locale.getDefault())
+    return format.format(date)
 }
