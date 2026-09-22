@@ -31,6 +31,7 @@ import com.linguaai.app.ui.screens.quiz.QuizScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
 import com.linguaai.app.ui.screens.splash.StartDestination
 import com.linguaai.app.ui.screens.vocabulary.VocabularyScreen
+import com.linguaai.app.ui.screens.vocabulary.saved.SavedWordsScreen
 import kotlin.reflect.KClass
 
 /** Short cross-fade between destinations; long enough to read as a transition. */
@@ -164,7 +165,11 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
     }
     composable<ProgressRoute> {
         com.linguaai.app.ui.screens.progress
-            .ProgressScreen()
+            .ProgressScreen(
+                onAskTutor = { topic ->
+                    navController.navigate(AiChatRoute(mode = "general", seed = topic))
+                },
+            )
     }
     composable<ProfileRoute> {
         com.linguaai.app.ui.screens.profile.ProfileScreen(
@@ -224,7 +229,7 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
         )
     }
     composable<SavedWordsRoute> {
-        com.linguaai.app.ui.screens.vocabulary.saved.SavedWordsScreen(onBack = { navController.popBackStack() })
+        SavedWordsScreen(onBack = { navController.popBackStack() })
     }
     composable<FlashcardRoute> {
         FlashcardScreen(onBack = { navController.popBackStack() })

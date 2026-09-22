@@ -69,8 +69,9 @@ class AiChatViewModel
     ) : ViewModel() {
         private val routeConversationId: Long? = savedStateHandle["conversationId"]
         private val routeMode: String = savedStateHandle["mode"] ?: "general"
+        private val routeSeed: String? = savedStateHandle["seed"]
 
-        private val _uiState = MutableStateFlow(AiChatUiState(mode = routeMode))
+        private val _uiState = MutableStateFlow(AiChatUiState(mode = routeMode, input = routeSeed.orEmpty()))
         val uiState: StateFlow<AiChatUiState> = _uiState.asStateFlow()
 
         /** The reply currently in flight, so [stop] can abandon it. */

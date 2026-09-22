@@ -64,6 +64,7 @@ data class QuizRoute(
 data class AiChatRoute(
     val conversationId: Long? = null,
     val mode: String = "general",
+    val seed: String? = null,
 )
 
 /** Destinations that show the bottom navigation bar. */

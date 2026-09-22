@@ -1,6 +1,7 @@
 package com.linguaai.app.ui.screens.progress
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,6 +105,7 @@ internal fun intensityBucket(minutes: Int): Int =
 @Composable
 fun ProgressScreen(
     modifier: Modifier = Modifier,
+    onAskTutor: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -113,6 +115,7 @@ fun ProgressScreen(
         state = state,
         isOnline = isOnline,
         onRetry = viewModel::refresh,
+        onAskTutor = onAskTutor,
         modifier = modifier,
     )
 }
@@ -122,6 +125,7 @@ private fun ProgressContent(
     state: ProgressUiState,
     isOnline: Boolean,
     onRetry: () -> Unit,
+    onAskTutor: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val summary = state.summary
@@ -164,7 +168,7 @@ private fun ProgressContent(
                     modifier = Modifier.padding(top = Spacing.lg),
                 )
 
-            else -> ProgressBody(summary = summary)
+            else -> ProgressBody(summary = summary, onAskTutor = onAskTutor)
         }
 
         Spacer(modifier = Modifier.height(Spacing.xl))
@@ -172,7 +176,10 @@ private fun ProgressContent(
 }
 
 @Composable
-private fun ProgressBody(summary: ProgressSummaryDto) {
+private fun ProgressBody(
+    summary: ProgressSummaryDto,
+    onAskTutor: (String) -> Unit,
+) {
     StreakHero(summary)
 
     Spacer(modifier = Modifier.height(Spacing.md))
@@ -226,7 +233,7 @@ private fun ProgressBody(summary: ProgressSummaryDto) {
 
     if (summary.weakTopics.isNotEmpty()) {
         SectionHeader(title = stringResource(R.string.progress_worth_revisiting), modifier = Modifier.padding(top = Spacing.lg))
-        WeakTopicsCard(summary)
+        WeakTopicsCard(summary, onAskTutor)
     }
 }
 
@@ -626,12 +633,27 @@ private fun MasteryRow(
 }
 
 @Composable
-private fun WeakTopicsCard(summary: ProgressSummaryDto) {
+private fun WeakTopicsCard(
+    summary: ProgressSummaryDto,
+    onAskTutor: (String) -> Unit,
+) {
     LinguaCard {
         Column(modifier = Modifier.padding(Spacing.md)) {
+            Text(
+                text = stringResource(R.string.progress_open_tutor),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = Spacing.sm),
+            )
             summary.weakTopics.forEachIndexed { index, topic ->
                 if (index > 0) Spacer(modifier = Modifier.height(Spacing.sm))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onAskTutor(topic.topic) },
+                ) {
                     Box(
                         modifier =
                             Modifier
