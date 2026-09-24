@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.data.datastore.cachedLearningLanguageCode
 import com.linguaai.app.data.local.dao.VocabularyDao
 import com.linguaai.app.data.local.entity.VocabularyEntity
 import com.linguaai.app.data.remote.dto.ProgressEventTypes
@@ -31,6 +32,7 @@ private const val MILLIS_PER_MINUTE = 60_000L
 data class FlashcardUiState(
     val isLoading: Boolean = true,
     val queue: List<VocabularyCard> = emptyList(),
+    val languageCode: String? = null,
     val currentIndex: Int = 0,
     val isRevealed: Boolean = false,
     val reviewedCount: Int = 0,
@@ -85,6 +87,17 @@ class FlashcardViewModel
                     }
                     return@launch
                 }
+                val languageCode =
+                    when (val languages = learningContentRepository.languages()) {
+                        is AppResult.Success ->
+                            languages.data.firstOrNull { it.id == languageId }?.code.also { code ->
+                                code?.let { settingsDataStore.setLearningLanguageCode(languageId, it) }
+                            }
+                        is AppResult.Failure -> {
+                            val (cachedLanguageId, cachedLanguageCode) = settingsDataStore.cachedLearningLanguage()
+                            cachedLearningLanguageCode(languageId, cachedLanguageId, cachedLanguageCode)
+                        }
+                    }
 
                 // Refresh cache first (network is optional); due words stay scoped
                 // to the learner's language so an old Japanese cache can never
@@ -113,6 +126,7 @@ class FlashcardViewModel
                     it.copy(
                         isLoading = false,
                         queue = due,
+                        languageCode = languageCode,
                         finished = due.isEmpty(),
                         error = null,
                     )
@@ -185,6 +199,17 @@ class FlashcardViewModel
                     _uiState.update { it.copy(isLoading = false) }
                     return@launch
                 }
+                val languageCode =
+                    when (val languages = learningContentRepository.languages()) {
+                        is AppResult.Success ->
+                            languages.data.firstOrNull { it.id == languageId }?.code.also { code ->
+                                code?.let { settingsDataStore.setLearningLanguageCode(languageId, it) }
+                            }
+                        is AppResult.Failure -> {
+                            val (cachedLanguageId, cachedLanguageCode) = settingsDataStore.cachedLearningLanguage()
+                            cachedLearningLanguageCode(languageId, cachedLanguageId, cachedLanguageCode)
+                        }
+                    }
                 val entities =
                     if (favoritesOnly) {
                         vocabularyDao.observeFavorites(languageId).first()
@@ -212,6 +237,7 @@ class FlashcardViewModel
                     it.copy(
                         isLoading = false,
                         queue = cards,
+                        languageCode = languageCode,
                         currentIndex = 0,
                         isRevealed = false,
                         finished = cards.isEmpty(),

@@ -169,29 +169,44 @@ fun AiChatScreen(
 
     AiChatContent(
         state = state,
-        onInputChanged = viewModel::onInputChanged,
-        onSend = viewModel::send,
-        onRetry = viewModel::retry,
-        onScorePractice = viewModel::scorePractice,
-        onStop = viewModel::stop,
-        onOpenSource = onOpenSource,
-        onBack = onBack,
+        actions =
+            AiChatActions(
+                onInputChanged = viewModel::onInputChanged,
+                onSend = viewModel::send,
+                onRetry = viewModel::retry,
+                onScorePractice = viewModel::scorePractice,
+                onStop = viewModel::stop,
+                onOpenSource = onOpenSource,
+                onBack = onBack,
+            ),
     )
 }
 
+internal data class AiChatActions(
+    val onInputChanged: (String) -> Unit,
+    val onSend: () -> Unit,
+    val onRetry: () -> Unit,
+    val onScorePractice: () -> Unit,
+    val onStop: () -> Unit,
+    val onOpenSource: (AiSourceDto) -> Unit,
+    val onBack: () -> Unit,
+    val onSpeak: ((String) -> Unit)? = null,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiChatContent(
+internal fun AiChatContent(
     state: AiChatUiState,
-    onInputChanged: (String) -> Unit,
-    onSend: () -> Unit,
-    onRetry: () -> Unit,
-    onScorePractice: () -> Unit,
-    onStop: () -> Unit,
-    onOpenSource: (AiSourceDto) -> Unit,
-    onBack: () -> Unit,
-    onSpeak: ((String) -> Unit)? = null,
+    actions: AiChatActions,
 ) {
+    val onInputChanged = actions.onInputChanged
+    val onSend = actions.onSend
+    val onRetry = actions.onRetry
+    val onScorePractice = actions.onScorePractice
+    val onStop = actions.onStop
+    val onOpenSource = actions.onOpenSource
+    val onBack = actions.onBack
+    val onSpeak = actions.onSpeak
     val tts =
         com.linguaai.app.ui.util
             .rememberLinguaTts()

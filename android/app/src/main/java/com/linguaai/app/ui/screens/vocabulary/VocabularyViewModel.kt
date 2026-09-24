@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.linguaai.app.R
 import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.data.datastore.cachedLearningLanguageCode
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppError
 import com.linguaai.app.domain.model.AppResult
@@ -34,6 +35,7 @@ private const val SEARCH_DEBOUNCE_MILLIS = 300L
 data class VocabularyUiState(
     val isLoading: Boolean = true,
     val vocabulary: List<VocabularyCard> = emptyList(),
+    val languageCode: String? = null,
     val availableLevels: List<String> = DEFAULT_LANGUAGE_LEVELS,
     val query: String = "",
     val selectedLevel: String? = null,
@@ -174,13 +176,23 @@ class VocabularyViewModel
 
         private suspend fun loadAvailableLevels(languageId: Long?) {
             when (val result = learningContentRepository.languages()) {
-                is AppResult.Success ->
-                    result.data
-                        .firstOrNull { it.id == languageId }
-                        ?.levels
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.let { levels -> _uiState.update { it.copy(availableLevels = levels) } }
-                is AppResult.Failure -> Unit
+                is AppResult.Success -> {
+                    val language = result.data.firstOrNull { it.id == languageId }
+                    if (language != null) {
+                        settingsDataStore.setLearningLanguageCode(language.id, language.code)
+                        _uiState.update { state ->
+                            state.copy(
+                                languageCode = language.code,
+                                availableLevels = language.levels.takeIf { it.isNotEmpty() } ?: state.availableLevels,
+                            )
+                        }
+                    }
+                }
+                is AppResult.Failure -> {
+                    val (cachedLanguageId, cachedLanguageCode) = settingsDataStore.cachedLearningLanguage()
+                    val cachedCode = cachedLearningLanguageCode(languageId, cachedLanguageId, cachedLanguageCode)
+                    _uiState.update { it.copy(languageCode = cachedCode) }
+                }
             }
         }
     }

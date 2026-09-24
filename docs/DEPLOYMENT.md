@@ -5,7 +5,7 @@
 | Artifact | Where |
 | --- | --- |
 | Backend image | `server/Dockerfile` — multi-stage, runs as a non-root user |
-| Local stack | `docker-compose.yml` — backend + MySQL 8 |
+| Local stack | `docker-compose.yml` — backend + MySQL 8 + Qdrant |
 | Android APK | `android/app/build/outputs/apk/debug/app-debug.apk` |
 
 ## Deploy the backend with Docker
@@ -17,9 +17,43 @@ cp .env.example .env
 $EDITOR .env
 
 docker-compose up --build -d
-docker-compose ps          # both services should report healthy
+docker-compose ps          # backend, MySQL and Qdrant should report healthy
 curl http://localhost:8080/api/v1/health
 ```
+
+## Published backend images
+
+The backend has a public, repository-linked [GitHub Container Registry package](https://github.com/JasonTM17/Language_Kotlin_App/pkgs/container/linguaai-backend). [The publish workflow](../.github/workflows/backend-ci.yml) owns GHCR tags; Docker Hub is updated from the corresponding GHCR references after that workflow completes. A tag can be missing or resolve to an older image while publication is pending. Before relying on a newly published tag, confirm that it exists and compare the linux/amd64 digest for the corresponding refs in both registries.
+
+```bash
+# Pull a pinned release after its publish and digest checks are complete
+docker pull ghcr.io/jasontm17/linguaai-backend:1.0.0
+docker pull docker.io/nguyenson1710/linguaai-backend:1.0.0
+
+# Inspect the linux/amd64 manifest before promoting an image
+docker buildx imagetools inspect ghcr.io/jasontm17/linguaai-backend:1.0.0
+docker buildx imagetools inspect docker.io/nguyenson1710/linguaai-backend:1.0.0
+```
+
+The repository's [Compose file](../docker-compose.yml) uses the Docker Hub
+`latest` image by default and supplies the MySQL, Qdrant, and runtime
+configuration that the backend needs. With `.env` configured as described
+above, pull and start the published image without rebuilding it locally:
+
+```bash
+docker compose pull backend
+docker compose up -d --no-build
+docker compose ps
+curl http://localhost:8080/api/v1/health
+```
+
+To use GHCR with that stack, set the `backend.image` value in
+`docker-compose.yml` to the GHCR release reference shown above, then run the
+same pull and `up --no-build` commands. Use the version tag to pin a release;
+`latest` follows the default-branch image and can lag while its Actions run is
+active. The SHA tag identifies a particular source commit. A version tag that
+already exists can still point to an older image; compare the linux/amd64 digest
+in each registry before treating two references as the same image.
 
 `docker-compose.yml` uses `:?` on `DB_PASSWORD`, `DB_ROOT_PASSWORD` and
 `JWT_SECRET`, so a missing value fails immediately with a clear message instead of

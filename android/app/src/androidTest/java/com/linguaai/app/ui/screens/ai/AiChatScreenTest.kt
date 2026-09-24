@@ -373,13 +373,16 @@ class AiChatScreenTest {
         LinguaAiTheme(darkTheme = false) {
             AiChatContent(
                 state = state,
-                onInputChanged = onInputChanged,
-                onSend = onSend,
-                onRetry = onRetry,
-                onScorePractice = onScorePractice,
-                onStop = onStop,
-                onOpenSource = onOpenSource,
-                onBack = {},
+                actions =
+                    AiChatActions(
+                        onInputChanged = onInputChanged,
+                        onSend = onSend,
+                        onRetry = onRetry,
+                        onScorePractice = onScorePractice,
+                        onStop = onStop,
+                        onOpenSource = onOpenSource,
+                        onBack = {},
+                    ),
             )
         }
     }

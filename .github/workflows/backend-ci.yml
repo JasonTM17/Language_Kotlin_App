@@ -5,6 +5,9 @@ name: backend-ci
 on:
   push:
     branches: [main]
+    # A version tag rebuilds the verified source and publishes an immutable
+    # semver tag to GHCR. Path filters are ignored for tag pushes by GitHub.
+    tags: ['v*']
     paths:
       - 'server/**'
       - '.github/workflows/backend-ci.yml'
@@ -57,7 +60,7 @@ jobs:
     name: Build & Publish Container
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       packages: write
@@ -82,8 +85,9 @@ jobs:
           images: |
             ghcr.io/jasontm17/linguaai-backend
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
+            type=semver,pattern={{version}}
 
       - name: Build and push container image
         uses: docker/build-push-action@v6

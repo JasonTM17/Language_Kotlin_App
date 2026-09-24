@@ -200,6 +200,7 @@ private fun FlashcardContent(
             AnimatedContent(targetState = state.isRevealed, label = "flashcard") { revealed ->
                 FlashcardFace(
                     card = card,
+                    languageCode = state.languageCode,
                     revealed = revealed,
                     flipDegrees = { flip.value },
                     onEvent = onEvent,
@@ -260,13 +261,14 @@ private fun Modifier.swipeToGrade(
 @Composable
 private fun FlashcardFace(
     card: com.linguaai.app.domain.model.VocabularyCard,
+    languageCode: String?,
     revealed: Boolean,
     flipDegrees: () -> Float,
     onEvent: (FlashcardEvent) -> Unit,
 ) {
     val tts =
         com.linguaai.app.ui.util
-            .rememberLinguaTts()
+            .rememberLinguaTts(languageCode)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,7 +297,10 @@ private fun FlashcardFace(
                     },
             )
             IconButton(
-                onClick = { tts.speak(card.word) },
+                onClick = {
+                    val reading = card.reading?.takeIf { languageCode.equals("ja", ignoreCase = true) && it.isNotBlank() }
+                    tts.speak(card.word, languageCode, reading ?: card.word)
+                },
                 modifier = Modifier.padding(start = Spacing.xs),
             ) {
                 Icon(

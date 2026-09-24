@@ -3,6 +3,7 @@ package com.linguaai.app.ui.screens.vocabulary.saved
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.data.datastore.cachedLearningLanguageCode
 import com.linguaai.app.data.repository.RemoteAuthRepository
 import com.linguaai.app.domain.model.AppResult
 import com.linguaai.app.domain.model.VocabularyCard
@@ -19,6 +20,7 @@ import javax.inject.Inject
 data class SavedWordsUiState(
     val isLoading: Boolean = true,
     val words: List<VocabularyCard> = emptyList(),
+    val languageCode: String? = null,
 )
 
 @HiltViewModel
@@ -39,6 +41,18 @@ class SavedWordsViewModel
                     _uiState.update { it.copy(isLoading = false) }
                     return@launch
                 }
+                val languageCode =
+                    when (val languages = learningContentRepository.languages()) {
+                        is AppResult.Success ->
+                            languages.data.firstOrNull { it.id == languageId }?.code.also { code ->
+                                code?.let { settingsDataStore.setLearningLanguageCode(languageId, it) }
+                            }
+                        is AppResult.Failure -> {
+                            val (cachedLanguageId, cachedLanguageCode) = settingsDataStore.cachedLearningLanguage()
+                            cachedLearningLanguageCode(languageId, cachedLanguageId, cachedLanguageCode)
+                        }
+                    }
+                _uiState.update { it.copy(languageCode = languageCode) }
                 learningContentRepository.observeFavorites(languageId).collect { words ->
                     _uiState.update { it.copy(isLoading = false, words = words) }
                 }

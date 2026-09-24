@@ -55,7 +55,7 @@ fun VocabularyScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tts =
         com.linguaai.app.ui.util
-            .rememberLinguaTts()
+            .rememberLinguaTts(state.languageCode)
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -166,12 +166,23 @@ fun VocabularyScreen(
                             onToggleFavorite = {
                                 viewModel.onEvent(VocabularyEvent.ToggleFavorite(card.id))
                             },
-                            onSpeak = { tts.speak(card.word) },
+                            onSpeak = {
+                                speakVocabularyWord(tts, card, state.languageCode)
+                            },
                         )
                     }
                 }
         }
     }
+}
+
+private fun speakVocabularyWord(
+    tts: com.linguaai.app.ui.util.LinguaTts,
+    card: com.linguaai.app.domain.model.VocabularyCard,
+    languageCode: String?,
+) {
+    val reading = card.reading?.takeIf { languageCode.equals("ja", ignoreCase = true) && it.isNotBlank() }
+    tts.speak(card.word, languageCode, reading ?: card.word)
 }
 
 @Composable
