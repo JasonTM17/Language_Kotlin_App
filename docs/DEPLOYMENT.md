@@ -49,11 +49,14 @@ curl http://localhost:8080/api/v1/health
 
 To use GHCR with that stack, set the `backend.image` value in
 `docker-compose.yml` to the GHCR release reference shown above, then run the
-same pull and `up --no-build` commands. Use the version tag to pin a release;
-`latest` follows the default-branch image and can lag while its Actions run is
-active. The SHA tag identifies a particular source commit. A version tag that
-already exists can still point to an older image; compare the linux/amd64 digest
-in each registry before treating two references as the same image.
+same pull and `up --no-build` commands. Use the version tag to pin a release.
+`latest` is mutable, and a publish run can move it; inspect the tags emitted by
+the actual run and compare the linux/amd64 digest after mirroring. For v1.0.0,
+the version-tag run emitted `latest`, `1.0.0`, and `sha-10d0bbc`, all resolving
+to the same image. The SHA tag identifies a particular source commit. A version
+tag that already exists can still point to an older image; compare the
+linux/amd64 digest in each registry before treating two references as the same
+image.
 
 `docker-compose.yml` uses `:?` on `DB_PASSWORD`, `DB_ROOT_PASSWORD` and
 `JWT_SECRET`, so a missing value fails immediately with a clear message instead of
