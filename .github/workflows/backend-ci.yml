@@ -81,7 +81,6 @@ jobs:
         with:
           images: |
             ghcr.io/jasontm17/linguaai-backend
-            ghcr.io/jasontm17/language-kotlin-app-backend
           tags: |
             type=raw,value=latest
             type=sha,format=short
