@@ -49,6 +49,7 @@ services:
       start_period: 15s
 
   backend:
+    image: nguyenson1710/linguaai-backend:latest
     build:
       context: ./server
     container_name: linguaai-backend
