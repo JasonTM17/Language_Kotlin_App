@@ -28,6 +28,9 @@ FROM eclipse-temurin:24-jre
 RUN useradd --create-home --shell /usr/sbin/nologin appuser
 WORKDIR /app
 
+LABEL org.opencontainers.image.source="https://github.com/JasonTM17/Language_Kotlin_App"
+LABEL org.opencontainers.image.description="LinguaAI Backend Server"
+
 COPY --from=build /workspace/build/install/*/ /app/
 
 USER appuser
