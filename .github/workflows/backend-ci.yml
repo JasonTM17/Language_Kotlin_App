@@ -80,7 +80,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/linguaai-backend
+            ghcr.io/jasontm17/linguaai-backend
+            ghcr.io/jasontm17/language-kotlin-app-backend
           tags: |
             type=raw,value=latest
             type=sha,format=short
