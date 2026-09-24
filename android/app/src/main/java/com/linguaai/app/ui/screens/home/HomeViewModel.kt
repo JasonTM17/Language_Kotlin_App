@@ -3,6 +3,7 @@ package com.linguaai.app.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.linguaai.app.data.datastore.SettingsDataStore
+import com.linguaai.app.data.datastore.cachedLearningLanguageCode
 import com.linguaai.app.data.remote.dto.LessonSummaryDto
 import com.linguaai.app.data.remote.dto.ProgressSummaryDto
 import com.linguaai.app.data.repository.ProfileData
@@ -25,6 +26,7 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val profile: ProfileData? = null,
     val languageName: String? = null,
+    val languageCode: String? = null,
     val dailyGoalMinutes: Int = 20,
     val todayMinutes: Int = 0,
     val streakDays: Int = 0,
@@ -112,13 +114,25 @@ class HomeViewModel
 
                 _uiState.value.profile?.languageId?.let { languageId ->
                     when (val languages = learningContentRepository.languages()) {
-                        is AppResult.Success ->
+                        is AppResult.Success -> {
+                            val language = languages.data.firstOrNull { it.id == languageId }
+                            language?.code?.let { settingsDataStore.setLearningLanguageCode(languageId, it) }
                             _uiState.update { state ->
                                 state.copy(
-                                    languageName = languages.data.firstOrNull { it.id == languageId }?.name,
+                                    languageName = language?.name,
+                                    languageCode = language?.code,
                                 )
                             }
-                        is AppResult.Failure -> Unit
+                        }
+                        is AppResult.Failure -> {
+                            val (cachedLanguageId, cachedLanguageCode) = settingsDataStore.cachedLearningLanguage()
+                            _uiState.update { state ->
+                                state.copy(
+                                    languageName = null,
+                                    languageCode = cachedLearningLanguageCode(languageId, cachedLanguageId, cachedLanguageCode),
+                                )
+                            }
+                        }
                     }
                 }
 

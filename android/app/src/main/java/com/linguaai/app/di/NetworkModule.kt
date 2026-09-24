@@ -37,6 +37,9 @@ object NetworkModule {
      * internet connection" and duplicated the exchange when the learner retried.
      */
     private const val READ_TIMEOUT_SECONDS = 75L
+    private const val WIKIMEDIA_CONNECT_TIMEOUT_SECONDS = 5L
+    private const val WIKIMEDIA_READ_TIMEOUT_SECONDS = 5L
+    private const val WIKIMEDIA_CALL_TIMEOUT_SECONDS = 8L
 
     private val json =
         Json {
@@ -80,6 +83,18 @@ object NetworkModule {
             .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(logging)
+            .build()
+
+    /** Public, read-only pronunciation metadata requests never carry app auth or body logging. */
+    @Provides
+    @Singleton
+    @Named("wikimedia")
+    fun wikimediaOkHttpClient(): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(WIKIMEDIA_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(WIKIMEDIA_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(WIKIMEDIA_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
 
     @Provides

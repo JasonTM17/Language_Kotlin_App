@@ -1,5 +1,12 @@
 package com.linguaai.app.domain.model
 
+private const val SINGLE_ACTION_QUEST_TARGET = 1
+private const val FLASHCARDS_QUEST_TARGET = 10
+private const val AI_CHAT_QUEST_XP_REWARD = 40
+private const val FLASHCARDS_QUEST_XP_REWARD = 30
+private const val QUIZ_QUEST_XP_REWARD = 50
+private const val WORD_OF_DAY_QUEST_XP_REWARD = 20
+
 /** Type and static metadata for a daily quest. */
 enum class DailyQuestType(
     val id: String,
@@ -7,10 +14,10 @@ enum class DailyQuestType(
     val xpReward: Int,
     val emoji: String,
 ) {
-    AI_CHAT("ai_chat", 1, 40, "💬"),
-    FLASHCARDS("flashcards", 10, 30, "🃏"),
-    QUIZ("quiz", 1, 50, "⚡"),
-    WORD_OF_DAY("word_of_day", 1, 20, "📖"),
+    AI_CHAT("ai_chat", SINGLE_ACTION_QUEST_TARGET, AI_CHAT_QUEST_XP_REWARD, "💬"),
+    FLASHCARDS("flashcards", FLASHCARDS_QUEST_TARGET, FLASHCARDS_QUEST_XP_REWARD, "🃏"),
+    QUIZ("quiz", SINGLE_ACTION_QUEST_TARGET, QUIZ_QUEST_XP_REWARD, "⚡"),
+    WORD_OF_DAY("word_of_day", SINGLE_ACTION_QUEST_TARGET, WORD_OF_DAY_QUEST_XP_REWARD, "📖"),
 }
 
 /** Dynamic daily state for one quest. */

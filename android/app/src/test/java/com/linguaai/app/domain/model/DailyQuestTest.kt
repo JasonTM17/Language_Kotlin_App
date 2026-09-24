@@ -7,6 +7,18 @@ import org.junit.Test
 
 class DailyQuestTest {
     @Test
+    fun `daily quest targets and rewards remain stable`() {
+        assertEquals(1, DailyQuestType.AI_CHAT.target)
+        assertEquals(40, DailyQuestType.AI_CHAT.xpReward)
+        assertEquals(10, DailyQuestType.FLASHCARDS.target)
+        assertEquals(30, DailyQuestType.FLASHCARDS.xpReward)
+        assertEquals(1, DailyQuestType.QUIZ.target)
+        assertEquals(50, DailyQuestType.QUIZ.xpReward)
+        assertEquals(1, DailyQuestType.WORD_OF_DAY.target)
+        assertEquals(20, DailyQuestType.WORD_OF_DAY.xpReward)
+    }
+
+    @Test
     fun `quest progress fraction calculates correctly`() {
         val quest =
             DailyQuest(

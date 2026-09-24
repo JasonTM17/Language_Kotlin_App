@@ -15,8 +15,8 @@ key inside the app.
 | Backend | Kotlin, Ktor 3, Exposed, Flyway, JWT (access + refresh rotation), bcrypt |
 | Database | MySQL 8 in Docker; H2 in-memory (MySQL mode) for integration tests |
 | AI | Provider-agnostic gateway (OpenAI-compatible / Mock), server-built prompts, retrieval-grounded answers over a Qdrant/SQL vector store, bounded conversation memory, per-user rate limiting |
-| Quality | 81 server tests plus 88 Android JVM tests and 29 Android instrumented tests — JUnit 5 + ktor-server-test-host + H2, JUnit 4 + MockWebServer, Compose UI tests and Room `MigrationTestHelper`; detekt and ktlint are blocking on both builds, with every exception justified in its config; GitHub Actions CI |
-| Delivery | Docker Compose, multi-stage backend image, Conventional Commits, Mermaid documentation |
+| Quality | Server and Android unit/instrumented suites, detekt and ktlint as blocking CI gates; exact current counts are recorded in the [testing guide](docs/TESTING.md) |
+| Delivery | Docker Compose, backend images in GHCR and Docker Hub, Conventional Commits, Mermaid documentation |
 
 ## Features
 
@@ -30,6 +30,9 @@ key inside the app.
   derived on the fly from the cached study summary — never persisted
 - Flashcards with a pluggable spaced-repetition scheduler (`ReviewScheduler`, SM-2 derivative),
   graded by horizontal swipe (right for GOOD, left for AGAIN) with a flip-in answer reveal
+- On-demand recorded word pronunciations from Wiktionary/Commons when an exact-language,
+  reusable recording is available, with visible file/author/license credits and a locale-correct
+  Android TTS fallback; coverage is partial — see the [pronunciation guide](docs/PRONUNCIATION.md)
 - Quiz engine with attempt tracking and grading
 
 **AI Tutor**
@@ -45,7 +48,8 @@ key inside the app.
 - Interruptible replies, a scroll-to-latest control, and a real rate-limit
   countdown driven by the server's `Retry-After` grant
 - Pluggable vector engine: **Qdrant** in Docker Compose, or a dependency-free SQL
-  cosine store offline; validated live at 100k-vector scale
+  cosine store offline; the verified local catalogue index contains 2,000,935
+  chunks. The repeatable load harness separately exercises 100k+ retrieval rows
   (`scripts/e2e-bigdata.sh`)
 - Context-aware: knows the current lesson, the grammar in focus and the learner's
   recurring weak topics
@@ -61,13 +65,19 @@ key inside the app.
 
 ## Screenshots
 
-Captured from a `vi-VN` locale emulator (1080x2400).
+Real emulator captures from the `vi-VN` locale. The animation shows Home, AI tutor,
+Japanese roleplay, Learn, and Vocabulary flows.
 
-| Splash | Home | Progress |
+![LinguaAI app demo](docs/img/demo.gif)
+
+| Home | Word of the day | AI tutor |
 | --- | --- | --- |
-| <img src="docs/img/splash.png" width="270"> | <img src="docs/img/home.png" width="270"> | <img src="docs/img/progress.png" width="270"> |
-| Swipe-to-grade flashcards | AI tutor chat | Vocabulary catalogue |
-| <img src="docs/img/flashcard.png" width="270"> | <img src="docs/img/ai-chat.png" width="270"> | <img src="docs/img/vocabulary.png" width="270"> |
+| <img src="docs/img/home-current-vi.png" width="240" alt="LinguaAI Home in Vietnamese"> | <img src="docs/img/home-word-of-day-vi.png" width="240" alt="Word of the day card"> | <img src="docs/img/ai-tutor-current-vi.png" width="240" alt="AI tutor modes"> |
+| Japanese roleplay | Learn | Vocabulary |
+| <img src="docs/img/roleplay-reply-vi.png" width="240" alt="Japanese roleplay reply"> | <img src="docs/img/learn-current-vi.png" width="240" alt="Learn dashboard"> | <img src="docs/img/vocabulary-current-vi.png" width="240" alt="Vocabulary catalogue"> |
+| Flashcard review |
+| --- |
+| <img src="docs/img/flashcard-review-vi.png" width="240" alt="Flashcard review card"> |
 
 ## Architecture in one picture
 
@@ -121,6 +131,8 @@ cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew assembleDebug \
 ```
 
 The override is debug-only; release builds keep their configured production endpoint.
+To pull and run the published backend image instead of building locally, see the
+[deployment guide](docs/DEPLOYMENT.md#published-backend-images).
 
 > **`JAVA_HOME` is not optional.** Gradle takes its JDK from `JAVA_HOME`, not from `java` on
 > `PATH`. With a newer JDK on `PATH` and `JAVA_HOME` unset, the build fails with a bare version
@@ -129,8 +141,8 @@ The override is debug-only; release builds keep their configured production endp
 ## Tests
 
 ```bash
-cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 81 tests
-cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 88 tests
+cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 84 tests
+cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 120 tests
 ```
 
 Both suites run offline — no network, no database, no AI key. The AI paths are exercised through
@@ -145,11 +157,9 @@ latency percentiles and post-seed relevance — is kept in the repository's plan
 rather than asserted by CI; environments without Docker-enabled Bash can follow the
 same manual-equivalent checkpoints.
 
-Twenty-nine instrumented tests (seven Room migration, twelve chatbot, four
-auth, two onboarding Compose cases, one language-scoped Review regression, one
-account-scoped language-cache regression and two vocabulary progress/outbox
-regressions) are defined for a device or emulator with
-`connectedDebugAndroidTest`. The current device evidence is recorded in
+Thirty-one instrumented test cases are defined for a device or emulator with
+`connectedDebugAndroidTest`; the current run reports 30 passed and one
+intentional opt-in pronunciation skip. The current device evidence is recorded in
 [docs/TESTING.md](docs/TESTING.md#android-instrumented-tests); a live authenticated
 UI-to-backend/provider walk remains a separate runtime gate.
 
@@ -183,6 +193,7 @@ plans/            local planning artefacts (gitignored)
 | [Diagrams](docs/diagrams/README.md) | System, layering, auth, AI path, offline sync, progress aggregation |
 | [Development](docs/DEVELOPMENT.md) | Setup, run, conventions, troubleshooting |
 | [Testing](docs/TESTING.md) | What each suite covers and what is deliberately missing |
+| [Pronunciation](docs/PRONUNCIATION.md) | Audio sources, licensing, language matching and privacy |
 | [Deployment](docs/DEPLOYMENT.md) | Docker, configuration, and the known limitations |
 | [Working agreement](docs/WORKFLOW.md) | Plan identity, execution cadence, verification budget, reporting contract |
 
@@ -198,15 +209,20 @@ Stated rather than glossed over:
   uses deterministic feature hashing — exact-token matching with no synonym or cross-lingual
   generalization. Configure an OpenAI-compatible provider and reindex for semantic embeddings
   ([ADR-0007](docs/architecture/adr/0007-retrieval-grounded-tutor.md)).
-- **Scale is validated, not "bigdata".** The live stack has been exercised at 100k+ corpus rows /
-  100k+ embedded chunks on a single-node Docker Compose deployment; that is pipeline load
-  evidence, not a distributed-systems claim.
-- **The million-row catalogue is source data, not a ranked curriculum.** The import preserves
+- **Scale is single-node evidence, not a distributed-capacity claim.** The live Compose stack
+  indexes the verified two-million-row catalogue in Qdrant, and the repeatable harness exercises
+  100k+ retrieval rows; neither proves multi-node capacity or a production SLO.
+- **The two-million-row catalogue is source data, not a ranked curriculum.** The import preserves
   third-party dictionary glosses and POS categories; frequency/rank-based pedagogy remains a
   separate product phase. See the [catalogue guide](docs/data/multilingual-vocabulary.md) for
   licenses, checksums and the bounded reindex workflow.
+- **Recorded pronunciations are best-effort and not available for every word or dialect.** The app
+  checks only on a speaker tap and falls back to Android TTS with the selected language locale. A
+  lookup sends the selected headword and language code to Wikimedia; the request also exposes
+  ordinary network metadata such as the device's IP address. See the [pronunciation guide](docs/PRONUNCIATION.md).
 - **The current Room migration chain through version 7 has executed on the
-  `linguaai-api35` emulator with 29/29 instrumented tests passing.** A fresh
+  `linguaai-api35` emulator.** The latest instrumented run reported 31 tests,
+  with 30 passing and one intentional opt-in pronunciation skip. A fresh
   authenticated route walk also exercised Home, Learn, Vocabulary, Grammar,
   Review and Daily Quiz against the local backend; hosted CI and production
   verification remain separate gates.

@@ -284,6 +284,12 @@
     <!-- Audio & Pronunciation -->
     <string name="tts_pronounce">Phát âm</string>
     <string name="tts_listen">Lắng nghe</string>
+    <string name="tts_voice_unavailable">Thiết bị chưa cài giọng đọc cho ngôn ngữ này.</string>
+    <string name="audio_attribution_title">Nguồn phát âm</string>
+    <string name="audio_attribution_details">Tệp: %1$s\nNgười ghi âm: %2$s\nGiấy phép: %3$s</string>
+    <string name="audio_open_wiktionary">Mục từ Wiktionary</string>
+    <string name="audio_open_commons_file">Tệp âm thanh và ghi công</string>
+    <string name="audio_open_license">Điều khoản giấy phép</string>
 
     <!-- Word of the Day Direct Actions -->
     <string name="home_word_ask_ai">Hỏi Gia sư AI</string>

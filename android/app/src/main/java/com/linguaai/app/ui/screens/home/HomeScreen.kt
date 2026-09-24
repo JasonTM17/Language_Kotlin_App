@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +55,31 @@ import com.linguaai.app.ui.components.SectionHeader
 import com.linguaai.app.ui.theme.BrandGradients
 import com.linguaai.app.ui.theme.Spacing
 import com.linguaai.app.ui.util.render
+
+private data class HomeActions(
+    val onContinueLesson: (Long) -> Unit,
+    val onStartReview: () -> Unit,
+    val onOpenAiTutor: () -> Unit,
+    val onOpenVocabulary: () -> Unit,
+    val onAskAiWord: ((VocabularyCard) -> Unit)?,
+    val onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
+    val onToggleFavorite: () -> Unit,
+    val onPracticeWord: () -> Unit,
+)
+
+private object HomeColors {
+    val WordOfDayBadgeBackground = Color(0xFFFEF3C7)
+    val WordOfDayBadgeBorder = Color(0xFFFDE68A)
+    val WordOfDayBadgeIcon = Color(0xFFD97706)
+    val WordOfDayBadgeText = Color(0xFF92400E)
+    val AiQuest = Color(0xFF8B5CF6)
+    val FlashcardsQuest = Color(0xFF0EA5E9)
+    val QuizQuest = Color(0xFFF59E0B)
+    val WordOfDayQuest = Color(0xFF10B981)
+    val ClaimedQuestBackground = Color(0xFFECFDF5)
+    val ClaimedQuestText = Color(0xFF047857)
+    val Favorite = Color(0xFFF59E0B)
+}
 
 @Composable
 fun HomeScreen(
@@ -77,14 +103,17 @@ fun HomeScreen(
         else ->
             HomeContent(
                 state = state,
-                onContinueLesson = onContinueLesson,
-                onStartReview = onStartReview,
-                onOpenAiTutor = onOpenAiTutor,
-                onOpenVocabulary = onOpenVocabulary,
-                onAskAiWord = onAskAiWord,
-                onClaimQuest = viewModel::claimQuest,
-                onToggleFavorite = viewModel::toggleFavoriteWordOfDay,
-                onPracticeWord = viewModel::practiceWordOfDay,
+                actions =
+                    HomeActions(
+                        onContinueLesson = onContinueLesson,
+                        onStartReview = onStartReview,
+                        onOpenAiTutor = onOpenAiTutor,
+                        onOpenVocabulary = onOpenVocabulary,
+                        onAskAiWord = onAskAiWord,
+                        onClaimQuest = viewModel::claimQuest,
+                        onToggleFavorite = viewModel::toggleFavoriteWordOfDay,
+                        onPracticeWord = viewModel::practiceWordOfDay,
+                    ),
             )
     }
 }
@@ -92,18 +121,11 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     state: HomeUiState,
-    onContinueLesson: (Long) -> Unit,
-    onStartReview: () -> Unit,
-    onOpenAiTutor: () -> Unit,
-    onOpenVocabulary: () -> Unit,
-    onAskAiWord: ((VocabularyCard) -> Unit)?,
-    onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
-    onToggleFavorite: () -> Unit,
-    onPracticeWord: () -> Unit,
+    actions: HomeActions,
 ) {
     val tts =
         com.linguaai.app.ui.util
-            .rememberLinguaTts(state.languageName)
+            .rememberLinguaTts(state.languageCode)
 
     Column(
         modifier =
@@ -116,25 +138,28 @@ private fun HomeContent(
         HomeHeader(state.profile, state.languageName, state.userXp)
         DailyGoalCard(state)
         if (state.dailyQuests.isNotEmpty()) {
-            DailyQuestsCard(quests = state.dailyQuests, onClaimQuest = onClaimQuest)
+            DailyQuestsCard(quests = state.dailyQuests, onClaimQuest = actions.onClaimQuest)
         }
-        ContinueLearningCard(state.continueLesson, onContinueLesson)
+        ContinueLearningCard(state.continueLesson, actions.onContinueLesson)
         WordOfDayCard(
             word = state.wordOfDay,
-            onOpenVocabulary = onOpenVocabulary,
-            onSpeak = { text -> tts.speak(text) },
-            onToggleFavorite = onToggleFavorite,
+            onOpenVocabulary = actions.onOpenVocabulary,
+            onSpeak = { card ->
+                val reading = card.reading?.takeIf { state.languageCode.equals("ja", ignoreCase = true) && it.isNotBlank() }
+                tts.speak(card.word, state.languageCode, reading ?: card.word)
+            },
+            onToggleFavorite = actions.onToggleFavorite,
             onAskAi = { word ->
-                onPracticeWord()
-                if (onAskAiWord != null) {
-                    onAskAiWord(word)
+                actions.onPracticeWord()
+                if (actions.onAskAiWord != null) {
+                    actions.onAskAiWord(word)
                 } else {
-                    onOpenAiTutor()
+                    actions.onOpenAiTutor()
                 }
             },
         )
-        ReviewCard(state.dueVocabularyCount, onStartReview)
-        AiTutorCard(onOpenAiTutor)
+        ReviewCard(state.dueVocabularyCount, actions.onStartReview)
+        AiTutorCard(actions.onOpenAiTutor)
 
         state.error?.let { error ->
             Text(
@@ -210,14 +235,12 @@ private fun HomeHeader(
         }
         Surface(
             color =
-                androidx.compose.ui.graphics
-                    .Color(0xFFFEF3C7),
+                HomeColors.WordOfDayBadgeBackground,
             shape = CircleShape,
             border =
                 androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    androidx.compose.ui.graphics
-                        .Color(0xFFFDE68A),
+                    HomeColors.WordOfDayBadgeBorder,
                 ),
         ) {
             Row(
@@ -229,16 +252,14 @@ private fun HomeHeader(
                     imageVector = Icons.Filled.AutoAwesome,
                     contentDescription = null,
                     tint =
-                        androidx.compose.ui.graphics
-                            .Color(0xFFD97706),
+                        HomeColors.WordOfDayBadgeIcon,
                     modifier = Modifier.size(14.dp),
                 )
                 Text(
                     text = stringResource(R.string.user_xp_badge, userXp),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color =
-                        androidx.compose.ui.graphics
-                            .Color(0xFF92400E),
+                        HomeColors.WordOfDayBadgeText,
                 )
             }
         }
@@ -449,21 +470,13 @@ private fun DailyQuestRow(
     val (icon, tint) =
         when (quest.type) {
             com.linguaai.app.domain.model.DailyQuestType.AI_CHAT ->
-                Icons.Filled.AutoAwesome to
-                    androidx.compose.ui.graphics
-                        .Color(0xFF8B5CF6)
+                Icons.Filled.AutoAwesome to HomeColors.AiQuest
             com.linguaai.app.domain.model.DailyQuestType.FLASHCARDS ->
-                Icons.AutoMirrored.Filled.MenuBook to
-                    androidx.compose.ui.graphics
-                        .Color(0xFF0EA5E9)
+                Icons.AutoMirrored.Filled.MenuBook to HomeColors.FlashcardsQuest
             com.linguaai.app.domain.model.DailyQuestType.QUIZ ->
-                Icons.Filled.CheckCircle to
-                    androidx.compose.ui.graphics
-                        .Color(0xFFF59E0B)
+                Icons.Filled.CheckCircle to HomeColors.QuizQuest
             com.linguaai.app.domain.model.DailyQuestType.WORD_OF_DAY ->
-                Icons.Filled.WbSunny to
-                    androidx.compose.ui.graphics
-                        .Color(0xFF10B981)
+                Icons.Filled.WbSunny to HomeColors.WordOfDayQuest
         }
     val titleRes =
         when (quest.type) {
@@ -528,52 +541,54 @@ private fun DailyQuestRow(
                 trackColor = tint.copy(alpha = 0.2f),
             )
         }
-        when {
-            quest.isClaimed -> {
-                Surface(
-                    shape = CircleShape,
-                    color =
-                        androidx.compose.ui.graphics
-                            .Color(0xFFECFDF5),
-                ) {
-                    Text(
-                        text = stringResource(R.string.quest_claimed),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color =
-                            androidx.compose.ui.graphics
-                                .Color(0xFF047857),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
-            }
-            quest.isCompleted -> {
-                androidx.compose.material3.Button(
-                    onClick = onClaim,
-                    shape = CircleShape,
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor =
-                                androidx.compose.ui.graphics
-                                    .Color(0xFFF59E0B),
-                            contentColor = androidx.compose.ui.graphics.Color.White,
-                        ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    modifier = Modifier.height(30.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.quest_claim_xp, quest.type.xpReward),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
-            }
-            else -> {
+        DailyQuestAction(quest = quest, onClaim = onClaim)
+    }
+}
+
+@Composable
+private fun DailyQuestAction(
+    quest: com.linguaai.app.domain.model.DailyQuest,
+    onClaim: () -> Unit,
+) {
+    when {
+        quest.isClaimed -> {
+            Surface(
+                shape = CircleShape,
+                color = HomeColors.ClaimedQuestBackground,
+            ) {
                 Text(
-                    text = "+${quest.type.xpReward} XP",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 4.dp),
+                    text = stringResource(R.string.quest_claimed),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = HomeColors.ClaimedQuestText,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
+        }
+        quest.isCompleted -> {
+            androidx.compose.material3.Button(
+                onClick = onClaim,
+                shape = CircleShape,
+                colors =
+                    androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = HomeColors.QuizQuest,
+                        contentColor = Color.White,
+                    ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.height(30.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.quest_claim_xp, quest.type.xpReward),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+        }
+        else -> {
+            Text(
+                text = "+${quest.type.xpReward} XP",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
         }
     }
 }
@@ -583,7 +598,7 @@ private fun DailyQuestRow(
 private fun WordOfDayCard(
     word: VocabularyCard?,
     onOpenVocabulary: () -> Unit,
-    onSpeak: (String) -> Unit,
+    onSpeak: (VocabularyCard) -> Unit,
     onToggleFavorite: () -> Unit,
     onAskAi: (VocabularyCard) -> Unit,
 ) {
@@ -613,7 +628,7 @@ private fun WordOfDayCard(
                     ) {
                         Text(word.word, style = MaterialTheme.typography.titleMedium)
                         androidx.compose.material3.IconButton(
-                            onClick = { onSpeak(word.word) },
+                            onClick = { onSpeak(word) },
                             modifier = Modifier.size(28.dp),
                         ) {
                             Icon(
@@ -651,8 +666,7 @@ private fun WordOfDayCard(
                             ),
                         tint =
                             if (word.favorite) {
-                                androidx.compose.ui.graphics
-                                    .Color(0xFFF59E0B)
+                                HomeColors.Favorite
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },

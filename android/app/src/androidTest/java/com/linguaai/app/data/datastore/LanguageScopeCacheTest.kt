@@ -30,10 +30,20 @@ class LanguageScopeCacheTest {
     fun languageScopeIsClearedAtTheAccountBoundary() =
         runBlocking {
             settingsDataStore.setLearningLanguageId(6L)
+            settingsDataStore.setLearningLanguageCode(6L, "ja")
             assertEquals(6L, settingsDataStore.learningLanguageId.first())
+            assertEquals("ja", settingsDataStore.learningLanguageCode.first())
+
+            settingsDataStore.setLearningLanguageId(7L)
+            assertNull(settingsDataStore.learningLanguageCode.first())
+
+            settingsDataStore.setLearningLanguageCode(6L, "ja")
+            settingsDataStore.setLearningLanguageCode(7L, "unknown")
+            assertNull(settingsDataStore.learningLanguageCode.first())
 
             settingsDataStore.setLearningLanguageId(null)
 
             assertNull(settingsDataStore.learningLanguageId.first())
+            assertNull(settingsDataStore.learningLanguageCode.first())
         }
 }

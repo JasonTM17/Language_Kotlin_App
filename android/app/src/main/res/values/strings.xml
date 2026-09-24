@@ -288,6 +288,12 @@
     <!-- Audio & Pronunciation -->
     <string name="tts_pronounce">Pronounce</string>
     <string name="tts_listen">Listen</string>
+    <string name="tts_voice_unavailable">No installed voice supports this language.</string>
+    <string name="audio_attribution_title">Pronunciation source</string>
+    <string name="audio_attribution_details">File: %1$s\nRecorded by: %2$s\nLicense: %3$s</string>
+    <string name="audio_open_wiktionary">Wiktionary entry</string>
+    <string name="audio_open_commons_file">Audio file and credit</string>
+    <string name="audio_open_license">License terms</string>
 
     <!-- Word of the Day Direct Actions -->
     <string name="home_word_ask_ai">Ask AI Tutor</string>
@@ -313,4 +319,3 @@
     <string name="scenario_doctor_title">Health &amp; Pharmacy</string>
     <string name="scenario_doctor_desc">Describe symptoms &amp; request remedies</string>
 </resources>
-

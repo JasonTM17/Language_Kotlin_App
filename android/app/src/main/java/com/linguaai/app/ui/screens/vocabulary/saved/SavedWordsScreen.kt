@@ -43,7 +43,7 @@ fun SavedWordsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tts =
         com.linguaai.app.ui.util
-            .rememberLinguaTts()
+            .rememberLinguaTts(state.languageCode)
 
     Scaffold(
         topBar = {
@@ -75,7 +75,13 @@ fun SavedWordsScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     items(state.words, key = { it.id }) { word ->
-                        SavedWordRow(word = word, onSpeak = { tts.speak(word.word) })
+                        SavedWordRow(
+                            word = word,
+                            onSpeak = {
+                                val reading = word.reading?.takeIf { state.languageCode.equals("ja", ignoreCase = true) && it.isNotBlank() }
+                                tts.speak(word.word, state.languageCode, reading ?: word.word)
+                            },
+                        )
                     }
                 }
         }

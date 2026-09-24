@@ -5,8 +5,9 @@
 | Suite | Command | Count | Needs |
 | --- | --- | --- | --- |
 | Server integration | `cd server && ./gradlew test` | 84 | Nothing — H2 in-memory |
-| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | 88 | Nothing |
-| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | 29 | A device or emulator |
+| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | 120 | Nothing |
+| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | 31 (30 pass, 1 opt-in skip) | A device or emulator |
+| Live pronunciation smoke | See the opt-in command below | 1 | Emulator, network access, Wikimedia APIs and installed Android TTS voices |
 | Live bigdata E2E | `bash scripts/e2e-bigdata.sh` | 13 checks | Docker (MySQL 8 + Qdrant), JDK — operational harness, not a CI gate |
 
 The server suite runs against a real Ktor module with real Flyway migrations on
@@ -83,6 +84,7 @@ count audit and explicit RAG reindex checkpoint.
 | Auth use cases | an invalid form never reaches the network, values are normalised before being sent, field-check order is stable |
 | AI Tutor | correction and practice start/reply/score routing, correction-history reuse, connectivity transitions, Room fallback, retry without duplicate messages, best-effort cache failures, loading-state send guard, generated-quiz profile handoff, and navigation mode preservation |
 | AI DTOs | a chat response without `sources` decodes to an empty list (backward compatibility with pre-RAG servers), citations decode with title/type/ids/level/score, a missing optional `level` is tolerated |
+| Pronunciation (Wiktionary/Commons) | exact-language section selection, mismatched phrase-label rejection, reusable-license/URL version consistency, attribution and MIME requirements, long `Retry-After` cooldowns, bounded overflow handling, selected-locale TTS fallback and cancellation of stale word lookups |
 
 ## Why the mock provider matters
 
@@ -99,12 +101,30 @@ real prompt was wrong.
 
 ## Device execution evidence
 
-The latest observed device run on 2026-09-22 re-ran on the boot-complete
-`linguaai-api35` emulator and passed **29/29** with
-`connectedDebugAndroidTest`. The suite has grown from 22 to 29 cases with the
-FE redesign; the Room migration chain through version 6, chatbot/auth/onboarding
-Compose cases, language/account isolation and vocabulary progress/outbox
-regressions remain covered.
+The latest observed default device run on 2026-09-24 ran on
+`linguaai-api35(AVD) - 15`: **31 tests, 0 failures, 0 errors, 1 intentional
+skip**. The skipped case is the opt-in live pronunciation test; the default
+suite does not contact Wikimedia or depend on installed language voices.
+
+The live pronunciation smoke was run separately on that AVD with:
+
+```powershell
+cd android
+.\gradlew.bat :app:connectedDebugAndroidTest --no-daemon `
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.linguaai.app.ui.util.WiktionaryAudioLiveSmokeTest' `
+  '-Pandroid.testInstrumentationRunnerArguments.liveAudioSmoke=true'
+```
+
+It passed **1/1**. The test tapped English `cat` and Japanese `学生`, waited
+for playback to start and checked source/file/license credits. For Japanese
+`環境`, Wiktionary returned no Japanese recording; the test observed Android
+TTS accept exactly `かんきょう` with `Locale.JAPANESE`. This confirms the
+selected text and locale reached the installed engine. It is not an independent
+acoustic transcription of Commons files or a measurement of the speaker output.
+
+The current suite covers the Room migration chain through version 7,
+chatbot/auth/onboarding Compose cases, language/account isolation, vocabulary
+progress/outbox, and pronunciation fallback/API metadata regressions.
 
 An earlier device run on 2026-09-17 passed **22/22** on the same emulator.
 That run caught one real regression the new empty-transcript state introduced

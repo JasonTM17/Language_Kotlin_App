@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import javax.inject.Inject
@@ -44,6 +45,13 @@ class SettingsDataStore
         }
 
         val learningLanguageId: Flow<Long?> = context.settingsDataStore.data.map { it[LEARNING_LANGUAGE_ID] }
+        val learningLanguageCode: Flow<String?> = context.settingsDataStore.data.map { it[LEARNING_LANGUAGE_CODE] }
+
+        /** Reads the cached locale and its language ID from one consistent preference snapshot. */
+        suspend fun cachedLearningLanguage(): Pair<Long?, String?> {
+            val preferences = context.settingsDataStore.data.first()
+            return preferences[LEARNING_LANGUAGE_ID] to preferences[LEARNING_LANGUAGE_CODE]
+        }
 
         /** The last few distinct vocabulary searches, newest first. */
         val recentVocabQueries: Flow<List<String>> =
@@ -156,8 +164,26 @@ class SettingsDataStore
             context.settingsDataStore.edit { preferences ->
                 if (languageId == null) {
                     preferences.remove(LEARNING_LANGUAGE_ID)
+                    preferences.remove(LEARNING_LANGUAGE_CODE)
                 } else {
+                    if (preferences[LEARNING_LANGUAGE_ID] != languageId) {
+                        preferences.remove(LEARNING_LANGUAGE_CODE)
+                    }
                     preferences[LEARNING_LANGUAGE_ID] = languageId
+                }
+            }
+        }
+
+        /** Caches the locale for correct offline TTS, scoped to the selected language ID. */
+        suspend fun setLearningLanguageCode(
+            languageId: Long,
+            languageCode: String,
+        ) {
+            val normalizedCode = languageCode.trim().lowercase()
+            if (normalizedCode !in SUPPORTED_LANGUAGE_CODES) return
+            context.settingsDataStore.edit { preferences ->
+                if (preferences[LEARNING_LANGUAGE_ID] == languageId) {
+                    preferences[LEARNING_LANGUAGE_CODE] = normalizedCode
                 }
             }
         }
@@ -197,6 +223,9 @@ class SettingsDataStore
             private val DAILY_GOAL = intPreferencesKey("daily_goal_minutes")
             private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
             private val LEARNING_LANGUAGE_ID = longPreferencesKey("learning_language_id")
+            private val LEARNING_LANGUAGE_CODE = stringPreferencesKey("learning_language_code")
+            private val SUPPORTED_LANGUAGE_CODES =
+                setOf("ar", "de", "en", "es", "fr", "hi", "id", "it", "ja", "ko", "nl", "pt", "ru", "th", "tr", "vi", "zh")
             private val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
             private val REMINDER_HOUR = intPreferencesKey("reminder_hour")
             private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
@@ -268,3 +297,12 @@ private fun parseQuizScoreEntry(raw: String): QuizScoreEntry? {
     val day = parts.getOrNull(1)?.toLongOrNull() ?: return null
     return QuizScoreEntry(percent, day)
 }
+
+internal fun cachedLearningLanguageCode(
+    profileLanguageId: Long?,
+    cachedLanguageId: Long?,
+    cachedLanguageCode: String?,
+): String? =
+    cachedLanguageCode
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() && profileLanguageId != null && profileLanguageId == cachedLanguageId }
