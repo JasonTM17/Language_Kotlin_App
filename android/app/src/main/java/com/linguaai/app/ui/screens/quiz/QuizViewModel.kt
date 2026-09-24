@@ -108,6 +108,7 @@ class QuizViewModel
                         if (total > 0) {
                             settingsDataStore.recordQuizScore(result.data.score * 100 / total)
                         }
+                        settingsDataStore.recordQuestProgress(com.linguaai.app.domain.model.DailyQuestType.QUIZ)
                         syncDao.enqueue(
                             PendingSyncOpEntity(
                                 operationId =

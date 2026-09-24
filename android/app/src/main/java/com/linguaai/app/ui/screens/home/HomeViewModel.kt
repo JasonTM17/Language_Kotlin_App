@@ -31,6 +31,8 @@ data class HomeUiState(
     val dueVocabularyCount: Int = 0,
     val continueLesson: LessonSummaryDto? = null,
     val wordOfDay: VocabularyCard? = null,
+    val userXp: Int = 120,
+    val dailyQuests: List<com.linguaai.app.domain.model.DailyQuest> = emptyList(),
     val error: UiMessage? = null,
     val isOffline: Boolean = false,
 )
@@ -48,7 +50,39 @@ class HomeViewModel
         val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
         init {
+            viewModelScope.launch {
+                settingsDataStore.userXp.collect { xp ->
+                    _uiState.update { it.copy(userXp = xp) }
+                }
+            }
+            viewModelScope.launch {
+                settingsDataStore.dailyQuests.collect { quests ->
+                    _uiState.update { it.copy(dailyQuests = quests) }
+                }
+            }
             refresh()
+        }
+
+        fun claimQuest(questType: com.linguaai.app.domain.model.DailyQuestType) {
+            viewModelScope.launch {
+                settingsDataStore.claimQuest(questType)
+            }
+        }
+
+        fun practiceWordOfDay() {
+            viewModelScope.launch {
+                settingsDataStore.recordQuestProgress(com.linguaai.app.domain.model.DailyQuestType.WORD_OF_DAY)
+            }
+        }
+
+        fun toggleFavoriteWordOfDay() {
+            val card = _uiState.value.wordOfDay ?: return
+            viewModelScope.launch {
+                learningContentRepository.toggleFavorite(card.id)
+                _uiState.update { state ->
+                    state.copy(wordOfDay = state.wordOfDay?.copy(favorite = !card.favorite))
+                }
+            }
         }
 
         fun refresh() {

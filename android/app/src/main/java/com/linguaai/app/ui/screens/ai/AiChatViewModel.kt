@@ -66,6 +66,7 @@ class AiChatViewModel
         private val aiApi: AiApi,
         private val cacheDao: AiMessageCacheDao,
         private val networkMonitor: ConnectivityMonitor,
+        private val settingsDataStore: com.linguaai.app.data.datastore.SettingsDataStore? = null,
     ) : ViewModel() {
         private val routeConversationId: Long? = savedStateHandle["conversationId"]
         private val routeMode: String = savedStateHandle["mode"] ?: "general"
@@ -136,6 +137,7 @@ class AiChatViewModel
                                 )
                             }
                             cacheExchange(conversationId, text, result.data.reply, result.data.sources)
+                            settingsDataStore?.recordQuestProgress(com.linguaai.app.domain.model.DailyQuestType.AI_CHAT)
                         }
                         is AppResult.Failure -> {
                             if (sequence != sendSequence) return@launch

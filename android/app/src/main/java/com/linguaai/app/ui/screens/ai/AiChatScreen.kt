@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.School
@@ -189,7 +190,12 @@ fun AiChatContent(
     onStop: () -> Unit,
     onOpenSource: (AiSourceDto) -> Unit,
     onBack: () -> Unit,
+    onSpeak: ((String) -> Unit)? = null,
 ) {
+    val tts =
+        com.linguaai.app.ui.util
+            .rememberLinguaTts()
+    val speakAction: (String) -> Unit = onSpeak ?: { text -> tts.speak(text) }
     val listState = rememberLazyListState()
 
     // Only follow the transcript when the learner was already at the bottom;
@@ -247,6 +253,7 @@ fun AiChatContent(
                     onUsePrompt = onInputChanged,
                     onStop = onStop,
                     onOpenSource = onOpenSource,
+                    onSpeak = speakAction,
                 )
                 ScrollToBottomButton(
                     listState = listState,
@@ -288,6 +295,7 @@ private fun ChatTranscript(
     onUsePrompt: (String) -> Unit,
     onStop: () -> Unit,
     onOpenSource: (AiSourceDto) -> Unit,
+    onSpeak: (String) -> Unit,
 ) {
     Box(
         modifier =
@@ -325,6 +333,7 @@ private fun ChatTranscript(
                             message = message,
                             onStop = onStop,
                             onOpenSource = onOpenSource,
+                            onSpeak = onSpeak,
                         )
                     }
                     state.error?.let { error ->
@@ -671,6 +680,7 @@ private fun MessageBubble(
     message: ChatMessage,
     onStop: () -> Unit,
     onOpenSource: (AiSourceDto) -> Unit,
+    onSpeak: (String) -> Unit,
 ) {
     val isUser = message.role == "USER"
     // Colour and alignment say who is speaking; a screen reader gets neither,
@@ -735,6 +745,23 @@ private fun MessageBubble(
                                     contentDescription = "$senderLabel. ${tutorPlainText(message.content)}"
                                 },
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(
+                            onClick = { onSpeak(tutorPlainText(message.content)) },
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = stringResource(R.string.tts_listen),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
                 if (!isUser && message.sources.isNotEmpty()) {
                     SourceChips(

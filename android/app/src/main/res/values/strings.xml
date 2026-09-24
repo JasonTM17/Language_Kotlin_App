@@ -273,5 +273,44 @@
         <item quantity="one">day</item>
         <item quantity="other">days</item>
     </plurals>
+
+    <!-- Daily Quests & Challenges -->
+    <string name="daily_quests_title">Daily Quests</string>
+    <string name="daily_quests_subtitle">Complete today\'s challenges to level up</string>
+    <string name="quest_ai_chat_title">Chat with AI Tutor</string>
+    <string name="quest_flashcards_title">Review 10 flashcards</string>
+    <string name="quest_quiz_title">Complete a daily quiz</string>
+    <string name="quest_word_of_day_title">Study Word of the Day</string>
+    <string name="quest_claim_xp">Claim +%1$d XP</string>
+    <string name="quest_claimed">Claimed ✓</string>
+    <string name="user_xp_badge">%1$d XP</string>
+
+    <!-- Audio & Pronunciation -->
+    <string name="tts_pronounce">Pronounce</string>
+    <string name="tts_listen">Listen</string>
+
+    <!-- Word of the Day Direct Actions -->
+    <string name="home_word_ask_ai">Ask AI Tutor</string>
+    <string name="home_word_favorite">Favorite</string>
+    <string name="home_word_unfavorite">Favorited</string>
+
+    <!-- Flashcard Cram & Free Practice -->
+    <string name="flashcard_cram_title">Free Practice</string>
+    <string name="flashcard_cram_all">Practice all words</string>
+    <string name="flashcard_cram_favorites">Practice starred words</string>
+
+    <!-- AI Roleplay Scenarios Hub -->
+    <string name="ai_roleplay_title">Roleplay Scenarios</string>
+    <string name="ai_roleplay_subtitle">Immersive real-life conversational practice</string>
+    <string name="scenario_cafe_title">Parisian Café</string>
+    <string name="scenario_cafe_desc">Order coffee, croissants &amp; pastries</string>
+    <string name="scenario_airport_title">Airport &amp; Customs</string>
+    <string name="scenario_airport_desc">Baggage check, boarding &amp; passport control</string>
+    <string name="scenario_interview_title">Job Interview</string>
+    <string name="scenario_interview_desc">Introduce your skills &amp; answer questions</string>
+    <string name="scenario_hotel_title">Hotel Check-in</string>
+    <string name="scenario_hotel_desc">Room bookings, Wi-Fi &amp; concierge requests</string>
+    <string name="scenario_doctor_title">Health &amp; Pharmacy</string>
+    <string name="scenario_doctor_desc">Describe symptoms &amp; request remedies</string>
 </resources>
 

@@ -89,3 +89,18 @@ val BadgeSilver = Color(0xFFB9C4BD)
 val BadgeBronze = Color(0xFFCE8F5A)
 val BadgeLockedContainerLight = Color(0xFFEEF1EC)
 val BadgeLockedContainerDark = Color(0xFF253029)
+
+// ---- Stitch Kinetic Bento tokens ----
+val AiViolet = Color(0xFF8B5CF6)
+val AiVioletContainerLight = Color(0xFFEDE9FE)
+val OnAiVioletContainerLight = Color(0xFF3B0764)
+val AiVioletContainerDark = Color(0xFF3B0764)
+val OnAiVioletContainerDark = Color(0xFFEDE9FE)
+
+val XpGold = Color(0xFFFFB800)
+val XpGoldContainerLight = Color(0xFFFEF3C7)
+val OnXpGoldContainerLight = Color(0xFF78350F)
+
+val VitalEmerald = Color(0xFF10B981)
+val VitalEmeraldContainerLight = Color(0xFFD1FAE5)
+val OnVitalEmeraldContainerLight = Color(0xFF065F46)

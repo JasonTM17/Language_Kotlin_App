@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarOutline
@@ -52,6 +53,9 @@ fun VocabularyScreen(
     viewModel: VocabularyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val tts =
+        com.linguaai.app.ui.util
+            .rememberLinguaTts()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -157,9 +161,13 @@ fun VocabularyScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     items(state.vocabulary, key = { it.id }) { card ->
-                        VocabularyRow(card = card, onToggleFavorite = {
-                            viewModel.onEvent(VocabularyEvent.ToggleFavorite(card.id))
-                        })
+                        VocabularyRow(
+                            card = card,
+                            onToggleFavorite = {
+                                viewModel.onEvent(VocabularyEvent.ToggleFavorite(card.id))
+                            },
+                            onSpeak = { tts.speak(card.word) },
+                        )
                     }
                 }
         }
@@ -170,6 +178,7 @@ fun VocabularyScreen(
 private fun VocabularyRow(
     card: VocabularyCard,
     onToggleFavorite: () -> Unit,
+    onSpeak: () -> Unit,
 ) {
     LinguaCard {
         Row(
@@ -197,6 +206,13 @@ private fun VocabularyRow(
                     text = card.meaning,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+            IconButton(onClick = onSpeak) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = stringResource(R.string.tts_pronounce),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
             IconButton(onClick = onToggleFavorite) {

@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,24 +87,60 @@ fun FlashcardScreen(
         when {
             state.isLoading -> LoadingIndicator(modifier = Modifier.padding(padding))
             state.finished ->
-                EmptyState(
-                    title =
-                        when {
-                            state.error != null -> stringResource(R.string.flashcard_review_paused)
-                            state.reviewedCount > 0 -> stringResource(R.string.flashcard_session_complete)
-                            else -> stringResource(R.string.flashcard_nothing_due)
-                        },
-                    message =
-                        state.error?.render()
-                            ?: if (state.reviewedCount > 0) {
-                                stringResource(R.string.flashcard_session_summary, state.reviewedCount)
-                            } else {
-                                stringResource(R.string.flashcard_all_caught_up)
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = Spacing.md),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    EmptyState(
+                        title =
+                            when {
+                                state.error != null -> stringResource(R.string.flashcard_review_paused)
+                                state.reviewedCount > 0 -> stringResource(R.string.flashcard_session_complete)
+                                else -> stringResource(R.string.flashcard_nothing_due)
                             },
-                    actionLabel = if (state.error != null) stringResource(R.string.common_back) else stringResource(R.string.common_done),
-                    onAction = onBack,
-                    modifier = Modifier.padding(padding),
-                )
+                        message =
+                            state.error?.render()
+                                ?: if (state.reviewedCount > 0) {
+                                    stringResource(R.string.flashcard_session_summary, state.reviewedCount)
+                                } else {
+                                    stringResource(R.string.flashcard_all_caught_up)
+                                },
+                        actionLabel =
+                            if (state.error != null) {
+                                stringResource(R.string.common_back)
+                            } else {
+                                stringResource(R.string.common_done)
+                            },
+                        onAction = onBack,
+                    )
+                    if (state.error == null) {
+                        Text(
+                            text = stringResource(R.string.flashcard_cram_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(top = Spacing.md),
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            modifier = Modifier.padding(top = Spacing.sm),
+                        ) {
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { viewModel.startCramSession(favoritesOnly = false) },
+                            ) {
+                                Text(stringResource(R.string.flashcard_cram_all))
+                            }
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { viewModel.startCramSession(favoritesOnly = true) },
+                            ) {
+                                Text(stringResource(R.string.flashcard_cram_favorites))
+                            }
+                        }
+                    }
+                }
             else -> FlashcardContent(state, viewModel::onEvent, Modifier.padding(padding))
         }
     }
@@ -227,6 +264,10 @@ private fun FlashcardFace(
     flipDegrees: () -> Float,
     onEvent: (FlashcardEvent) -> Unit,
 ) {
+    val tts =
+        com.linguaai.app.ui.util
+            .rememberLinguaTts()
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
@@ -239,16 +280,36 @@ private fun FlashcardFace(
                     }
                 },
     ) {
-        Text(
-            text = card.word,
-            style = MaterialTheme.typography.displaySmall,
-            color =
-                if (revealed) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                },
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = card.word,
+                style = MaterialTheme.typography.displaySmall,
+                color =
+                    if (revealed) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+            )
+            IconButton(
+                onClick = { tts.speak(card.word) },
+                modifier = Modifier.padding(start = Spacing.xs),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = stringResource(R.string.tts_pronounce),
+                    tint =
+                        if (revealed) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        },
+                )
+            }
+        }
         card.reading?.let {
             Text(
                 text = it,

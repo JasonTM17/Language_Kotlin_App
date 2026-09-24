@@ -269,4 +269,43 @@
         <item quantity="one">ngày</item>
         <item quantity="other">ngày</item>
     </plurals>
+
+    <!-- Daily Quests & Challenges -->
+    <string name="daily_quests_title">Nhiệm vụ hằng ngày</string>
+    <string name="daily_quests_subtitle">Hoàn thành thử thách hôm nay để tăng cấp</string>
+    <string name="quest_ai_chat_title">Trò chuyện với Gia sư AI</string>
+    <string name="quest_flashcards_title">Ôn tập 10 thẻ từ vựng</string>
+    <string name="quest_quiz_title">Hoàn thành 1 bài kiểm tra</string>
+    <string name="quest_word_of_day_title">Học Từ vựng của ngày</string>
+    <string name="quest_claim_xp">Nhận +%1$d XP</string>
+    <string name="quest_claimed">Đã nhận ✓</string>
+    <string name="user_xp_badge">%1$d XP</string>
+
+    <!-- Audio & Pronunciation -->
+    <string name="tts_pronounce">Phát âm</string>
+    <string name="tts_listen">Lắng nghe</string>
+
+    <!-- Word of the Day Direct Actions -->
+    <string name="home_word_ask_ai">Hỏi Gia sư AI</string>
+    <string name="home_word_favorite">Yêu thích</string>
+    <string name="home_word_unfavorite">Đã thích</string>
+
+    <!-- Flashcard Cram & Free Practice -->
+    <string name="flashcard_cram_title">Luyện tập tự do</string>
+    <string name="flashcard_cram_all">Luyện tất cả từ</string>
+    <string name="flashcard_cram_favorites">Luyện các từ đã đánh dấu sao</string>
+
+    <!-- AI Roleplay Scenarios Hub -->
+    <string name="ai_roleplay_title">Tình huống thực tế</string>
+    <string name="ai_roleplay_subtitle">Luyện giao tiếp phản xạ theo ngữ cảnh sống động</string>
+    <string name="scenario_cafe_title">Quán cà phê</string>
+    <string name="scenario_cafe_desc">Gọi cà phê, bánh ngọt và thanh toán</string>
+    <string name="scenario_airport_title">Sân bay &amp; Hải quan</string>
+    <string name="scenario_airport_desc">Ký gửi hành lý, lên máy bay &amp; kiểm tra hộ chiếu</string>
+    <string name="scenario_interview_title">Phỏng vấn xin việc</string>
+    <string name="scenario_interview_desc">Giới thiệu bản thân &amp; trả lời câu hỏi chuyên môn</string>
+    <string name="scenario_hotel_title">Nhận phòng khách sạn</string>
+    <string name="scenario_hotel_desc">Đặt phòng, mật khẩu Wi-Fi &amp; hỗ trợ lễ tân</string>
+    <string name="scenario_doctor_title">Khám bệnh &amp; Nhà thuốc</string>
+    <string name="scenario_doctor_desc">Mô tả triệu chứng &amp; mua thuốc theo toa</string>
 </resources>

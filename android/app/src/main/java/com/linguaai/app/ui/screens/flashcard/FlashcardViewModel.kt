@@ -155,6 +155,7 @@ class FlashcardViewModel
                         vocabularyProgress = updated.toProgressSnapshot(),
                         localUpdate = { vocabularyDao.upsert(updated) },
                     )
+                    settingsDataStore.recordQuestProgress(com.linguaai.app.domain.model.DailyQuestType.FLASHCARDS)
                     _uiState.update { state ->
                         val nextIndex = state.currentIndex + 1
                         state.copy(
@@ -171,7 +172,57 @@ class FlashcardViewModel
                 }
             }
         }
+
+        fun startCramSession(favoritesOnly: Boolean = false) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true) }
+                val languageId =
+                    when (val profile = remoteAuthRepository.fetchProfile()) {
+                        is AppResult.Success -> profile.data.languageId
+                        is AppResult.Failure -> settingsDataStore.learningLanguageId.first()
+                    }
+                if (languageId == null) {
+                    _uiState.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+                val entities =
+                    if (favoritesOnly) {
+                        vocabularyDao.observeFavorites(languageId).first()
+                    } else {
+                        vocabularyDao.observeVocabulary(languageId, null, null, null).first().take(CRAM_BATCH_LIMIT)
+                    }
+                val cards =
+                    entities.map { entity ->
+                        VocabularyCard(
+                            id = entity.id,
+                            languageId = entity.languageId,
+                            level = entity.level,
+                            word = entity.word,
+                            reading = entity.reading,
+                            pronunciation = entity.pronunciation,
+                            meaning = entity.meaning,
+                            example = entity.example,
+                            exampleTranslation = entity.exampleTranslation,
+                            category = entity.category,
+                            favorite = entity.favorite,
+                            masteryLevel = entity.masteryLevel,
+                        )
+                    }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        queue = cards,
+                        currentIndex = 0,
+                        isRevealed = false,
+                        finished = cards.isEmpty(),
+                        error = null,
+                    )
+                }
+            }
+        }
     }
+
+private const val CRAM_BATCH_LIMIT = 20
 
 private fun VocabularyEntity.toProgressSnapshot(): VocabularyProgressSnapshotDto =
     VocabularyProgressSnapshotDto(

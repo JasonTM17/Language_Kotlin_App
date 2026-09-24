@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +17,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +61,7 @@ fun HomeScreen(
     onStartReview: () -> Unit,
     onOpenAiTutor: () -> Unit,
     onOpenVocabulary: () -> Unit,
+    onAskAiWord: ((VocabularyCard) -> Unit)? = null,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,7 +74,18 @@ fun HomeScreen(
                 retryLabel = stringResource(R.string.common_retry),
                 onRetry = viewModel::refresh,
             )
-        else -> HomeContent(state, onContinueLesson, onStartReview, onOpenAiTutor, onOpenVocabulary)
+        else ->
+            HomeContent(
+                state = state,
+                onContinueLesson = onContinueLesson,
+                onStartReview = onStartReview,
+                onOpenAiTutor = onOpenAiTutor,
+                onOpenVocabulary = onOpenVocabulary,
+                onAskAiWord = onAskAiWord,
+                onClaimQuest = viewModel::claimQuest,
+                onToggleFavorite = viewModel::toggleFavoriteWordOfDay,
+                onPracticeWord = viewModel::practiceWordOfDay,
+            )
     }
 }
 
@@ -79,7 +96,15 @@ private fun HomeContent(
     onStartReview: () -> Unit,
     onOpenAiTutor: () -> Unit,
     onOpenVocabulary: () -> Unit,
+    onAskAiWord: ((VocabularyCard) -> Unit)?,
+    onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
+    onToggleFavorite: () -> Unit,
+    onPracticeWord: () -> Unit,
 ) {
+    val tts =
+        com.linguaai.app.ui.util
+            .rememberLinguaTts(state.languageName)
+
     Column(
         modifier =
             Modifier
@@ -88,10 +113,26 @@ private fun HomeContent(
                 .padding(horizontal = Spacing.md),
     ) {
         OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(top = Spacing.sm))
-        HomeHeader(state.profile, state.languageName)
+        HomeHeader(state.profile, state.languageName, state.userXp)
         DailyGoalCard(state)
+        if (state.dailyQuests.isNotEmpty()) {
+            DailyQuestsCard(quests = state.dailyQuests, onClaimQuest = onClaimQuest)
+        }
         ContinueLearningCard(state.continueLesson, onContinueLesson)
-        WordOfDayCard(state.wordOfDay, onOpenVocabulary)
+        WordOfDayCard(
+            word = state.wordOfDay,
+            onOpenVocabulary = onOpenVocabulary,
+            onSpeak = { text -> tts.speak(text) },
+            onToggleFavorite = onToggleFavorite,
+            onAskAi = { word ->
+                onPracticeWord()
+                if (onAskAiWord != null) {
+                    onAskAiWord(word)
+                } else {
+                    onOpenAiTutor()
+                }
+            },
+        )
         ReviewCard(state.dueVocabularyCount, onStartReview)
         AiTutorCard(onOpenAiTutor)
 
@@ -107,11 +148,12 @@ private fun HomeContent(
     }
 }
 
-/** Avatar, greeting and the learner's language, shown at the top of the screen. */
+/** Avatar, greeting, learner's language and user XP badge, shown at the top of the screen. */
 @Composable
 private fun HomeHeader(
     profile: ProfileData?,
     languageName: String?,
+    userXp: Int,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -165,6 +207,40 @@ private fun HomeHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs),
             )
+        }
+        Surface(
+            color =
+                androidx.compose.ui.graphics
+                    .Color(0xFFFEF3C7),
+            shape = CircleShape,
+            border =
+                androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    androidx.compose.ui.graphics
+                        .Color(0xFFFDE68A),
+                ),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    tint =
+                        androidx.compose.ui.graphics
+                            .Color(0xFFD97706),
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    text = stringResource(R.string.user_xp_badge, userXp),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color =
+                        androidx.compose.ui.graphics
+                            .Color(0xFF92400E),
+                )
+            }
         }
     }
 }
@@ -338,48 +414,284 @@ private fun ContinueLearningCard(
     }
 }
 
+/** Daily quests and XP challenges card. */
+@Composable
+private fun DailyQuestsCard(
+    quests: List<com.linguaai.app.domain.model.DailyQuest>,
+    onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
+) {
+    SectionHeader(
+        title = stringResource(R.string.daily_quests_title),
+        modifier = Modifier.padding(top = Spacing.lg),
+    )
+    LinguaCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Text(
+                text = stringResource(R.string.daily_quests_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            quests.forEach { quest ->
+                DailyQuestRow(quest = quest, onClaim = { onClaimQuest(quest.type) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyQuestRow(
+    quest: com.linguaai.app.domain.model.DailyQuest,
+    onClaim: () -> Unit,
+) {
+    val (icon, tint) =
+        when (quest.type) {
+            com.linguaai.app.domain.model.DailyQuestType.AI_CHAT ->
+                Icons.Filled.AutoAwesome to
+                    androidx.compose.ui.graphics
+                        .Color(0xFF8B5CF6)
+            com.linguaai.app.domain.model.DailyQuestType.FLASHCARDS ->
+                Icons.AutoMirrored.Filled.MenuBook to
+                    androidx.compose.ui.graphics
+                        .Color(0xFF0EA5E9)
+            com.linguaai.app.domain.model.DailyQuestType.QUIZ ->
+                Icons.Filled.CheckCircle to
+                    androidx.compose.ui.graphics
+                        .Color(0xFFF59E0B)
+            com.linguaai.app.domain.model.DailyQuestType.WORD_OF_DAY ->
+                Icons.Filled.WbSunny to
+                    androidx.compose.ui.graphics
+                        .Color(0xFF10B981)
+        }
+    val titleRes =
+        when (quest.type) {
+            com.linguaai.app.domain.model.DailyQuestType.AI_CHAT -> R.string.quest_ai_chat_title
+            com.linguaai.app.domain.model.DailyQuestType.FLASHCARDS -> R.string.quest_flashcards_title
+            com.linguaai.app.domain.model.DailyQuestType.QUIZ -> R.string.quest_quiz_title
+            com.linguaai.app.domain.model.DailyQuestType.WORD_OF_DAY -> R.string.quest_word_of_day_title
+        }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(tint.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(titleRes),
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Text(
+                    text = "${quest.progress}/${quest.type.target}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
+            }
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { quest.progressFraction },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .padding(top = 4.dp)
+                        .clip(CircleShape),
+                color = tint,
+                trackColor = tint.copy(alpha = 0.2f),
+            )
+        }
+        when {
+            quest.isClaimed -> {
+                Surface(
+                    shape = CircleShape,
+                    color =
+                        androidx.compose.ui.graphics
+                            .Color(0xFFECFDF5),
+                ) {
+                    Text(
+                        text = stringResource(R.string.quest_claimed),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color =
+                            androidx.compose.ui.graphics
+                                .Color(0xFF047857),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            quest.isCompleted -> {
+                androidx.compose.material3.Button(
+                    onClick = onClaim,
+                    shape = CircleShape,
+                    colors =
+                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor =
+                                androidx.compose.ui.graphics
+                                    .Color(0xFFF59E0B),
+                            contentColor = androidx.compose.ui.graphics.Color.White,
+                        ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(30.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.quest_claim_xp, quest.type.xpReward),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+            else -> {
+                Text(
+                    text = "+${quest.type.xpReward} XP",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+        }
+    }
+}
+
 /** Today's word from the learner's tracked vocabulary; tap opens the catalogue. */
 @Composable
 private fun WordOfDayCard(
     word: VocabularyCard?,
     onOpenVocabulary: () -> Unit,
+    onSpeak: (String) -> Unit,
+    onToggleFavorite: () -> Unit,
+    onAskAi: (VocabularyCard) -> Unit,
 ) {
     if (word == null) return
     SectionHeader(title = stringResource(R.string.home_word_of_day), modifier = Modifier.padding(top = Spacing.lg))
-    LinguaCard(onClick = onOpenVocabulary) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    LinguaCard {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.md),
         ) {
-            IconTile(
-                imageVector = Icons.Filled.WbSunny,
-                contentDescription = null,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(word.word, style = MaterialTheme.typography.titleMedium)
-                word.reading?.let { reading ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                IconTile(
+                    imageVector = Icons.Filled.WbSunny,
+                    contentDescription = null,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    ) {
+                        Text(word.word, style = MaterialTheme.typography.titleMedium)
+                        androidx.compose.material3.IconButton(
+                            onClick = { onSpeak(word.word) },
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = stringResource(R.string.tts_pronounce),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                    word.reading?.let { reading ->
+                        Text(
+                            text = reading,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Text(
-                        text = reading,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = word.meaning,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = Spacing.xs),
                     )
                 }
-                Text(
-                    text = word.meaning,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = Spacing.xs),
-                )
+                androidx.compose.material3.IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        imageVector = if (word.favorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        contentDescription =
+                            stringResource(
+                                if (word.favorite) R.string.home_word_unfavorite else R.string.home_word_favorite,
+                            ),
+                        tint =
+                            if (word.favorite) {
+                                androidx.compose.ui.graphics
+                                    .Color(0xFFF59E0B)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
+                }
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
+
+            // Quick actions footer: Ask AI & View Vocabulary
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.sm),
+            ) {
+                androidx.compose.material3.AssistChip(
+                    onClick = { onAskAi(word) },
+                    label = { Text(stringResource(R.string.home_word_ask_ai)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                    modifier = Modifier.height(32.dp),
+                )
+                androidx.compose.material3.TextButton(
+                    onClick = onOpenVocabulary,
+                    modifier = Modifier.height(32.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.vocab_title),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
         }
     }
 }

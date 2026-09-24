@@ -36,6 +36,14 @@ object BrandGradients {
     val BadgeGold: Brush =
         Brush.linearGradient(colors = listOf(Color(0xFFF3CE63), Color(0xFFD99B23)))
 
+    /** Stitch Kinetic AI violet gradient for smart tutor chips and roleplay headers. */
+    val AiViolet: Brush =
+        Brush.linearGradient(colors = listOf(Color(0xFF5B36F5), Color(0xFF8B5CF6)))
+
+    /** Vibrant flame gradient for streak counters and quest milestones. */
+    val StreakFlameGradient: Brush =
+        Brush.linearGradient(colors = listOf(Color(0xFFFF7A00), Color(0xFFFF9E3B)))
+
     /** Soft radial glow behind mascots and celebration moments. */
     fun mascotGlow(color: Color): Brush = Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent))
 

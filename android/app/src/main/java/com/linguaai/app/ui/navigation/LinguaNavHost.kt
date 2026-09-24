@@ -152,6 +152,17 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
             onOpenVocabulary = {
                 navController.navigate(VocabularyRoute) { launchSingleTop = true }
             },
+            onAskAiWord = { word ->
+                val promptSeed =
+                    "How do I naturally use the word '${word.word}' (${word.meaning}) in conversation? " +
+                        "Give me 2 example sentences."
+                navController.navigate(
+                    AiChatRoute(
+                        mode = "general",
+                        seed = promptSeed,
+                    ),
+                )
+            },
         )
     }
     composable<LearnRoute> {
@@ -198,6 +209,9 @@ private fun NavGraphBuilder.aiGraph(navController: NavHostController) {
             onOpenConversation = { conversationId, mode ->
                 val routeMode = chatRouteMode(conversationId, mode)
                 navController.navigate(AiChatRoute(conversationId = conversationId, mode = routeMode))
+            },
+            onOpenScenario = { mode, seed ->
+                navController.navigate(AiChatRoute(mode = mode, seed = seed))
             },
         )
     }

@@ -66,6 +66,75 @@ class SettingsDataStore
             }
         }
 
+        /** Total user XP accumulated across daily quests and challenges. */
+        val userXp: Flow<Int> = context.settingsDataStore.data.map { it[USER_XP] ?: DEFAULT_STARTING_XP }
+
+        /** Observable daily quests for today. */
+        val dailyQuests: Flow<List<com.linguaai.app.domain.model.DailyQuest>> =
+            context.settingsDataStore.data.map { prefs ->
+                parseQuests(
+                    raw = prefs[DAILY_QUESTS_DATA],
+                    todayDay = epochDay(),
+                    savedDay = prefs[DAILY_QUESTS_EPOCH_DAY],
+                )
+            }
+
+        /** Record progress for a quest (e.g. AI turn sent, flashcard graded). */
+        suspend fun recordQuestProgress(
+            questType: com.linguaai.app.domain.model.DailyQuestType,
+            delta: Int = 1,
+        ) {
+            context.settingsDataStore.edit { prefs ->
+                val currentDay = epochDay()
+                val quests =
+                    parseQuests(
+                        raw = prefs[DAILY_QUESTS_DATA],
+                        todayDay = currentDay,
+                        savedDay = prefs[DAILY_QUESTS_EPOCH_DAY],
+                    )
+                val updated =
+                    quests.map { quest ->
+                        if (quest.type == questType) {
+                            quest.copy(progress = (quest.progress + delta).coerceAtMost(quest.type.target))
+                        } else {
+                            quest
+                        }
+                    }
+                prefs[DAILY_QUESTS_EPOCH_DAY] = currentDay
+                prefs[DAILY_QUESTS_DATA] = serializeQuests(updated)
+            }
+        }
+
+        /** Claim the XP reward for a completed quest. Returns the XP added. */
+        suspend fun claimQuest(questType: com.linguaai.app.domain.model.DailyQuestType): Int {
+            var rewardAdded = 0
+            context.settingsDataStore.edit { prefs ->
+                val currentDay = epochDay()
+                val quests =
+                    parseQuests(
+                        raw = prefs[DAILY_QUESTS_DATA],
+                        todayDay = currentDay,
+                        savedDay = prefs[DAILY_QUESTS_EPOCH_DAY],
+                    )
+                val updated =
+                    quests.map { quest ->
+                        if (quest.type == questType && quest.isCompleted && !quest.isClaimed) {
+                            rewardAdded = quest.type.xpReward
+                            quest.copy(isClaimed = true)
+                        } else {
+                            quest
+                        }
+                    }
+                if (rewardAdded > 0) {
+                    val currentXp = prefs[USER_XP] ?: DEFAULT_STARTING_XP
+                    prefs[USER_XP] = currentXp + rewardAdded
+                    prefs[DAILY_QUESTS_EPOCH_DAY] = currentDay
+                    prefs[DAILY_QUESTS_DATA] = serializeQuests(updated)
+                }
+            }
+            return rewardAdded
+        }
+
         val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[NOTIFICATIONS] ?: true }
         val reminderHour: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_HOUR] ?: DEFAULT_REMINDER_HOUR }
         val reminderMinute: Flow<Int> = context.settingsDataStore.data.map { it[REMINDER_MINUTE] ?: 0 }
@@ -137,6 +206,11 @@ class SettingsDataStore
             private const val RECENT_QUERY_LIMIT = 5
             private const val MIN_QUERY_LENGTH = 2
             private const val SEPARATOR_NEWLINE: String = "\n"
+
+            private val USER_XP = intPreferencesKey("user_xp")
+            private const val DEFAULT_STARTING_XP = 120
+            private val DAILY_QUESTS_EPOCH_DAY = longPreferencesKey("daily_quests_epoch_day")
+            private val DAILY_QUESTS_DATA = stringPreferencesKey("daily_quests_data")
         }
     }
 
@@ -150,6 +224,38 @@ private fun epochDay(): Long {
     val today = LocalDate.now()
     return today.toEpochDay()
 }
+
+private fun parseQuests(
+    raw: String?,
+    todayDay: Long,
+    savedDay: Long?,
+): List<com.linguaai.app.domain.model.DailyQuest> {
+    if (savedDay != todayDay || raw.isNullOrBlank()) {
+        return com.linguaai.app.domain.model.DailyQuestType.entries.map {
+            com.linguaai.app.domain.model
+                .DailyQuest(type = it, progress = 0, isClaimed = false)
+        }
+    }
+    val map =
+        raw.split(";").associate { entry ->
+            val parts = entry.split(":")
+            val id = parts.getOrNull(0).orEmpty()
+            val progress = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            val claimed = parts.getOrNull(2)?.toBooleanStrictOrNull() ?: false
+            id to (progress to claimed)
+        }
+    return com.linguaai.app.domain.model.DailyQuestType.entries.map { type ->
+        val pair = map[type.id]
+        com.linguaai.app.domain.model.DailyQuest(
+            type = type,
+            progress = pair?.first ?: 0,
+            isClaimed = pair?.second ?: false,
+        )
+    }
+}
+
+private fun serializeQuests(quests: List<com.linguaai.app.domain.model.DailyQuest>): String =
+    quests.joinToString(";") { "${it.type.id}:${it.progress}:${it.isClaimed}" }
 
 private fun parseQuizScoreHistory(raw: String?): List<QuizScoreEntry> {
     val entries = raw.orEmpty().split(',')

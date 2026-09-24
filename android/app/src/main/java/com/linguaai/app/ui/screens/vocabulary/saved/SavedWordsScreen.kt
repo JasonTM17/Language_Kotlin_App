@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,9 @@ fun SavedWordsScreen(
     viewModel: SavedWordsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val tts =
+        com.linguaai.app.ui.util
+            .rememberLinguaTts()
 
     Scaffold(
         topBar = {
@@ -71,7 +75,7 @@ fun SavedWordsScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     items(state.words, key = { it.id }) { word ->
-                        SavedWordRow(word)
+                        SavedWordRow(word = word, onSpeak = { tts.speak(word.word) })
                     }
                 }
         }
@@ -79,7 +83,10 @@ fun SavedWordsScreen(
 }
 
 @Composable
-private fun SavedWordRow(word: VocabularyCard) {
+private fun SavedWordRow(
+    word: VocabularyCard,
+    onSpeak: () -> Unit,
+) {
     LinguaCard {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -110,6 +117,13 @@ private fun SavedWordRow(word: VocabularyCard) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+            IconButton(onClick = onSpeak) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = stringResource(R.string.tts_pronounce),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
             Icon(
