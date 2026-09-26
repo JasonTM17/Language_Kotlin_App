@@ -26,6 +26,7 @@ import com.linguaai.app.ui.screens.grammar.GrammarScreen
 import com.linguaai.app.ui.screens.home.HomeScreen
 import com.linguaai.app.ui.screens.learn.LearnScreen
 import com.linguaai.app.ui.screens.learn.LessonDetailScreen
+import com.linguaai.app.ui.screens.listenandtype.ListenAndTypeScreen
 import com.linguaai.app.ui.screens.onboarding.OnboardingScreen
 import com.linguaai.app.ui.screens.quiz.QuizScreen
 import com.linguaai.app.ui.screens.splash.SplashScreen
@@ -142,6 +143,9 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
             onStartReview = {
                 navController.navigate(FlashcardRoute)
             },
+            onStartQuest = { questType, wordOfDay ->
+                navController.navigate(dailyQuestDestination(questType, wordOfDay))
+            },
             onOpenAiTutor = {
                 navController.navigate(AiTutorRoute) {
                     popUpTo(HomeRoute) { saveState = true }
@@ -153,13 +157,10 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
                 navController.navigate(VocabularyRoute) { launchSingleTop = true }
             },
             onAskAiWord = { word ->
-                val promptSeed =
-                    "How do I naturally use the word '${word.word}' (${word.meaning}) in conversation? " +
-                        "Give me 2 example sentences."
                 navController.navigate(
                     AiChatRoute(
                         mode = "general",
-                        seed = promptSeed,
+                        seed = wordOfDayAiSeed(word),
                     ),
                 )
             },
@@ -171,6 +172,7 @@ private fun NavGraphBuilder.dashboardGraph(navController: NavHostController) {
             onOpenVocabulary = { navController.navigate(VocabularyRoute) },
             onOpenGrammar = { navController.navigate(GrammarRoute) },
             onOpenFlashcards = { navController.navigate(FlashcardRoute) },
+            onStartListenAndType = { navController.navigate(ListenAndTypeRoute) },
             onStartQuiz = { quizId -> navController.navigate(QuizRoute(quizId)) },
         )
     }
@@ -247,6 +249,12 @@ private fun NavGraphBuilder.catalogueGraph(navController: NavHostController) {
     }
     composable<FlashcardRoute> {
         FlashcardScreen(onBack = { navController.popBackStack() })
+    }
+    composable<ListenAndTypeRoute> {
+        ListenAndTypeScreen(
+            onBack = { navController.popBackStack() },
+            onOpenVocabulary = { navController.navigate(VocabularyRoute) },
+        )
     }
     composable<GrammarRoute> {
         GrammarScreen(

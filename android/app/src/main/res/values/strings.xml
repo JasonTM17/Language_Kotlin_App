@@ -167,6 +167,8 @@
     <string name="learn_daily_quiz">Daily quiz</string>
     <string name="learn_quiz_hint">Five quick questions to check your progress.</string>
     <string name="learn_build_habit">Build a small habit with focused lessons.</string>
+    <string name="learn_listen_type_title">Listen &amp; type</string>
+    <string name="learn_listen_type_hint">Hear a word, then spell it from memory.</string>
     <string name="lesson_ask_ai">Ask AI about this lesson</string>
     <string name="lesson_mark_learned">Mark as learned</string>
     <string name="lesson_completed">Completed ✓</string>
@@ -201,6 +203,30 @@
     <string name="flashcard_grade_good">Good</string>
     <string name="flashcard_grade_easy">Easy</string>
     <string name="flashcard_swipe_hint">Swipe right if you knew it, left if you didn’t.</string>
+
+    <!-- Listen and type -->
+    <string name="listen_type_title">Listen &amp; type</string>
+    <string name="listen_type_progress">Question %1$d of %2$d</string>
+    <string name="listen_type_prompt">Listen to the word and type what you hear.</string>
+    <string name="listen_type_hidden_word">Word hidden until you answer</string>
+    <string name="listen_type_play_audio">Play word audio</string>
+    <string name="listen_type_answer_label">Your answer</string>
+    <string name="listen_type_answer_hint">Type the word you heard</string>
+    <string name="listen_type_check">Check answer</string>
+    <string name="listen_type_correct">Correct!</string>
+    <string name="listen_type_incorrect">Not quite. Here is the answer:</string>
+    <string name="listen_type_correct_word">Word: %1$s</string>
+    <string name="listen_type_next">Next word</string>
+    <string name="listen_type_complete_title">Round complete</string>
+    <string name="listen_type_score">You got %1$d out of %2$d words right.</string>
+    <string name="listen_type_retry">Play again</string>
+    <string name="listen_type_done">Back to Learn</string>
+    <string name="listen_type_empty_title">No words ready for this round</string>
+    <string name="listen_type_empty_hint">Words appear here when they are new or due for review. Browse your vocabulary or come back later.</string>
+    <string name="listen_type_open_vocabulary">Open vocabulary</string>
+    <string name="listen_type_no_language_title">Choose a learning language</string>
+    <string name="listen_type_language_unavailable">The language audio settings could not be loaded. Try again while online.</string>
+    <string name="listen_type_load_failed">The word round could not be loaded. Try again.</string>
 
     <!-- Quiz -->
     <string name="quiz_title_fallback">Quiz</string>
@@ -281,6 +307,9 @@
     <string name="quest_flashcards_title">Review 10 flashcards</string>
     <string name="quest_quiz_title">Complete a daily quiz</string>
     <string name="quest_word_of_day_title">Study Word of the Day</string>
+    <string name="quest_start">Start</string>
+    <string name="quest_continue">Continue</string>
+    <string name="quest_action_accessibility">%1$s: %2$s</string>
     <string name="quest_claim_xp">Claim +%1$d XP</string>
     <string name="quest_claimed">Claimed ✓</string>
     <string name="user_xp_badge">%1$d XP</string>

@@ -2,13 +2,13 @@
 
 ## Suites
 
-| Suite | Command | Count | Needs |
-| --- | --- | --- | --- |
-| Server integration | `cd server && ./gradlew test` | 84 | Nothing — H2 in-memory |
-| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | 120 | Nothing |
-| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | 31 (30 pass, 1 opt-in skip) | A device or emulator |
-| Live pronunciation smoke | See the opt-in command below | 1 | Emulator, network access, Wikimedia APIs and installed Android TTS voices |
-| Live bigdata E2E | `bash scripts/e2e-bigdata.sh` | 13 checks | Docker (MySQL 8 + Qdrant), JDK — operational harness, not a CI gate |
+| Suite | Command | Needs |
+| --- | --- | --- |
+| Server integration | `cd server && ./gradlew test` | Nothing — H2 in-memory |
+| Android unit (JVM) | `cd android && ./gradlew testDebugUnitTest` | Nothing |
+| Android instrumented | `cd android && ./gradlew connectedDebugAndroidTest` | A device or emulator |
+| Live pronunciation smoke | See the opt-in command below | Emulator, network access, Wikimedia APIs and installed Android TTS voices |
+| Live bigdata E2E | `bash scripts/e2e-bigdata.sh` | Docker (MySQL 8 + Qdrant), JDK — operational harness, not a CI gate |
 
 The server suite runs against a real Ktor module with real Flyway migrations on
 H2 in MySQL mode, so it exercises routing, serialization, auth, persistence and
@@ -80,6 +80,7 @@ count audit and explicit RAG reindex checkpoint.
 | `WorkScheduler` | reminder arithmetic — a time equal to *now* rolls to tomorrow, month-end rolls correctly |
 | `TokenAuthenticator` | refresh-then-retry carries the new token, a failed refresh clears the session without retrying, unauthenticated requests are not refreshed, an auth-endpoint 401 never recurses |
 | `Validators` | email, password and username rules at their boundaries |
+| `ListenAndTypeRoundTest` | answer trimming, NFC equivalence, case-insensitive matching that preserves accents, language/headword uniqueness, the ten-word cap, single-submit progression, score and retry reset |
 | `ProgressHeatmapTest` | the heatmap intensity ladder over `intensityBucket`: zero and negative minutes stay in the empty bucket, 1–4 / 5–14 / 15–24 / 25+ minutes map to buckets 1–4, so the UI colours and any future analytics read the same tiers |
 | Auth use cases | an invalid form never reaches the network, values are normalised before being sent, field-check order is stable |
 | AI Tutor | correction and practice start/reply/score routing, correction-history reuse, connectivity transitions, Room fallback, retry without duplicate messages, best-effort cache failures, loading-state send guard, generated-quiz profile handoff, and navigation mode preservation |
@@ -99,12 +100,36 @@ against **the prompt the model actually received**, through the real pipeline,
 rather than against a string the test built itself — which could pass while the
 real prompt was wrong.
 
-## Device execution evidence
+## Android instrumented tests
 
-The latest observed default device run on 2026-09-24 ran on
-`linguaai-api35(AVD) - 15`: **31 tests, 0 failures, 0 errors, 1 intentional
-skip**. The skipped case is the opt-in live pronunciation test; the default
-suite does not contact Wikimedia or depend on installed language voices.
+The latest observed Android verification on 2026-09-25 ran on
+`linguaai-api35 (AVD) - 15` (Android 15). The unit-test XML reports **130 tests,
+all passed**. Connected-test XML reports **35 testcases: 34 passed and one
+intentional opt-in live-pronunciation skip**. XML reports are authoritative;
+Gradle's console summary reported a different total. `detekt` and `assembleDebug`
+also passed in that run. The command was:
+
+```powershell
+cd android
+.\gradlew.bat detekt testDebugUnitTest assembleDebug connectedDebugAndroidTest --no-daemon `
+  '-Plinguaai.debugBaseUrl=http://10.0.2.2:8081/api/v1/'
+```
+
+The final `ktlintCheck` was run separately after the one user-approved format repair
+and passed. The suite's opt-in pronunciation test is skipped by default, so the
+standard connected run does not contact Wikimedia or depend on installed language
+voices.
+
+Listen & Type coverage includes `ListenAndTypeRoundTest` for matching, the ten-word
+bound, one-submit scoring and retry; `VocabularyDaoLanguageScopeTest` checks the
+selected-language and ten-row DAO boundaries; and `ListenAndTypeScreenTest` covers
+correct/incorrect answer feedback, revealed meaning, progression, completion, retry,
+and the empty-state Vocabulary action. A targeted Compose capture replay passed on
+the same Android 15 emulator. Its three frames use deterministic `hello` / `greeting`
+test data and verify the screen rendering; the UI test injects the playback action,
+so those images do not prove audible output or an authenticated route walk.
+
+## Device execution evidence
 
 The live pronunciation smoke was run separately on that AVD with:
 

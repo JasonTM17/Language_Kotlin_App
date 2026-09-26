@@ -10,6 +10,7 @@ import com.linguaai.app.data.local.entity.VocabularyEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -48,6 +49,19 @@ class VocabularyDaoLanguageScopeTest {
             val chinese = database.vocabularyDao().dueForReview(languageId = 6, now = 0, limit = 20)
 
             assertEquals(listOf("今天"), chinese.map { it.word })
+        }
+    }
+
+    @Test
+    fun dueForReview_respectsTheRequestedLimit() {
+        runBlocking {
+            val dao = database.vocabularyDao()
+            dao.upsertAll((10L..21L).map { id -> word(id = id, languageId = 1, value = "word-$id") })
+
+            val selected = dao.dueForReview(languageId = 1, now = 0, limit = 10)
+
+            assertEquals(10, selected.size)
+            assertTrue(selected.all { it.languageId == 1L })
         }
     }
 
