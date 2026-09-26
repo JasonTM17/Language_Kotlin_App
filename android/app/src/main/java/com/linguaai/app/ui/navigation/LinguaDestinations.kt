@@ -1,5 +1,7 @@
 package com.linguaai.app.ui.navigation
 
+import com.linguaai.app.domain.model.DailyQuestType
+import com.linguaai.app.domain.model.VocabularyCard
 import kotlinx.serialization.Serializable
 
 /**
@@ -48,6 +50,9 @@ data object SavedWordsRoute
 data object FlashcardRoute
 
 @Serializable
+data object ListenAndTypeRoute
+
+@Serializable
 data object GrammarRoute
 
 @Serializable
@@ -66,6 +71,23 @@ data class AiChatRoute(
     val mode: String = "general",
     val seed: String? = null,
 )
+
+/** Existing typed destination selected by an unfinished Daily Quest. */
+internal fun dailyQuestDestination(
+    questType: DailyQuestType,
+    wordOfDay: VocabularyCard?,
+): Any =
+    when (questType) {
+        DailyQuestType.AI_CHAT -> AiChatRoute(mode = "general")
+        DailyQuestType.FLASHCARDS -> FlashcardRoute
+        DailyQuestType.QUIZ -> LearnRoute
+        DailyQuestType.WORD_OF_DAY ->
+            wordOfDay?.let { AiChatRoute(mode = "general", seed = wordOfDayAiSeed(it)) } ?: VocabularyRoute
+    }
+
+internal fun wordOfDayAiSeed(word: VocabularyCard): String =
+    "How do I naturally use the word '${word.word}' (${word.meaning}) in conversation? " +
+        "Give me 2 example sentences."
 
 /** Destinations that show the bottom navigation bar. */
 val topLevelDestinations = listOf(HomeRoute, LearnRoute, AiTutorRoute, ProgressRoute, ProfileRoute)

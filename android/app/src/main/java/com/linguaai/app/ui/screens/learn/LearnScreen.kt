@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.School
@@ -43,40 +44,90 @@ fun LearnScreen(
     onOpenVocabulary: () -> Unit,
     onOpenGrammar: () -> Unit,
     onOpenFlashcards: () -> Unit,
+    onStartListenAndType: () -> Unit,
     onStartQuiz: (Long) -> Unit,
     viewModel: LearnViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LearnContent(
         state = state,
-        onOpenLesson = onOpenLesson,
-        onOpenVocabulary = onOpenVocabulary,
-        onOpenGrammar = onOpenGrammar,
-        onOpenFlashcards = onOpenFlashcards,
-        onStartQuiz = onStartQuiz,
+        actions =
+            LearnActions(
+                onOpenLesson = onOpenLesson,
+                onOpenVocabulary = onOpenVocabulary,
+                onOpenGrammar = onOpenGrammar,
+                onOpenFlashcards = onOpenFlashcards,
+                onStartListenAndType = onStartListenAndType,
+                onStartQuiz = onStartQuiz,
+            ),
         onSelectLevel = viewModel::selectLevel,
         onRefresh = viewModel::refresh,
     )
 }
 
+private data class LearnActions(
+    val onOpenLesson: (Long) -> Unit,
+    val onOpenVocabulary: () -> Unit,
+    val onOpenGrammar: () -> Unit,
+    val onOpenFlashcards: () -> Unit,
+    val onStartListenAndType: () -> Unit,
+    val onStartQuiz: (Long) -> Unit,
+)
+
 @Composable
 private fun LearnContent(
     state: LearnUiState,
-    onOpenLesson: (Long) -> Unit,
-    onOpenVocabulary: () -> Unit,
-    onOpenGrammar: () -> Unit,
-    onOpenFlashcards: () -> Unit,
-    onStartQuiz: (Long) -> Unit,
+    actions: LearnActions,
     onSelectLevel: (String?) -> Unit,
     onRefresh: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         LearnHeader()
         OfflineBanner(visible = state.isOffline, modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.sm))
-        LearnTools(onOpenVocabulary, onOpenGrammar, onOpenFlashcards)
-        state.firstQuizId?.let { quizId -> DailyQuizCard(quizId, onStartQuiz) }
+        LearnTools(actions.onOpenVocabulary, actions.onOpenGrammar, actions.onOpenFlashcards)
+        ListenAndTypeEntryCard(onClick = actions.onStartListenAndType)
+        state.firstQuizId?.let { quizId -> DailyQuizCard(quizId, actions.onStartQuiz) }
         LevelFilters(state.availableLevels, state.selectedLevel, onSelectLevel)
-        LessonList(state, onOpenLesson, onOpenVocabulary, onRefresh)
+        LessonList(state, actions.onOpenLesson, actions.onOpenVocabulary, onRefresh)
+    }
+}
+
+@Composable
+private fun ListenAndTypeEntryCard(onClick: () -> Unit) {
+    LinguaCard(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.padding(horizontal = Spacing.md),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.md),
+        ) {
+            IconTile(
+                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                contentDescription = null,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.learn_listen_type_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.learn_listen_type_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
     }
 }
 

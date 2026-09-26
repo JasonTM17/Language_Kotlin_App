@@ -33,6 +33,8 @@ key inside the app.
 - On-demand recorded word pronunciations from Wiktionary/Commons when an exact-language,
   reusable recording is available, with visible file/author/license credits and a locale-correct
   Android TTS fallback; coverage is partial — see the [pronunciation guide](docs/PRONUNCIATION.md)
+- **Listen & Type** practice from Learn: hear up to ten due vocabulary words, type each answer,
+  and review the word, meaning, and round score using the existing audio and TTS path.
 - Quiz engine with attempt tracking and grading
 
 **AI Tutor**
@@ -78,6 +80,19 @@ Japanese roleplay, Learn, and Vocabulary flows.
 | Flashcard review |
 | --- |
 | <img src="docs/img/flashcard-review-vi.png" width="240" alt="Flashcard review card"> |
+
+Listen & Type question, answer feedback, and completion screens:
+
+![Listen & Type demo](docs/img/listen-and-type/listen-and-type-demo.gif)
+
+These three screens come from the Android 15 Compose UI test fixture (`hello` / `greeting`);
+the capture verifies the rendered flow and does not record audible playback. See the
+[screenshot capture notes](docs/screenshots/README.md#listen-and-type) and
+[Android test evidence](docs/TESTING.md#android-instrumented-tests).
+
+| Question | Answer feedback | Round complete |
+| --- | --- | --- |
+| <img src="docs/img/listen-and-type/listen-and-type-question.png" width="180" alt="Listen and Type question with audio action and answer field"> | <img src="docs/img/listen-and-type/listen-and-type-feedback.png" width="180" alt="Listen and Type correct answer feedback with word and meaning"> | <img src="docs/img/listen-and-type/listen-and-type-complete.png" width="180" alt="Listen and Type completion screen with round score"> |
 
 ## Architecture in one picture
 
@@ -141,8 +156,8 @@ To pull and run the published backend image instead of building locally, see the
 ## Tests
 
 ```bash
-cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test                  # 84 tests
-cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest     # 120 tests
+cd server  && JAVA_HOME=/path/to/jdk-24 ./gradlew test
+cd android && JAVA_HOME=/path/to/jdk-24 ./gradlew testDebugUnitTest
 ```
 
 Both suites run offline — no network, no database, no AI key. The AI paths are exercised through
@@ -157,11 +172,9 @@ latency percentiles and post-seed relevance — is kept in the repository's plan
 rather than asserted by CI; environments without Docker-enabled Bash can follow the
 same manual-equivalent checkpoints.
 
-Thirty-one instrumented test cases are defined for a device or emulator with
-`connectedDebugAndroidTest`; the current run reports 30 passed and one
-intentional opt-in pronunciation skip. The current device evidence is recorded in
-[docs/TESTING.md](docs/TESTING.md#android-instrumented-tests); a live authenticated
-UI-to-backend/provider walk remains a separate runtime gate.
+Android unit and instrumented test evidence, including dated device results, is
+recorded in the [testing guide](docs/TESTING.md#android-instrumented-tests). A live
+authenticated UI-to-backend/provider walk remains a separate runtime gate.
 
 ## Project layout
 
@@ -221,11 +234,11 @@ Stated rather than glossed over:
   lookup sends the selected headword and language code to Wikimedia; the request also exposes
   ordinary network metadata such as the device's IP address. See the [pronunciation guide](docs/PRONUNCIATION.md).
 - **The current Room migration chain through version 7 has executed on the
-  `linguaai-api35` emulator.** The latest instrumented run reported 31 tests,
-  with 30 passing and one intentional opt-in pronunciation skip. A fresh
-  authenticated route walk also exercised Home, Learn, Vocabulary, Grammar,
-  Review and Daily Quiz against the local backend; hosted CI and production
-  verification remain separate gates.
+  `linguaai-api35` emulator.** The latest Android test date and counts are in the
+  [testing guide](docs/TESTING.md#android-instrumented-tests). A separate
+  authenticated route walk exercised Home, Learn, Vocabulary, Grammar, Review
+  and Daily Quiz against the local backend; hosted CI and production verification
+  remain separate gates.
 - **No TLS termination** in the Compose stack, and no database backup.
 
 ## Contributing

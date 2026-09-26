@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,6 +65,7 @@ private data class HomeActions(
     val onOpenAiTutor: () -> Unit,
     val onOpenVocabulary: () -> Unit,
     val onAskAiWord: ((VocabularyCard) -> Unit)?,
+    val onStartQuest: (com.linguaai.app.domain.model.DailyQuestType, VocabularyCard?) -> Unit,
     val onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
     val onToggleFavorite: () -> Unit,
     val onPracticeWord: () -> Unit,
@@ -85,6 +89,7 @@ private object HomeColors {
 fun HomeScreen(
     onContinueLesson: (Long) -> Unit,
     onStartReview: () -> Unit,
+    onStartQuest: (com.linguaai.app.domain.model.DailyQuestType, VocabularyCard?) -> Unit,
     onOpenAiTutor: () -> Unit,
     onOpenVocabulary: () -> Unit,
     onAskAiWord: ((VocabularyCard) -> Unit)? = null,
@@ -110,6 +115,7 @@ fun HomeScreen(
                         onOpenAiTutor = onOpenAiTutor,
                         onOpenVocabulary = onOpenVocabulary,
                         onAskAiWord = onAskAiWord,
+                        onStartQuest = onStartQuest,
                         onClaimQuest = viewModel::claimQuest,
                         onToggleFavorite = viewModel::toggleFavoriteWordOfDay,
                         onPracticeWord = viewModel::practiceWordOfDay,
@@ -138,7 +144,18 @@ private fun HomeContent(
         HomeHeader(state.profile, state.languageName, state.userXp)
         DailyGoalCard(state)
         if (state.dailyQuests.isNotEmpty()) {
-            DailyQuestsCard(quests = state.dailyQuests, onClaimQuest = actions.onClaimQuest)
+            DailyQuestsCard(
+                quests = state.dailyQuests,
+                onClaimQuest = actions.onClaimQuest,
+                onStartQuest = { questType ->
+                    startDailyQuest(
+                        questType = questType,
+                        wordOfDay = state.wordOfDay,
+                        onPracticeWord = actions.onPracticeWord,
+                        onNavigate = actions.onStartQuest,
+                    )
+                },
+            )
         }
         ContinueLearningCard(state.continueLesson, actions.onContinueLesson)
         WordOfDayCard(
@@ -437,9 +454,10 @@ private fun ContinueLearningCard(
 
 /** Daily quests and XP challenges card. */
 @Composable
-private fun DailyQuestsCard(
+internal fun DailyQuestsCard(
     quests: List<com.linguaai.app.domain.model.DailyQuest>,
     onClaimQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
+    onStartQuest: (com.linguaai.app.domain.model.DailyQuestType) -> Unit,
 ) {
     SectionHeader(
         title = stringResource(R.string.daily_quests_title),
@@ -456,7 +474,11 @@ private fun DailyQuestsCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             quests.forEach { quest ->
-                DailyQuestRow(quest = quest, onClaim = { onClaimQuest(quest.type) })
+                DailyQuestRow(
+                    quest = quest,
+                    onClaim = { onClaimQuest(quest.type) },
+                    onStart = { onStartQuest(quest.type) },
+                )
             }
         }
     }
@@ -466,6 +488,7 @@ private fun DailyQuestsCard(
 private fun DailyQuestRow(
     quest: com.linguaai.app.domain.model.DailyQuest,
     onClaim: () -> Unit,
+    onStart: () -> Unit,
 ) {
     val (icon, tint) =
         when (quest.type) {
@@ -541,14 +564,21 @@ private fun DailyQuestRow(
                 trackColor = tint.copy(alpha = 0.2f),
             )
         }
-        DailyQuestAction(quest = quest, onClaim = onClaim)
+        DailyQuestAction(
+            quest = quest,
+            questTitleRes = titleRes,
+            onClaim = onClaim,
+            onStart = onStart,
+        )
     }
 }
 
 @Composable
 private fun DailyQuestAction(
     quest: com.linguaai.app.domain.model.DailyQuest,
+    questTitleRes: Int,
     onClaim: () -> Unit,
+    onStart: () -> Unit,
 ) {
     when {
         quest.isClaimed -> {
@@ -583,14 +613,47 @@ private fun DailyQuestAction(
             }
         }
         else -> {
-            Text(
-                text = "+${quest.type.xpReward} XP",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
+            val actionText =
+                stringResource(
+                    if (quest.progress > 0) R.string.quest_continue else R.string.quest_start,
+                )
+            val questTitle = stringResource(questTitleRes)
+            val accessibilityLabel =
+                stringResource(R.string.quest_action_accessibility, actionText, questTitle)
+            androidx.compose.material3.Button(
+                onClick = onStart,
+                shape = CircleShape,
+                colors =
+                    androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                modifier =
+                    Modifier
+                        .heightIn(min = 48.dp)
+                        .semantics { contentDescription = accessibilityLabel },
+            ) {
+                Text(
+                    text = actionText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+            }
         }
     }
+}
+
+internal fun startDailyQuest(
+    questType: com.linguaai.app.domain.model.DailyQuestType,
+    wordOfDay: VocabularyCard?,
+    onPracticeWord: () -> Unit,
+    onNavigate: (com.linguaai.app.domain.model.DailyQuestType, VocabularyCard?) -> Unit,
+) {
+    if (questType == com.linguaai.app.domain.model.DailyQuestType.WORD_OF_DAY && wordOfDay != null) {
+        onPracticeWord()
+    }
+    onNavigate(questType, wordOfDay)
 }
 
 /** Today's word from the learner's tracked vocabulary; tap opens the catalogue. */

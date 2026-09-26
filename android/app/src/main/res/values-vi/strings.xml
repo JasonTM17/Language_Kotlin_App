@@ -163,6 +163,8 @@
     <string name="learn_daily_quiz">Kiểm tra hằng ngày</string>
     <string name="learn_quiz_hint">Năm câu hỏi nhanh để kiểm tra tiến trình.</string>
     <string name="learn_build_habit">Xây thói quen nhỏ bằng những bài học tập trung.</string>
+    <string name="learn_listen_type_title">Nghe và gõ</string>
+    <string name="learn_listen_type_hint">Nghe một từ rồi tự viết lại.</string>
     <string name="lesson_ask_ai">Hỏi AI về bài học này</string>
     <string name="lesson_mark_learned">Đánh dấu đã học</string>
     <string name="lesson_completed">Đã học ✓</string>
@@ -197,6 +199,30 @@
     <string name="flashcard_grade_good">Được</string>
     <string name="flashcard_grade_easy">Dễ</string>
     <string name="flashcard_swipe_hint">Quẹt phải nếu bạn nhớ, trái nếu chưa.</string>
+
+    <!-- Listen and type -->
+    <string name="listen_type_title">Nghe và gõ</string>
+    <string name="listen_type_progress">Câu %1$d trên %2$d</string>
+    <string name="listen_type_prompt">Nghe từ và gõ lại từ bạn vừa nghe.</string>
+    <string name="listen_type_hidden_word">Từ sẽ hiện sau khi bạn trả lời</string>
+    <string name="listen_type_play_audio">Phát âm thanh từ</string>
+    <string name="listen_type_answer_label">Câu trả lời</string>
+    <string name="listen_type_answer_hint">Gõ từ bạn vừa nghe</string>
+    <string name="listen_type_check">Kiểm tra đáp án</string>
+    <string name="listen_type_correct">Chính xác!</string>
+    <string name="listen_type_incorrect">Chưa đúng. Đáp án là:</string>
+    <string name="listen_type_correct_word">Từ: %1$s</string>
+    <string name="listen_type_next">Từ tiếp theo</string>
+    <string name="listen_type_complete_title">Hoàn thành lượt chơi</string>
+    <string name="listen_type_score">Bạn đúng %1$d trên %2$d từ.</string>
+    <string name="listen_type_retry">Chơi lại</string>
+    <string name="listen_type_done">Về mục Học</string>
+    <string name="listen_type_empty_title">Chưa có từ cho lượt chơi này</string>
+    <string name="listen_type_empty_hint">Từ mới hoặc từ đến hạn ôn sẽ xuất hiện ở đây. Hãy xem từ vựng hoặc quay lại sau.</string>
+    <string name="listen_type_open_vocabulary">Mở từ vựng</string>
+    <string name="listen_type_no_language_title">Chọn ngôn ngữ học</string>
+    <string name="listen_type_language_unavailable">Chưa tải được cài đặt âm thanh cho ngôn ngữ này. Hãy thử lại khi có mạng.</string>
+    <string name="listen_type_load_failed">Chưa tải được lượt từ. Hãy thử lại.</string>
 
     <!-- Quiz -->
     <string name="quiz_title_fallback">Bài kiểm tra</string>
@@ -277,6 +303,9 @@
     <string name="quest_flashcards_title">Ôn tập 10 thẻ từ vựng</string>
     <string name="quest_quiz_title">Hoàn thành 1 bài kiểm tra</string>
     <string name="quest_word_of_day_title">Học Từ vựng của ngày</string>
+    <string name="quest_start">Bắt đầu</string>
+    <string name="quest_continue">Tiếp tục</string>
+    <string name="quest_action_accessibility">%1$s: %2$s</string>
     <string name="quest_claim_xp">Nhận +%1$d XP</string>
     <string name="quest_claimed">Đã nhận ✓</string>
     <string name="user_xp_badge">%1$d XP</string>
