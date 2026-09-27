@@ -35,3 +35,14 @@ its existing attribution and fallback coverage.
 | Question | ![Listen & Type question](../img/listen-and-type/listen-and-type-question.png) |
 | Correct-answer feedback | ![Listen & Type feedback](../img/listen-and-type/listen-and-type-feedback.png) |
 | Completed round | ![Listen & Type completion](../img/listen-and-type/listen-and-type-complete.png) |
+
+## Flashcard review
+
+This Vietnamese capture is rendered by `FlashcardScreenTest` on the Android 15
+emulator at 1080x2400 with a deterministic Japanese `環境` vocabulary fixture.
+The test checks that all four grading controls use the same theme primary
+color in light and dark themes, then writes this light-theme reference image.
+It verifies the Compose screen and does not depend on a signed-in account or
+live vocabulary data.
+
+![Vietnamese flashcard review with consistent grade button colors](../img/flashcard-review-vi.png)

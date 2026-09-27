@@ -69,6 +69,22 @@ fun FlashcardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    FlashcardScreenContent(
+        state = state,
+        onBack = onBack,
+        onEvent = viewModel::onEvent,
+        onStartCramSession = viewModel::startCramSession,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FlashcardScreenContent(
+    state: FlashcardUiState,
+    onBack: () -> Unit,
+    onEvent: (FlashcardEvent) -> Unit,
+    onStartCramSession: (Boolean) -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -129,19 +145,19 @@ fun FlashcardScreen(
                             modifier = Modifier.padding(top = Spacing.sm),
                         ) {
                             androidx.compose.material3.OutlinedButton(
-                                onClick = { viewModel.startCramSession(favoritesOnly = false) },
+                                onClick = { onStartCramSession(false) },
                             ) {
                                 Text(stringResource(R.string.flashcard_cram_all))
                             }
                             androidx.compose.material3.OutlinedButton(
-                                onClick = { viewModel.startCramSession(favoritesOnly = true) },
+                                onClick = { onStartCramSession(true) },
                             ) {
                                 Text(stringResource(R.string.flashcard_cram_favorites))
                             }
                         }
                     }
                 }
-            else -> FlashcardContent(state, viewModel::onEvent, Modifier.padding(padding))
+            else -> FlashcardContent(state, onEvent, Modifier.padding(padding))
         }
     }
 }
@@ -374,7 +390,6 @@ private fun GradeActions(
         GradeButton(
             label = stringResource(R.string.flashcard_grade_again),
             grade = ReviewGrade.AGAIN,
-            color = MaterialTheme.colorScheme.error,
             onEvent = onEvent,
             enabled = enabled,
             modifier = Modifier.weight(1f),
@@ -382,7 +397,6 @@ private fun GradeActions(
         GradeButton(
             label = stringResource(R.string.flashcard_grade_hard),
             grade = ReviewGrade.HARD,
-            color = MaterialTheme.colorScheme.tertiary,
             onEvent = onEvent,
             enabled = enabled,
             modifier = Modifier.weight(1f),
@@ -395,7 +409,6 @@ private fun GradeActions(
         GradeButton(
             label = stringResource(R.string.flashcard_grade_good),
             grade = ReviewGrade.GOOD,
-            color = MaterialTheme.colorScheme.primary,
             onEvent = onEvent,
             enabled = enabled,
             modifier = Modifier.weight(1f),
@@ -403,7 +416,6 @@ private fun GradeActions(
         GradeButton(
             label = stringResource(R.string.flashcard_grade_easy),
             grade = ReviewGrade.EASY,
-            color = MaterialTheme.colorScheme.secondary,
             onEvent = onEvent,
             enabled = enabled,
             modifier = Modifier.weight(1f),
@@ -415,7 +427,6 @@ private fun GradeActions(
 private fun GradeButton(
     label: String,
     grade: ReviewGrade,
-    color: androidx.compose.ui.graphics.Color,
     onEvent: (FlashcardEvent) -> Unit,
     enabled: Boolean,
     modifier: Modifier = Modifier,
@@ -423,7 +434,11 @@ private fun GradeButton(
     Button(
         onClick = { onEvent(FlashcardEvent.Grade(grade)) },
         enabled = enabled,
-        colors = ButtonDefaults.buttonColors(containerColor = color),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.heightIn(min = 48.dp),
     ) {
