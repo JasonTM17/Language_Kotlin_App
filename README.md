@@ -77,9 +77,9 @@ Japanese roleplay, Learn, and Vocabulary flows.
 | <img src="docs/img/home-current-vi.png" width="240" alt="LinguaAI Home in Vietnamese"> | <img src="docs/img/home-word-of-day-vi.png" width="240" alt="Word of the day card"> | <img src="docs/img/ai-tutor-current-vi.png" width="240" alt="AI tutor modes"> |
 | Japanese roleplay | Learn | Vocabulary |
 | <img src="docs/img/roleplay-reply-vi.png" width="240" alt="Japanese roleplay reply"> | <img src="docs/img/learn-current-vi.png" width="240" alt="Learn dashboard"> | <img src="docs/img/vocabulary-current-vi.png" width="240" alt="Vocabulary catalogue"> |
-| Flashcard review |
-| --- |
-| <img src="docs/img/flashcard-review-vi.png" width="240" alt="Flashcard review card"> |
+### Flashcard review
+
+<img src="docs/img/flashcard-review-vi.png" width="360" alt="Vietnamese flashcard review screen">
 
 Listen & Type question, answer feedback, and completion screens:
 

@@ -30,7 +30,7 @@ shape/spacing/motion/type in `Shape.kt`, `Spacing.kt`, `LinguaMotion.kt`,
 | --- | --- | --- | --- |
 | Primary | `#0F7A4E` | `#7FDCA8` | Brand emerald: CTAs, active nav, mastery bars |
 | PrimaryContainer | `#C9EFD8` | `#0A5136` | Chips, highlighted cards, badge-earned tile |
-| Secondary | `#C74324` | `#FFB59A` | Coral: streaks, user chat bubble, HARD-side accents |
+| Secondary | `#C74324` | `#FFB59A` | Coral accents: streaks and user chat bubble |
 | SecondaryContainer | `#FFE0D4` | `#78301B` | Coral-tinted surfaces, revealed flashcard face |
 | Tertiary | `#A96A00` | `#FFC95C` | Amber: XP, celebration, weak-topic markers |
 | TertiaryContainer | `#FFEFC7` | `#604100` | Amber-tinted surfaces; mascot glow source |
@@ -190,6 +190,8 @@ Bubble restyle stayed token-only: tutor bubble = surface + outline, user bubble
   `GOOD`, left past 110 dp sends `AGAIN`; the card tilts at 0.06° per dragged dp
   and always springs back to center (`smooth()`), since grading advances the
   queue.
+- The four grade actions share the theme's `primary` / `onPrimary` colors; their
+  localized labels carry the grade meaning in both light and dark themes.
 - Swipes are additive, not exclusive: the four grade buttons (AGAIN / HARD /
   GOOD / EASY) remain, and both paths call the unchanged ViewModel events.
 
@@ -224,7 +226,7 @@ Captured from a `vi-VN` locale emulator (1080x2400); committed copies in
 | --- | --- | --- |
 | <img src="../../docs/img/splash.png" width="270"> | <img src="../../docs/img/home.png" width="270"> | <img src="../../docs/img/progress.png" width="270"> |
 | Swipe-to-grade flashcards | AI tutor chat | Vocabulary catalogue |
-| <img src="../../docs/img/flashcard.png" width="270"> | <img src="../../docs/img/ai-chat.png" width="270"> | <img src="../../docs/img/vocabulary.png" width="270"> |
+| <img src="../../docs/img/flashcard-review-vi.png" width="270" alt="Vietnamese flashcard review screen"> | <img src="../../docs/img/ai-chat.png" width="270"> | <img src="../../docs/img/vocabulary.png" width="270"> |
 
 ## 7. How to extend
 
